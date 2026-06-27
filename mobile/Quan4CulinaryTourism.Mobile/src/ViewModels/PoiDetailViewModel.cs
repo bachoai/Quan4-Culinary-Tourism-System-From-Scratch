@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Maui.ApplicationModel;
 using Quan4CulinaryTourism.Mobile.DTOs;
 using Quan4CulinaryTourism.Mobile.Models;
 using Quan4CulinaryTourism.Mobile.Services;
@@ -17,6 +16,7 @@ public partial class PoiDetailViewModel : BaseViewModel
     private readonly AudioDownloadService _audioDownloadService;
     private readonly AnalyticsApiService _analyticsApiService;
     private readonly SettingsService _settingsService;
+    private bool _audioEventsAttached;
 
     [ObservableProperty]
     private PoiDetailResponse? poi;
@@ -67,6 +67,28 @@ public partial class PoiDetailViewModel : BaseViewModel
         await LoadAsync(poiId);
     }
 
+    public void AttachAudioEvents()
+    {
+        if (_audioEventsAttached)
+        {
+            return;
+        }
+
+        _audioPlayerService.PlaybackStateChanged += OnPlaybackStateChanged;
+        _audioEventsAttached = true;
+    }
+
+    public void DetachAudioEvents()
+    {
+        if (!_audioEventsAttached)
+        {
+            return;
+        }
+
+        _audioPlayerService.PlaybackStateChanged -= OnPlaybackStateChanged;
+        _audioEventsAttached = false;
+    }
+
     [RelayCommand]
     private async Task PlayAudioAsync()
     {
@@ -79,11 +101,13 @@ public partial class PoiDetailViewModel : BaseViewModel
 
         try
         {
-            AudioState = "Preparing";
-            AudioMessage = "Đang chuẩn bị audio...";
-            await _audioPlayerService.PlayAsync(Audio.AudioUrl, Audio.LocalAudioPath);
-            AudioState = "Playing";
-            AudioMessage = string.IsNullOrWhiteSpace(Audio.LocalAudioPath) ? "Đang phát audio online." : "Đang phát audio offline.";
+            await _audioPlayerService.PlayPoiAudioAsync(
+                Poi?.Id ?? "manual-audio",
+                SelectedLanguage,
+                Audio.AudioUrl,
+                Audio.LocalAudioPath,
+                Poi?.Name,
+                "detail");
 
             await _analyticsApiService.CollectAsync(new CollectAnalyticsRequest
             {
@@ -151,7 +175,7 @@ public partial class PoiDetailViewModel : BaseViewModel
     [RelayCommand]
     private async Task SpeakWithTtsAsync()
     {
-        if (Poi is null || string.IsNullOrWhiteSpace(Poi.Description))
+        if (Poi is null || string.IsNullOrWhiteSpace(Poi.NarrationText))
         {
             AudioMessage = "Không có mô tả để đọc bằng TTS.";
             return;
@@ -159,9 +183,13 @@ public partial class PoiDetailViewModel : BaseViewModel
 
         try
         {
-            await TextToSpeech.Default.SpeakAsync(Poi.Description);
-            AudioState = "TTS";
-            AudioMessage = "Đang đọc mô tả bằng TTS.";
+            await _audioPlayerService.SpeakPoiDescriptionAsync(
+                Poi.Id,
+                SelectedLanguage,
+                Poi.NarrationText,
+                Poi.Name,
+                "detail");
+
             await _analyticsApiService.CollectAsync(new CollectAnalyticsRequest
             {
                 EventName = "tts_played",
@@ -184,7 +212,7 @@ public partial class PoiDetailViewModel : BaseViewModel
             return;
         }
 
-        await Launcher.Default.OpenAsync($"https://www.google.com/maps/dir/?api=1&destination={Poi.Latitude},{Poi.Longitude}");
+        await Launcher.Default.OpenAsync(Poi.ResolvedMapUrl);
     }
 
     [RelayCommand]
@@ -247,5 +275,39 @@ public partial class PoiDetailViewModel : BaseViewModel
                 Lang = SelectedLanguage
             });
         }, "Không tải được chi tiết địa điểm.");
+    }
+
+    private void OnPlaybackStateChanged(object? sender, AudioPlaybackStateChangedEventArgs args)
+    {
+        if (Poi?.Id is null || args.PoiId != Poi.Id)
+        {
+            return;
+        }
+
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            AudioState = args.State.ToString();
+            AudioMessage = MapAudioMessage(args);
+        });
+    }
+
+    private static string MapAudioMessage(AudioPlaybackStateChangedEventArgs args)
+    {
+        return args.State switch
+        {
+            AudioPlaybackState.Queued => "Đã thêm vào hàng chờ thuyết minh.",
+            AudioPlaybackState.Preparing => args.ContentType == AudioPlaybackContentType.TextToSpeech
+                ? "Đang chuẩn bị TTS..."
+                : "Đang chuẩn bị audio...",
+            AudioPlaybackState.Playing => args.ContentType == AudioPlaybackContentType.TextToSpeech
+                ? "Đang đọc mô tả bằng TTS."
+                : args.Message,
+            AudioPlaybackState.Paused => "Audio đã tạm dừng.",
+            AudioPlaybackState.Stopped => "Đã dừng audio.",
+            AudioPlaybackState.Completed => "Đã phát xong thuyết minh.",
+            AudioPlaybackState.Interrupted => "Audio bị dừng vì có nguồn âm thanh khác hoặc thông báo chen vào.",
+            AudioPlaybackState.Error => args.Message,
+            _ => "Sẵn sàng phát thuyết minh."
+        };
     }
 }

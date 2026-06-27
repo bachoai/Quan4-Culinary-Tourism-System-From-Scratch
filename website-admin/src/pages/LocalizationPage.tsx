@@ -57,6 +57,7 @@ export function LocalizationPage() {
                 { title: t('language'), dataIndex: 'lang' },
                 { title: t('name'), dataIndex: 'name' },
                 { title: t('description'), dataIndex: 'description' },
+                { title: t('tts_script'), dataIndex: 'ttsScript' },
                 {
                   title: t('actions'),
                   render: (_, record) => (

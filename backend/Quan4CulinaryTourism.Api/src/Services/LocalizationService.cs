@@ -41,6 +41,7 @@ public class LocalizationService
             Name = request.Name,
             Description = request.Description,
             AudioUrl = request.AudioUrl,
+            TtsScript = string.IsNullOrWhiteSpace(request.TtsScript) ? null : request.TtsScript.Trim(),
             IsFallback = request.IsFallback
         };
         await _repository.CreateAsync(entity, cancellationToken);
@@ -54,6 +55,7 @@ public class LocalizationService
         entity.Name = request.Name;
         entity.Description = request.Description;
         entity.AudioUrl = request.AudioUrl;
+        entity.TtsScript = string.IsNullOrWhiteSpace(request.TtsScript) ? null : request.TtsScript.Trim();
         entity.IsFallback = request.IsFallback;
         await _repository.UpdateAsync(entity, cancellationToken);
         return ToResponse(entity);
@@ -74,6 +76,7 @@ public class LocalizationService
         Name = entity.Name,
         Description = entity.Description,
         AudioUrl = entity.AudioUrl,
+        TtsScript = entity.TtsScript,
         IsFallback = entity.IsFallback
     };
 }

@@ -47,6 +47,8 @@
                             SelectedItem="{Binding SelectedNarrationRadius}"
                             Title="Bán kính mặc định" />
                     <Button Text="Lưu Auto Narration" Command="{Binding SaveNarrationSettingsCommand}" />
+                    <Label Text="Tracking status" Style="{StaticResource SectionTitleLabel}" />
+                    <Label Text="{Binding TrackingStatus}" />
                 </VerticalStackLayout>
             </Border>
 

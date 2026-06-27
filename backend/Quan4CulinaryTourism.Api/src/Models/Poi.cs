@@ -16,6 +16,10 @@ public class Poi : BaseDocument
     public double Rating { get; set; }
     public int ReviewCount { get; set; }
     public int Priority { get; set; }
+    public string? MapUrl { get; set; }
+    public string? TtsScript { get; set; }
+    public int GeofenceRadiusMeters { get; set; } = 100;
+    public bool AutoNarrationEnabled { get; set; } = true;
     public List<PoiImage> Images { get; set; } = [];
     public List<OpeningHour> OpeningHours { get; set; } = [];
     public ContactInfo? ContactInfo { get; set; }

@@ -81,6 +81,13 @@ export function OwnerSubmissionPage() {
             <Descriptions.Item label="POI ID">{selectedRecord.poiId ?? '--'}</Descriptions.Item>
             <Descriptions.Item label="Type"><StatusBadge value={selectedRecord.submissionType} /></Descriptions.Item>
             <Descriptions.Item label="Status"><StatusBadge value={selectedRecord.status} /></Descriptions.Item>
+            <Descriptions.Item label={t('priority')}>{selectedRecord.priority}</Descriptions.Item>
+            <Descriptions.Item label={t('map_url')}>{selectedRecord.mapUrl ?? '--'}</Descriptions.Item>
+            <Descriptions.Item label={t('tts_script')}>{selectedRecord.ttsScript ?? '--'}</Descriptions.Item>
+            <Descriptions.Item label={t('geofence_radius')}>{selectedRecord.geofenceRadiusMeters} m</Descriptions.Item>
+            <Descriptions.Item label={t('auto_narration_enabled')}>
+              <StatusBadge value={selectedRecord.autoNarrationEnabled} trueLabel={t('yes')} falseLabel={t('no')} />
+            </Descriptions.Item>
             <Descriptions.Item label="Admin note">{selectedRecord.adminNote ?? '--'}</Descriptions.Item>
           </Descriptions>
         ) : null}

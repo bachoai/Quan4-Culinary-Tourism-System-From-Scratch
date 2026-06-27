@@ -81,6 +81,11 @@ public class OwnerService
             District = request.District,
             City = request.City,
             PriceRange = request.PriceRange,
+            Priority = request.Priority,
+            MapUrl = string.IsNullOrWhiteSpace(request.MapUrl) ? null : request.MapUrl.Trim(),
+            TtsScript = string.IsNullOrWhiteSpace(request.TtsScript) ? null : request.TtsScript.Trim(),
+            GeofenceRadiusMeters = request.GeofenceRadiusMeters,
+            AutoNarrationEnabled = request.AutoNarrationEnabled,
             Images = request.Images,
             OpeningHours = request.OpeningHours,
             ContactInfo = request.ContactInfo,
@@ -131,6 +136,11 @@ public class OwnerService
         entity.District = request.District;
         entity.City = request.City;
         entity.PriceRange = request.PriceRange;
+        entity.Priority = request.Priority;
+        entity.MapUrl = string.IsNullOrWhiteSpace(request.MapUrl) ? null : request.MapUrl.Trim();
+        entity.TtsScript = string.IsNullOrWhiteSpace(request.TtsScript) ? null : request.TtsScript.Trim();
+        entity.GeofenceRadiusMeters = request.GeofenceRadiusMeters;
+        entity.AutoNarrationEnabled = request.AutoNarrationEnabled;
         entity.Images = request.Images;
         entity.OpeningHours = request.OpeningHours;
         entity.ContactInfo = request.ContactInfo;
@@ -147,6 +157,11 @@ public class OwnerService
         PoiId = entity.PoiId,
         SubmissionType = entity.SubmissionType,
         PoiName = entity.PoiName,
+        Priority = entity.Priority,
+        MapUrl = entity.MapUrl,
+        TtsScript = entity.TtsScript,
+        GeofenceRadiusMeters = entity.GeofenceRadiusMeters,
+        AutoNarrationEnabled = entity.AutoNarrationEnabled,
         Status = entity.Status,
         AdminNote = entity.AdminNote,
         CreatedAt = entity.CreatedAt

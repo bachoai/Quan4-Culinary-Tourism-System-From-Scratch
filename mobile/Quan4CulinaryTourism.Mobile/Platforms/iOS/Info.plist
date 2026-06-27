@@ -35,5 +35,14 @@
 	<string>Assets.xcassets/appicon.appiconset</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Ứng dụng cần vị trí để tìm quán ăn gần bạn tại Quận 4.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Ứng dụng dùng vị trí liên tục để kích hoạt audio thuyết minh khi bạn di chuyển qua các điểm ẩm thực.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Ứng dụng dùng vị trí nền để tiếp tục geofence và audio thuyết minh ngay cả khi bạn rời màn hình chính.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>location</string>
+	</array>
 </dict>
 </plist>

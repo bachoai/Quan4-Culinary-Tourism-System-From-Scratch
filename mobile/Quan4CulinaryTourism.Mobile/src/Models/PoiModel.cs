@@ -16,6 +16,8 @@ public class PoiResponse
     public double Rating { get; set; }
     public int ReviewCount { get; set; }
     public int Priority { get; set; }
+    public string? MapUrl { get; set; }
+    public string? TtsScript { get; set; }
     public double Latitude { get; set; }
     public double Longitude { get; set; }
     public List<string> Tags { get; set; } = [];
@@ -35,6 +37,13 @@ public class PoiResponse
             ?? Images.FirstOrDefault()?.Url);
 
     public string HeroImageUrl => ThumbnailUrl;
+
+    public string ResolvedMapUrl =>
+        !string.IsNullOrWhiteSpace(MapUrl)
+            ? MapUrl
+            : $"https://www.google.com/maps/search/?api=1&query={Latitude},{Longitude}";
+
+    public string NarrationText => string.IsNullOrWhiteSpace(TtsScript) ? Description : TtsScript;
 
     public string RatingText => Rating > 0 ? $"{Rating:0.0} ({ReviewCount})" : "Mới";
 }

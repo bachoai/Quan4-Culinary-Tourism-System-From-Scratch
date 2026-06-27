@@ -27,6 +27,14 @@ public class ContactInfo
     public string? WebsiteUrl { get; set; }
 }
 
+public class TourStop
+{
+    public string PoiId { get; set; } = string.Empty;
+    public string? Title { get; set; }
+    public int Order { get; set; }
+    public int EstimatedStayMinutes { get; set; } = 15;
+}
+
 public static class GeoLocationFactory
 {
     public static GeoJsonPoint<GeoJson2DGeographicCoordinates> Create(double longitude, double latitude) =>

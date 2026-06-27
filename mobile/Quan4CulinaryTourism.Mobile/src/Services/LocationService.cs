@@ -4,6 +4,13 @@ namespace Quan4CulinaryTourism.Mobile.Services;
 
 public class LocationService
 {
+    private readonly LocationTrackingService _locationTrackingService;
+
+    public LocationService(LocationTrackingService locationTrackingService)
+    {
+        _locationTrackingService = locationTrackingService;
+    }
+
     public async Task<bool> CheckAndRequestPermissionAsync()
     {
         var status = await Permissions.CheckStatusAsync<Permissions.LocationWhenInUse>();
@@ -18,6 +25,13 @@ public class LocationService
 
     public async Task<Location?> GetCurrentLocationAsync()
     {
+        var cachedLocation = _locationTrackingService.LastKnownLocation;
+        var cachedAt = _locationTrackingService.LastKnownTimestampUtc;
+        if (cachedLocation is not null && cachedAt is not null && DateTimeOffset.UtcNow - cachedAt <= TimeSpan.FromMinutes(2))
+        {
+            return cachedLocation;
+        }
+
         try
         {
             var request = new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(10));

@@ -3,10 +3,12 @@ import {
   AudioLines,
   ChartColumn,
   FolderKanban,
+  History,
   Landmark,
   LayoutDashboard,
   Map,
   Mic2,
+  Route,
   ScrollText,
   Tags,
   Users,
@@ -32,6 +34,8 @@ export function Sidebar({ collapsed }: SidebarProps) {
     { key: '/admin/audio', icon: <Mic2 size={16} />, label: t('sidebar_audio') },
     { key: '/admin/localizations', icon: <AudioLines size={16} />, label: t('sidebar_localizations') },
     { key: '/admin/analytics', icon: <ChartColumn size={16} />, label: t('sidebar_analytics') },
+    { key: '/admin/usage-history', icon: <History size={16} />, label: t('sidebar_usage_history') },
+    { key: '/admin/tours', icon: <Route size={16} />, label: t('sidebar_tours') },
     { key: '/admin/maps', icon: <Map size={16} />, label: t('sidebar_maps') },
   ];
   const selectedKey = items.find((item) => location.pathname.startsWith(item.key))?.key ?? '/admin/dashboard';

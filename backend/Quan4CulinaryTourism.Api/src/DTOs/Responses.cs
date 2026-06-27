@@ -58,8 +58,12 @@ public class PoiResponse
     public double Rating { get; set; }
     public int ReviewCount { get; set; }
     public int Priority { get; set; }
+    public string? MapUrl { get; set; }
+    public string? TtsScript { get; set; }
     public double Latitude { get; set; }
     public double Longitude { get; set; }
+    public int GeofenceRadiusMeters { get; set; }
+    public bool AutoNarrationEnabled { get; set; }
     public List<string> Tags { get; set; } = [];
     public List<Quan4CulinaryTourism.Api.Models.PoiImage> Images { get; set; } = [];
     public bool IsActive { get; set; }
@@ -98,6 +102,11 @@ public class OwnerSubmissionResponse
     public string? PoiId { get; set; }
     public string SubmissionType { get; set; } = string.Empty;
     public string PoiName { get; set; } = string.Empty;
+    public int Priority { get; set; }
+    public string? MapUrl { get; set; }
+    public string? TtsScript { get; set; }
+    public int GeofenceRadiusMeters { get; set; }
+    public bool AutoNarrationEnabled { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? AdminNote { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -134,6 +143,7 @@ public class PoiLocalizationResponse
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string? AudioUrl { get; set; }
+    public string? TtsScript { get; set; }
     public bool IsFallback { get; set; }
 }
 
@@ -169,6 +179,40 @@ public class TopPoiAnalyticsResponse
 {
     public string PoiId { get; set; } = string.Empty;
     public long Count { get; set; }
+}
+
+public class UsageHistoryEntryResponse
+{
+    public string Id { get; set; } = string.Empty;
+    public string? AnonymousId { get; set; }
+    public string? SessionId { get; set; }
+    public string? PageViewId { get; set; }
+    public string EventName { get; set; } = string.Empty;
+    public string? PoiId { get; set; }
+    public string? Lang { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = [];
+    public DateTime CreatedAt { get; set; }
+}
+
+public class TourStopResponse
+{
+    public string PoiId { get; set; } = string.Empty;
+    public string? Title { get; set; }
+    public int Order { get; set; }
+    public int EstimatedStayMinutes { get; set; }
+}
+
+public class TourResponse
+{
+    public string Id { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Lang { get; set; } = string.Empty;
+    public string? CoverImageUrl { get; set; }
+    public int EstimatedDurationMinutes { get; set; }
+    public bool IsActive { get; set; }
+    public List<TourStopResponse> Stops { get; set; } = [];
+    public DateTime UpdatedAt { get; set; }
 }
 
 public class MediaFileResponse

@@ -113,5 +113,13 @@ public class MongoIndexInitializer
             new CreateIndexModel<MapPack>(Builders<MapPack>.IndexKeys.Ascending(x => x.Version), new CreateIndexOptions { Unique = true }),
             new CreateIndexModel<MapPack>(Builders<MapPack>.IndexKeys.Ascending(x => x.IsActive))
         ], cancellationToken);
+
+        await _context.Tours.Indexes.CreateManyAsync(
+        [
+            new CreateIndexModel<Tour>(Builders<Tour>.IndexKeys.Ascending(x => x.IsActive)),
+            new CreateIndexModel<Tour>(Builders<Tour>.IndexKeys.Ascending(x => x.Lang)),
+            new CreateIndexModel<Tour>(Builders<Tour>.IndexKeys.Ascending(x => x.UpdatedAt)),
+            new CreateIndexModel<Tour>(Builders<Tour>.IndexKeys.Text(x => x.Title).Text(x => x.Description))
+        ], cancellationToken);
     }
 }

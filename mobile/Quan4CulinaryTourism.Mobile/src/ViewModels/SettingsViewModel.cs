@@ -13,6 +13,7 @@ public partial class SettingsViewModel : BaseViewModel
     private readonly OfflineDatabaseService _offlineDatabaseService;
     private readonly HealthApiService _healthApiService;
     private readonly AnalyticsApiService _analyticsApiService;
+    private readonly LocationTrackingService _locationTrackingService;
 
     [ObservableProperty]
     private LanguageOption? selectedLanguageOption;
@@ -38,16 +39,21 @@ public partial class SettingsViewModel : BaseViewModel
     [ObservableProperty]
     private ApiEndpointOption? selectedEndpointOption;
 
+    [ObservableProperty]
+    private string trackingStatus = string.Empty;
+
     public SettingsViewModel(
         SettingsService settingsService,
         OfflineDatabaseService offlineDatabaseService,
         HealthApiService healthApiService,
-        AnalyticsApiService analyticsApiService)
+        AnalyticsApiService analyticsApiService,
+        LocationTrackingService locationTrackingService)
     {
         _settingsService = settingsService;
         _offlineDatabaseService = offlineDatabaseService;
         _healthApiService = healthApiService;
         _analyticsApiService = analyticsApiService;
+        _locationTrackingService = locationTrackingService;
 
         Title = "Cài đặt";
         Languages = _settingsService.GetLanguages();
@@ -69,6 +75,7 @@ public partial class SettingsViewModel : BaseViewModel
         ApiBaseUrl = _settingsService.GetApiBaseUrl();
         SelectedEndpointOption = ApiEndpoints.FirstOrDefault(option => option.Url == ApiBaseUrl);
         AppVersion = AppInfo.Current.VersionString;
+        TrackingStatus = _locationTrackingService.GetStatusText();
 
         var health = await _healthApiService.GetHealthAsync();
         BackendStatus = health is null
@@ -95,12 +102,21 @@ public partial class SettingsViewModel : BaseViewModel
     }
 
     [RelayCommand]
-    private Task SaveNarrationSettingsAsync()
+    private async Task SaveNarrationSettingsAsync()
     {
-        _settingsService.SetAutoNarrationEnabled(AutoNarrationEnabled);
-        _settingsService.SetNarrationRadiusMeters(SelectedNarrationRadius);
-        BackendStatus = "Đã cập nhật Auto Narration.";
-        return Task.CompletedTask;
+        _settingsService.UpdateAutoNarrationSettings(AutoNarrationEnabled, SelectedNarrationRadius);
+
+        if (AutoNarrationEnabled)
+        {
+            await _locationTrackingService.EnsureStartedAsync();
+        }
+        else
+        {
+            await _locationTrackingService.StopAsync();
+        }
+
+        TrackingStatus = _locationTrackingService.GetStatusText();
+        BackendStatus = "Đã cập nhật Auto Narration và GPS tracking.";
     }
 
     [RelayCommand]

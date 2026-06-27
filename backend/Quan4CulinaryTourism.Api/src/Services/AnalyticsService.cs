@@ -1,3 +1,4 @@
+using Quan4CulinaryTourism.Api.Common;
 using Quan4CulinaryTourism.Api.DTOs;
 using Quan4CulinaryTourism.Api.Models;
 using Quan4CulinaryTourism.Api.Repositories;
@@ -40,6 +41,9 @@ public class AnalyticsService
             TopPoiAudioPlays = await _analyticsRepository.GetTopAudioPlaysAsync(cancellationToken)
         };
     }
+
+    public Task<PagedResponse<UsageHistoryEntryResponse>> GetUsageHistoryAsync(UsageHistoryRequest request, CancellationToken cancellationToken = default) =>
+        _analyticsRepository.SearchUsageHistoryAsync(request, cancellationToken);
 
     private static Dictionary<string, object> NormalizeMetadata(Dictionary<string, object> metadata)
     {

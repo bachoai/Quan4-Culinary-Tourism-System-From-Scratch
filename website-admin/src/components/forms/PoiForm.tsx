@@ -19,6 +19,10 @@ type PoiFormValues = {
   longitude: number;
   priceRange: '$' | '$$' | '$$$';
   priority: number;
+  mapUrl?: string;
+  ttsScript?: string;
+  geofenceRadiusMeters: number;
+  autoNarrationEnabled: boolean;
   tagsText?: string;
   ownerId?: string;
   isActive: boolean;
@@ -45,6 +49,10 @@ function toFormValues(values?: UpdatePoiRequest): PoiFormValues {
     longitude: values?.location.longitude ?? 106.707,
     priceRange: values?.priceRange ?? '$',
     priority: values?.priority ?? 0,
+    mapUrl: values?.mapUrl ?? '',
+    ttsScript: values?.ttsScript ?? '',
+    geofenceRadiusMeters: values?.geofenceRadiusMeters ?? 100,
+    autoNarrationEnabled: values?.autoNarrationEnabled ?? true,
     tagsText: values?.tags.join(', ') ?? '',
     ownerId: values?.ownerId ?? '',
     isActive: values?.isActive ?? true,
@@ -76,6 +84,10 @@ export function PoiForm({ categories, initialValues, loading, onSubmit }: PoiFor
         city: values.city,
         priceRange: values.priceRange,
         priority: values.priority,
+        mapUrl: values.mapUrl?.trim() || undefined,
+        ttsScript: values.ttsScript?.trim() || undefined,
+        geofenceRadiusMeters: values.geofenceRadiusMeters,
+        autoNarrationEnabled: values.autoNarrationEnabled,
         images: initialValues?.images ?? [],
         openingHours: initialValues?.openingHours ?? [],
         contactInfo: initialValues?.contactInfo ?? null,
@@ -130,6 +142,15 @@ export function PoiForm({ categories, initialValues, loading, onSubmit }: PoiFor
             <Controller name="priority" control={control} render={({ field }) => <Form.Item label={t('priority')}><InputNumber min={0} style={{ width: '100%' }} value={field.value} onChange={(value) => field.onChange(value ?? 0)} /></Form.Item>} />
           </Col>
           <Col xs={24} md={6}>
+            <Controller name="geofenceRadiusMeters" control={control} render={({ field }) => <Form.Item label={t('geofence_radius')}><InputNumber min={10} max={10000} style={{ width: '100%' }} value={field.value} onChange={(value) => field.onChange(value ?? 100)} /></Form.Item>} />
+          </Col>
+          <Col span={24}>
+            <Controller name="mapUrl" control={control} render={({ field }) => <Form.Item label={t('map_url')}><Input {...field} /></Form.Item>} />
+          </Col>
+          <Col span={24}>
+            <Controller name="ttsScript" control={control} render={({ field }) => <Form.Item label={t('tts_script')}><Input.TextArea rows={4} {...field} /></Form.Item>} />
+          </Col>
+          <Col xs={24} md={6}>
             <Controller name="ownerId" control={control} render={({ field }) => <Form.Item label={t('owner_id')}><Input {...field} /></Form.Item>} />
           </Col>
           <Col span={24}>
@@ -140,6 +161,9 @@ export function PoiForm({ categories, initialValues, loading, onSubmit }: PoiFor
           </Col>
           <Col xs={24} md={12}>
             <Controller name="activationRequested" control={control} render={({ field }) => <Form.Item label={t('activation_requested')}><Switch checked={field.value} onChange={field.onChange} /></Form.Item>} />
+          </Col>
+          <Col xs={24} md={12}>
+            <Controller name="autoNarrationEnabled" control={control} render={({ field }) => <Form.Item label={t('auto_narration_enabled')}><Switch checked={field.value} onChange={field.onChange} /></Form.Item>} />
           </Col>
         </Row>
       </Card>

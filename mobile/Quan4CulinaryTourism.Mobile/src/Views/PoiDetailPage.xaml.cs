@@ -21,9 +21,16 @@ public partial class PoiDetailPage : ContentPage, IQueryAttributable
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        _viewModel.AttachAudioEvents();
         if (!string.IsNullOrWhiteSpace(_poiId))
         {
             await _viewModel.InitializeAsync(_poiId);
         }
+    }
+
+    protected override void OnDisappearing()
+    {
+        _viewModel.DetachAudioEvents();
+        base.OnDisappearing();
     }
 }

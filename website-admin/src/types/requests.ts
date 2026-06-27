@@ -28,6 +28,10 @@ export interface PoiPayloadBase {
   city: string;
   priceRange: '$' | '$$' | '$$$';
   priority: number;
+  mapUrl?: string;
+  ttsScript?: string;
+  geofenceRadiusMeters: number;
+  autoNarrationEnabled: boolean;
   images: PoiImage[];
   openingHours: OpeningHour[];
   contactInfo?: ContactInfo | null;
@@ -47,6 +51,7 @@ export interface CreateLocalizationRequest {
   name: string;
   description: string;
   audioUrl?: string;
+  ttsScript?: string;
   isFallback: boolean;
 }
 
@@ -58,6 +63,25 @@ export interface UploadPoiAudioRequest {
   voiceName?: string;
   sourceType: string;
 }
+
+export interface TourStopRequest {
+  poiId: string;
+  title?: string;
+  order: number;
+  estimatedStayMinutes: number;
+}
+
+export interface CreateTourRequest {
+  title: string;
+  description: string;
+  lang: string;
+  coverImageUrl?: string;
+  estimatedDurationMinutes: number;
+  isActive: boolean;
+  stops: TourStopRequest[];
+}
+
+export interface UpdateTourRequest extends CreateTourRequest {}
 
 export interface ApproveRequest {
   adminNote?: string;

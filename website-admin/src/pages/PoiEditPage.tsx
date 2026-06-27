@@ -29,16 +29,18 @@ export function PoiEditPage() {
   });
 
   const initialValues: UpdatePoiRequest | undefined = poiQuery.data
-    ? {
-        ...poiQuery.data,
-        location: {
-          latitude: poiQuery.data.latitude,
-          longitude: poiQuery.data.longitude,
-        },
-        priceRange: normalizePriceRange(poiQuery.data.priceRange),
-        activationRequested: false,
-      }
-    : undefined;
+      ? {
+          ...poiQuery.data,
+          location: {
+            latitude: poiQuery.data.latitude,
+            longitude: poiQuery.data.longitude,
+          },
+          priceRange: normalizePriceRange(poiQuery.data.priceRange),
+          mapUrl: poiQuery.data.mapUrl ?? undefined,
+          ttsScript: poiQuery.data.ttsScript ?? undefined,
+          activationRequested: false,
+        }
+      : undefined;
 
   if (categoriesQuery.isLoading || poiQuery.isLoading || !poiQuery.data) return <LoadingScreen />;
 

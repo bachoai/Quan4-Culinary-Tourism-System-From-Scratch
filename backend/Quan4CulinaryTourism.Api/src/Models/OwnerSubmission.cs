@@ -16,6 +16,11 @@ public class OwnerSubmission : BaseDocument
     public string District { get; set; } = "Quận 4";
     public string City { get; set; } = "TP.HCM";
     public string PriceRange { get; set; } = "$";
+    public int Priority { get; set; }
+    public string? MapUrl { get; set; }
+    public string? TtsScript { get; set; }
+    public int GeofenceRadiusMeters { get; set; } = 100;
+    public bool AutoNarrationEnabled { get; set; } = true;
     public List<PoiImage> Images { get; set; } = [];
     public List<OpeningHour> OpeningHours { get; set; } = [];
     public ContactInfo? ContactInfo { get; set; }

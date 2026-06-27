@@ -18,4 +18,9 @@ public class AnalyticsController : BaseApiController
     [Authorize(Roles = SharedConstants.UserRoles.Admin)]
     [HttpGet($"{AppConstants.ApiVersionPrefix}/admin/analytics/summary")]
     public Task<IActionResult> Summary() => ExecuteAsync(() => _analyticsService.GetSummaryAsync(), "Lấy analytics summary thành công");
+
+    [Authorize(Roles = SharedConstants.UserRoles.Admin)]
+    [HttpGet($"{AppConstants.ApiVersionPrefix}/admin/analytics/history")]
+    public Task<IActionResult> History([FromQuery] UsageHistoryRequest request) =>
+        ExecuteAsync(() => _analyticsService.GetUsageHistoryAsync(request), "Lấy lịch sử sử dụng thành công");
 }

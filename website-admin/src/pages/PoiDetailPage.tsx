@@ -80,6 +80,8 @@ export function PoiDetailPage() {
     ...poiQuery.data,
     location: { latitude: poiQuery.data.latitude, longitude: poiQuery.data.longitude },
     priceRange: normalizePriceRange(poiQuery.data.priceRange),
+    mapUrl: poiQuery.data.mapUrl ?? undefined,
+    ttsScript: poiQuery.data.ttsScript ?? undefined,
     activationRequested: false,
   };
 
@@ -121,10 +123,14 @@ export function PoiDetailPage() {
           <div className="info-list" style={{ marginTop: 18 }}>
             <div className="info-list-item"><span>{t('category_id')}</span><strong>{poiQuery.data.categoryId}</strong></div>
             <div className="info-list-item"><span>{t('coordinates')}</span><strong>{poiQuery.data.latitude}, {poiQuery.data.longitude}</strong></div>
+            <div className="info-list-item"><span>{t('geofence_radius')}</span><strong>{poiQuery.data.geofenceRadiusMeters} m</strong></div>
+            <div className="info-list-item"><span>{t('map_url')}</span><strong>{poiQuery.data.mapUrl ?? '--'}</strong></div>
             <div className="info-list-item"><span>{t('tags')}</span><strong>{poiQuery.data.tags.join(', ') || '--'}</strong></div>
           </div>
           <Typography.Title level={5} style={{ marginTop: 20 }}>{t('description')}</Typography.Title>
           <Typography.Paragraph>{poiQuery.data.description}</Typography.Paragraph>
+          <Typography.Title level={5} style={{ marginTop: 20 }}>{t('tts_script')}</Typography.Title>
+          <Typography.Paragraph>{poiQuery.data.ttsScript || '--'}</Typography.Paragraph>
         </Card>
         <div className="detail-side-stack">
           <Card className="glass-card" title={<Space><MapPin size={16} />Thông tin</Space>}>
@@ -132,6 +138,10 @@ export function PoiDetailPage() {
               <Descriptions.Item label={t('address')}>{`${poiQuery.data.address}, ${poiQuery.data.ward}, ${poiQuery.data.district}`}</Descriptions.Item>
               <Descriptions.Item label={t('price')}>{poiQuery.data.priceRange}</Descriptions.Item>
               <Descriptions.Item label={t('rating')}>{poiQuery.data.rating}</Descriptions.Item>
+              <Descriptions.Item label={t('priority')}>{poiQuery.data.priority}</Descriptions.Item>
+              <Descriptions.Item label={t('auto_narration_enabled')}>
+                <StatusBadge value={poiQuery.data.autoNarrationEnabled} trueLabel={t('yes')} falseLabel={t('no')} />
+              </Descriptions.Item>
             </Descriptions>
           </Card>
           <Card className="glass-card" title={<Space><Music4 size={16} />{t('audio_title')}</Space>}>
@@ -186,12 +196,13 @@ export function PoiDetailPage() {
           className="table-responsive"
           rowKey="id"
           dataSource={localizationsQuery.data ?? []}
-          columns={[
-            { title: t('language'), dataIndex: 'lang' },
-            { title: t('name'), dataIndex: 'name' },
-            { title: t('description'), dataIndex: 'description' },
-            { title: t('fallback'), render: (_, record) => <StatusBadge value={record.isFallback ? 'active' : 'inactive'} trueLabel={t('yes')} falseLabel={t('no')} /> },
-          ]}
+              columns={[
+                { title: t('language'), dataIndex: 'lang' },
+                { title: t('name'), dataIndex: 'name' },
+                { title: t('description'), dataIndex: 'description' },
+                { title: t('tts_script'), dataIndex: 'ttsScript' },
+                { title: t('fallback'), render: (_, record) => <StatusBadge value={record.isFallback ? 'active' : 'inactive'} trueLabel={t('yes')} falseLabel={t('no')} /> },
+              ]}
           pagination={false}
         />
       </Card>

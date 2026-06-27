@@ -15,6 +15,7 @@ public class SettingsService
 
     public event EventHandler<string>? LanguageChanged;
     public event EventHandler<string>? ThemeChanged;
+    public event EventHandler<AutoNarrationSettingsChangedEventArgs>? AutoNarrationSettingsChanged;
 
     public string GetLanguage() => Preferences.Default.Get(LanguageKey, "vi");
 
@@ -63,11 +64,26 @@ public class SettingsService
 
     public bool GetAutoNarrationEnabled() => Preferences.Default.Get(AutoNarrationKey, true);
 
-    public void SetAutoNarrationEnabled(bool enabled) => Preferences.Default.Set(AutoNarrationKey, enabled);
+    public void SetAutoNarrationEnabled(bool enabled)
+    {
+        Preferences.Default.Set(AutoNarrationKey, enabled);
+        RaiseAutoNarrationSettingsChanged();
+    }
 
     public int GetNarrationRadiusMeters() => Preferences.Default.Get(NarrationRadiusKey, 150);
 
-    public void SetNarrationRadiusMeters(int radius) => Preferences.Default.Set(NarrationRadiusKey, radius);
+    public void SetNarrationRadiusMeters(int radius)
+    {
+        Preferences.Default.Set(NarrationRadiusKey, radius);
+        RaiseAutoNarrationSettingsChanged();
+    }
+
+    public void UpdateAutoNarrationSettings(bool enabled, int radius)
+    {
+        Preferences.Default.Set(AutoNarrationKey, enabled);
+        Preferences.Default.Set(NarrationRadiusKey, radius);
+        RaiseAutoNarrationSettingsChanged();
+    }
 
     public string GetApiBaseUrl() => AppConfig.GetApiBaseUrl();
 
@@ -95,4 +111,24 @@ public class SettingsService
         new() { Name = "Android emulator", Url = AppConfig.AndroidEmulatorBaseUrl },
         new() { Name = "LAN device example", Url = AppConfig.LanExampleBaseUrl }
     ];
+
+    private void RaiseAutoNarrationSettingsChanged()
+    {
+        AutoNarrationSettingsChanged?.Invoke(this, new AutoNarrationSettingsChangedEventArgs(
+            GetAutoNarrationEnabled(),
+            GetNarrationRadiusMeters()));
+    }
+}
+
+public sealed class AutoNarrationSettingsChangedEventArgs : EventArgs
+{
+    public AutoNarrationSettingsChangedEventArgs(bool enabled, int radiusMeters)
+    {
+        Enabled = enabled;
+        RadiusMeters = radiusMeters;
+    }
+
+    public bool Enabled { get; }
+
+    public int RadiusMeters { get; }
 }

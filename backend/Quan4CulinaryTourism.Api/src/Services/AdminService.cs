@@ -147,6 +147,11 @@ public class AdminService
             PoiId = entity.PoiId,
             SubmissionType = entity.SubmissionType,
             PoiName = entity.PoiName,
+            Priority = entity.Priority,
+            MapUrl = entity.MapUrl,
+            TtsScript = entity.TtsScript,
+            GeofenceRadiusMeters = entity.GeofenceRadiusMeters,
+            AutoNarrationEnabled = entity.AutoNarrationEnabled,
             Status = entity.Status,
             AdminNote = entity.AdminNote,
             CreatedAt = entity.CreatedAt
@@ -170,6 +175,11 @@ public class AdminService
                 District = submission.District,
                 City = submission.City,
                 PriceRange = submission.PriceRange,
+                Priority = submission.Priority,
+                MapUrl = submission.MapUrl,
+                TtsScript = submission.TtsScript,
+                GeofenceRadiusMeters = submission.GeofenceRadiusMeters,
+                AutoNarrationEnabled = submission.AutoNarrationEnabled,
                 Images = submission.Images,
                 OpeningHours = submission.OpeningHours,
                 ContactInfo = submission.ContactInfo,
@@ -194,6 +204,11 @@ public class AdminService
             poi.District = submission.District;
             poi.City = submission.City;
             poi.PriceRange = submission.PriceRange;
+            poi.Priority = submission.Priority;
+            poi.MapUrl = submission.MapUrl;
+            poi.TtsScript = submission.TtsScript;
+            poi.GeofenceRadiusMeters = submission.GeofenceRadiusMeters;
+            poi.AutoNarrationEnabled = submission.AutoNarrationEnabled;
             poi.Images = submission.Images;
             poi.OpeningHours = submission.OpeningHours;
             poi.ContactInfo = submission.ContactInfo;

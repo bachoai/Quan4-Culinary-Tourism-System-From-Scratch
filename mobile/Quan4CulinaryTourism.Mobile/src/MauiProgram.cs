@@ -30,6 +30,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<ConnectivityService>();
         builder.Services.AddSingleton<LocalDbContext>();
         builder.Services.AddSingleton<OfflineDatabaseService>();
+        builder.Services.AddSingleton<LocationTrackingService>();
         builder.Services.AddSingleton<LocationService>();
         builder.Services.AddSingleton<AudioPlayerService>();
         builder.Services.AddSingleton<AudioDownloadService>();

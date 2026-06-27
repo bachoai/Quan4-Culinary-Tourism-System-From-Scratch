@@ -23,6 +23,7 @@ public class MongoDbContext
         AuditLogs = Database.GetCollection<AuditLog>("audit_logs");
         MediaFiles = Database.GetCollection<MediaFile>("media_files");
         MapPacks = Database.GetCollection<MapPack>("map_packs");
+        Tours = Database.GetCollection<Tour>("tours");
     }
 
     public IMongoDatabase Database { get; }
@@ -39,4 +40,5 @@ public class MongoDbContext
     public IMongoCollection<AuditLog> AuditLogs { get; }
     public IMongoCollection<MediaFile> MediaFiles { get; }
     public IMongoCollection<MapPack> MapPacks { get; }
+    public IMongoCollection<Tour> Tours { get; }
 }

@@ -27,6 +27,10 @@ export const poiSchema = z.object({
   longitude: z.number().min(-180).max(180),
   priceRange: z.enum(PRICE_RANGES),
   priority: z.number().min(0),
+  mapUrl: z.string().optional(),
+  ttsScript: z.string().optional(),
+  geofenceRadiusMeters: z.number().min(10).max(10000),
+  autoNarrationEnabled: z.boolean(),
   tagsText: z.string().optional(),
   ownerId: z.string().optional(),
   isActive: z.boolean(),
@@ -38,6 +42,7 @@ export const localizationSchema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
   audioUrl: z.string().optional(),
+  ttsScript: z.string().optional(),
   isFallback: z.boolean(),
 });
 
@@ -46,4 +51,14 @@ export const audioSchema = z.object({
   audioUrl: z.string().optional(),
   voiceName: z.string().optional(),
   sourceType: z.string().min(1),
+});
+
+export const tourSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().min(1, 'Description is required'),
+  lang: z.string().min(1, 'Language is required'),
+  coverImageUrl: z.string().optional(),
+  estimatedDurationMinutes: z.number().min(1).max(1440),
+  isActive: z.boolean(),
+  stopsText: z.string().min(1, 'At least one tour stop is required'),
 });

@@ -40,8 +40,12 @@ export interface PoiResponse {
   rating: number;
   reviewCount: number;
   priority: number;
+  mapUrl?: string | null;
+  ttsScript?: string | null;
   latitude: number;
   longitude: number;
+  geofenceRadiusMeters: number;
+  autoNarrationEnabled: boolean;
   tags: string[];
   images: PoiImage[];
   isActive: boolean;
@@ -81,6 +85,11 @@ export interface OwnerSubmissionResponse {
   poiId?: string | null;
   submissionType: string;
   poiName: string;
+  priority: number;
+  mapUrl?: string | null;
+  ttsScript?: string | null;
+  geofenceRadiusMeters: number;
+  autoNarrationEnabled: boolean;
   status: string;
   adminNote?: string | null;
   createdAt: string;
@@ -104,6 +113,7 @@ export interface PoiLocalizationResponse {
   name: string;
   description: string;
   audioUrl?: string | null;
+  ttsScript?: string | null;
   isFallback: boolean;
 }
 
@@ -129,12 +139,43 @@ export interface TopPoiAnalyticsResponse {
   count: number;
 }
 
+export interface UsageHistoryEntryResponse {
+  id: string;
+  anonymousId?: string | null;
+  sessionId?: string | null;
+  pageViewId?: string | null;
+  eventName: string;
+  poiId?: string | null;
+  lang?: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface AnalyticsSummaryResponse {
   poiViewedCount: number;
   audioPlayedCount: number;
   searchExecutedCount: number;
   topPoiViews: TopPoiAnalyticsResponse[];
   topPoiAudioPlays: TopPoiAnalyticsResponse[];
+}
+
+export interface TourStopResponse {
+  poiId: string;
+  title?: string | null;
+  order: number;
+  estimatedStayMinutes: number;
+}
+
+export interface TourResponse {
+  id: string;
+  title: string;
+  description: string;
+  lang: string;
+  coverImageUrl?: string | null;
+  estimatedDurationMinutes: number;
+  isActive: boolean;
+  stops: TourStopResponse[];
+  updatedAt: string;
 }
 
 export interface MediaFileResponse {
