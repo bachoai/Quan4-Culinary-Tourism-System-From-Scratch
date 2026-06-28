@@ -167,6 +167,8 @@ public class DbSeeder
         {
             await _context.Pois.InsertManyAsync(missing, cancellationToken: cancellationToken);
         }
+
+        await BackfillPoiDescriptionsAsync(cancellationToken);
     }
 
     private async Task SeedPoiLocalizationsAsync(CancellationToken cancellationToken)
@@ -187,6 +189,37 @@ public class DbSeeder
             var key = poi.Id + ":en";
             if (existingKeys.Contains(key, StringComparer.Ordinal))
             {
+                var existingLocalization = await _context.PoiLocalizations
+                    .Find(x => x.PoiId == poi.Id && x.Lang == "en")
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (existingLocalization is null)
+                {
+                    continue;
+                }
+
+                var shouldUpdate = false;
+                if (string.IsNullOrWhiteSpace(existingLocalization.Description))
+                {
+                    existingLocalization.Description = BuildEnglishDescription(poi, index);
+                    shouldUpdate = true;
+                }
+
+                if (string.IsNullOrWhiteSpace(existingLocalization.TtsScript))
+                {
+                    existingLocalization.TtsScript = BuildEnglishNarrationScript(poi.Name);
+                    shouldUpdate = true;
+                }
+
+                if (shouldUpdate)
+                {
+                    existingLocalization.UpdatedAt = DateTime.UtcNow;
+                    await _context.PoiLocalizations.ReplaceOneAsync(
+                        x => x.Id == existingLocalization.Id,
+                        existingLocalization,
+                        cancellationToken: cancellationToken);
+                }
+
                 continue;
             }
 
@@ -197,7 +230,7 @@ public class DbSeeder
                 Name = poi.Name,
                 Description = BuildEnglishDescription(poi, index),
                 AudioUrl = SampleAudioUrls[index % SampleAudioUrls.Length],
-                TtsScript = $"Welcome to {poi.Name}, one of the notable food stops in District 4.",
+                TtsScript = BuildEnglishNarrationScript(poi.Name),
                 IsFallback = false,
                 CreatedAt = DateTime.UtcNow.AddDays(-(index + 2)),
                 UpdatedAt = DateTime.UtcNow.AddDays(-(index % 3))
@@ -207,6 +240,45 @@ public class DbSeeder
         if (localizations.Count > 0)
         {
             await _context.PoiLocalizations.InsertManyAsync(localizations, cancellationToken: cancellationToken);
+        }
+    }
+
+    private async Task BackfillPoiDescriptionsAsync(CancellationToken cancellationToken)
+    {
+        var seedMap = PoiSeeds.ToDictionary(seed => seed.Name, StringComparer.OrdinalIgnoreCase);
+        var pois = await _context.Pois.Find(x => seedMap.Keys.Contains(x.Name)).ToListAsync(cancellationToken);
+
+        foreach (var poi in pois)
+        {
+            if (!seedMap.TryGetValue(poi.Name, out var seed))
+            {
+                continue;
+            }
+
+            var shouldUpdate = false;
+
+            if (string.IsNullOrWhiteSpace(poi.Description))
+            {
+                poi.Description = seed.Description;
+                shouldUpdate = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(poi.TtsScript))
+            {
+                poi.TtsScript = BuildVietnameseNarrationScript(seed.Name, seed.Description);
+                shouldUpdate = true;
+            }
+
+            if (!shouldUpdate)
+            {
+                continue;
+            }
+
+            poi.UpdatedAt = DateTime.UtcNow;
+            await _context.Pois.ReplaceOneAsync(
+                x => x.Id == poi.Id,
+                poi,
+                cancellationToken: cancellationToken);
         }
     }
 
@@ -761,7 +833,7 @@ public class DbSeeder
         ReviewCount = seed.ReviewCount,
         Priority = seed.Priority,
         MapUrl = $"https://www.google.com/maps/search/?api=1&query={seed.Latitude},{seed.Longitude}",
-        TtsScript = $"Gioi thieu nhanh ve {seed.Name}: {seed.Description}",
+        TtsScript = BuildVietnameseNarrationScript(seed.Name, seed.Description),
         GeofenceRadiusMeters = 90 + seed.Index * 4,
         AutoNarrationEnabled = seed.Index % 4 != 0,
         Images =
@@ -813,6 +885,12 @@ public class DbSeeder
 
     private static string BuildEnglishDescription(Poi poi, int index) =>
         $"{poi.Name} is a popular District 4 food stop near {poi.Address}, known for a local atmosphere and crowd-favorite dishes. This seed translation #{index + 1:00} helps demo multilingual content in the CMS and mobile app.";
+
+    private static string BuildEnglishNarrationScript(string poiName) =>
+        $"Welcome to {poiName}, one of the notable food stops in District 4.";
+
+    private static string BuildVietnameseNarrationScript(string poiName, string description) =>
+        $"Gioi thieu nhanh ve {poiName}: {description}";
 
     private static Dictionary<string, object> BuildAnalyticsMetadata(string eventName, int index)
     {

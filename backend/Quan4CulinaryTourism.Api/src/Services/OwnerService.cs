@@ -12,17 +12,27 @@ public class OwnerService
     private readonly OwnerRegistrationRepository _ownerRegistrationRepository;
     private readonly OwnerSubmissionRepository _ownerSubmissionRepository;
     private readonly PoiRepository _poiRepository;
+    private readonly PoiLocalizationRepository _poiLocalizationRepository;
     private readonly AnalyticsRepository _analyticsRepository;
 
-    public OwnerService(OwnerRegistrationRepository ownerRegistrationRepository, OwnerSubmissionRepository ownerSubmissionRepository, PoiRepository poiRepository, AnalyticsRepository analyticsRepository)
+    public OwnerService(
+        OwnerRegistrationRepository ownerRegistrationRepository,
+        OwnerSubmissionRepository ownerSubmissionRepository,
+        PoiRepository poiRepository,
+        PoiLocalizationRepository poiLocalizationRepository,
+        AnalyticsRepository analyticsRepository)
     {
         _ownerRegistrationRepository = ownerRegistrationRepository;
         _ownerSubmissionRepository = ownerSubmissionRepository;
         _poiRepository = poiRepository;
+        _poiLocalizationRepository = poiLocalizationRepository;
         _analyticsRepository = analyticsRepository;
     }
 
-    public async Task<OwnerRegistrationResponse> RegisterAsync(string userId, CreateOwnerRegistrationRequest request, CancellationToken cancellationToken = default)
+    public async Task<OwnerRegistrationResponse> RegisterAsync(
+        string userId,
+        CreateOwnerRegistrationRequest request,
+        CancellationToken cancellationToken = default)
     {
         var entity = new OwnerRegistration
         {
@@ -47,11 +57,16 @@ public class OwnerService
         };
     }
 
-    public async Task<OwnerDashboardResponse> GetDashboardAsync(string ownerId, CancellationToken cancellationToken = default)
+    public async Task<OwnerDashboardResponse> GetDashboardAsync(
+        string ownerId,
+        CancellationToken cancellationToken = default)
     {
         var ownerPois = await _poiRepository.GetByOwnerIdAsync(ownerId, cancellationToken);
         var submissions = await _ownerSubmissionRepository.GetByOwnerIdAsync(ownerId, cancellationToken);
-        var poiIds = ownerPois.Select(x => x.Id).ToList();
+        var poiIds = ownerPois.Select(static poi => poi.Id).ToList();
+        var engagement = poiIds.Count == 0
+            ? new OwnerPortfolioEngagementResponse()
+            : await _analyticsRepository.GetPortfolioEngagementStatsAsync(poiIds, cancellationToken);
 
         return new OwnerDashboardResponse
         {
@@ -60,14 +75,43 @@ public class OwnerService
             PendingSubmissions = submissions.Count(x => x.Status == SharedConstants.SubmissionPending),
             ApprovedSubmissions = submissions.Count(x => x.Status == SharedConstants.SubmissionApproved),
             RejectedSubmissions = submissions.Count(x => x.Status == SharedConstants.SubmissionRejected),
-            TotalViews = poiIds.Count == 0 ? 0 : await _analyticsRepository.CountByEventNameAndPoiIdsAsync("poi_viewed", poiIds, cancellationToken),
-            TotalAudioPlays = poiIds.Count == 0
-                ? 0
-                : await _analyticsRepository.CountByEventNamesAndPoiIdsAsync(["audio_played", "tts_played"], poiIds, cancellationToken)
+            TotalViews = engagement.ViewCount,
+            UniqueVisitors = engagement.UniqueVisitorCount,
+            TotalAudioPlays = engagement.AudioPlayCount,
+            UniqueAudioListeners = engagement.UniqueAudioListenerCount,
+            TotalQrScans = engagement.QrScanCount
         };
     }
 
-    public async Task<OwnerSubmissionResponse> CreateSubmissionAsync(string ownerId, CreateOwnerSubmissionRequest request, CancellationToken cancellationToken = default)
+    public async Task<List<OwnerManagedPoiResponse>> GetMyPoisAsync(
+        string ownerId,
+        string? lang = null,
+        CancellationToken cancellationToken = default)
+    {
+        var pois = await _poiRepository.GetByOwnerIdAsync(ownerId, cancellationToken);
+        if (pois.Count == 0)
+        {
+            return [];
+        }
+
+        var statsLookup = await _analyticsRepository.GetPoiEngagementStatsAsync(
+            pois.Select(static poi => poi.Id),
+            cancellationToken);
+
+        var responses = new List<OwnerManagedPoiResponse>(pois.Count);
+        foreach (var poi in pois.OrderByDescending(static poi => poi.UpdatedAt).ThenByDescending(static poi => poi.Priority))
+        {
+            statsLookup.TryGetValue(poi.Id, out var stats);
+            responses.Add(await MapManagedPoiAsync(poi, stats, lang, cancellationToken));
+        }
+
+        return responses;
+    }
+
+    public async Task<OwnerSubmissionResponse> CreateSubmissionAsync(
+        string ownerId,
+        CreateOwnerSubmissionRequest request,
+        CancellationToken cancellationToken = default)
     {
         var entity = new OwnerSubmission
         {
@@ -98,33 +142,46 @@ public class OwnerService
         return ToResponse(entity);
     }
 
-    public async Task<List<OwnerSubmissionResponse>> GetMySubmissionsAsync(string ownerId, CancellationToken cancellationToken = default)
-        => (await _ownerSubmissionRepository.GetByOwnerIdAsync(ownerId, cancellationToken)).Select(ToResponse).ToList();
+    public async Task<List<OwnerSubmissionResponse>> GetMySubmissionsAsync(
+        string ownerId,
+        CancellationToken cancellationToken = default) =>
+        (await _ownerSubmissionRepository.GetByOwnerIdAsync(ownerId, cancellationToken))
+        .Select(ToResponse)
+        .ToList();
 
-    public async Task<OwnerSubmissionResponse> GetMySubmissionByIdAsync(string ownerId, string id, CancellationToken cancellationToken = default)
+    public async Task<OwnerSubmissionResponse> GetMySubmissionByIdAsync(
+        string ownerId,
+        string id,
+        CancellationToken cancellationToken = default)
     {
         var entity = await _ownerSubmissionRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new ApiException("Không tìm thấy submission.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("Khong tim thay submission.", StatusCodes.Status404NotFound);
+
         if (entity.OwnerId != ownerId)
         {
-            throw new ApiException("Không có quyền truy cập.", StatusCodes.Status403Forbidden);
+            throw new ApiException("Khong co quyen truy cap.", StatusCodes.Status403Forbidden);
         }
 
         return ToResponse(entity);
     }
 
-    public async Task<OwnerSubmissionResponse> UpdateMySubmissionAsync(string ownerId, string id, CreateOwnerSubmissionRequest request, CancellationToken cancellationToken = default)
+    public async Task<OwnerSubmissionResponse> UpdateMySubmissionAsync(
+        string ownerId,
+        string id,
+        CreateOwnerSubmissionRequest request,
+        CancellationToken cancellationToken = default)
     {
         var entity = await _ownerSubmissionRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new ApiException("Không tìm thấy submission.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("Khong tim thay submission.", StatusCodes.Status404NotFound);
+
         if (entity.OwnerId != ownerId)
         {
-            throw new ApiException("Không có quyền truy cập.", StatusCodes.Status403Forbidden);
+            throw new ApiException("Khong co quyen truy cap.", StatusCodes.Status403Forbidden);
         }
 
         if (entity.Status != SharedConstants.SubmissionPending)
         {
-            throw new ApiException("Chỉ được sửa submission đang pending.");
+            throw new ApiException("Chi duoc sua submission dang pending.");
         }
 
         entity.SubmissionType = request.SubmissionType;
@@ -150,6 +207,54 @@ public class OwnerService
 
         await _ownerSubmissionRepository.UpdateAsync(entity, cancellationToken);
         return ToResponse(entity);
+    }
+
+    private async Task<OwnerManagedPoiResponse> MapManagedPoiAsync(
+        Poi poi,
+        OwnerPoiEngagementResponse? stats,
+        string? lang,
+        CancellationToken cancellationToken)
+    {
+        var localization = !string.IsNullOrWhiteSpace(lang)
+            ? await _poiLocalizationRepository.GetByPoiAndLangAsync(poi.Id, lang, cancellationToken)
+            : null;
+
+        return new OwnerManagedPoiResponse
+        {
+            Id = poi.Id,
+            Name = localization?.Name ?? poi.Name,
+            Description = localization?.Description ?? poi.Description,
+            CategoryId = poi.CategoryId,
+            Address = poi.Address,
+            Ward = poi.Ward,
+            District = poi.District,
+            City = poi.City,
+            PriceRange = poi.PriceRange,
+            Rating = poi.Rating,
+            ReviewCount = poi.ReviewCount,
+            Priority = poi.Priority,
+            MapUrl = poi.MapUrl,
+            TtsScript = string.IsNullOrWhiteSpace(localization?.TtsScript) ? poi.TtsScript : localization!.TtsScript,
+            Latitude = poi.Location.Coordinates.Latitude,
+            Longitude = poi.Location.Coordinates.Longitude,
+            GeofenceRadiusMeters = poi.GeofenceRadiusMeters,
+            AutoNarrationEnabled = poi.AutoNarrationEnabled,
+            Tags = poi.Tags,
+            Images = poi.Images,
+            IsActive = poi.IsActive,
+            OpeningHours = poi.OpeningHours,
+            ContactInfo = poi.ContactInfo,
+            OwnerId = poi.OwnerId,
+            AudioStatus = poi.AudioStatus,
+            ActivationRequested = poi.ActivationRequested,
+            CreatedAt = poi.CreatedAt,
+            UpdatedAt = poi.UpdatedAt,
+            ViewCount = stats?.ViewCount ?? 0,
+            UniqueVisitorCount = stats?.UniqueVisitorCount ?? 0,
+            AudioPlayCount = stats?.AudioPlayCount ?? 0,
+            UniqueAudioListenerCount = stats?.UniqueAudioListenerCount ?? 0,
+            QrScanCount = stats?.QrScanCount ?? 0
+        };
     }
 
     private static OwnerSubmissionResponse ToResponse(OwnerSubmission entity) => new()

@@ -50,7 +50,7 @@
 
             <HorizontalStackLayout Spacing="12">
                 <Button Text="Tải audio offline" Command="{Binding DownloadOfflineAudioCommand}" />
-                <Button Text="Nghe bằng TTS" Command="{Binding SpeakWithTtsCommand}" BackgroundColor="{StaticResource Secondary}" />
+                <Button Text="Doc mo ta" Command="{Binding SpeakWithTtsCommand}" BackgroundColor="{StaticResource Secondary}" />
             </HorizontalStackLayout>
             <Label Text="{Binding OfflineAudioState}" TextColor="{StaticResource Primary}" />
 

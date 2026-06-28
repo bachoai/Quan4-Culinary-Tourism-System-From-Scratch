@@ -54,22 +54,22 @@ public sealed class NarrationEngineService
             ?? await _offlineDatabaseService.GetPoiAudioAsync(poi.Id, language);
 
         var queued = false;
-        if (!string.IsNullOrWhiteSpace(audio?.AudioUrl) || !string.IsNullOrWhiteSpace(audio?.LocalAudioPath))
+        if (!string.IsNullOrWhiteSpace(poi.NarrationText))
+        {
+            queued = await _audioPlayerService.QueuePoiTtsAsync(
+                poi.Id,
+                language,
+                poi.NarrationText,
+                poi.Name,
+                "geofence");
+        }
+        else if (!string.IsNullOrWhiteSpace(audio?.AudioUrl) || !string.IsNullOrWhiteSpace(audio?.LocalAudioPath))
         {
             queued = await _audioPlayerService.QueuePoiAudioAsync(
                 poi.Id,
                 language,
                 audio!.AudioUrl,
                 audio.LocalAudioPath,
-                poi.Name,
-                "geofence");
-        }
-        else if (!string.IsNullOrWhiteSpace(poi.NarrationText))
-        {
-            queued = await _audioPlayerService.QueuePoiTtsAsync(
-                poi.Id,
-                language,
-                poi.NarrationText,
                 poi.Name,
                 "geofence");
         }

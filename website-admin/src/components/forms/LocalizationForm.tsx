@@ -31,7 +31,15 @@ export function LocalizationForm({ initialValues, loading, onSubmit }: Localizat
       <Controller name="lang" control={control} render={({ field }) => <Form.Item label={t('language')}><Select {...field} options={SUPPORTED_LANGUAGES.map((value) => ({ value, label: value.toUpperCase() }))} /></Form.Item>} />
       <Controller name="name" control={control} render={({ field, fieldState }) => <Form.Item label={t('name')} validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}><Input {...field} /></Form.Item>} />
       <Controller name="description" control={control} render={({ field, fieldState }) => <Form.Item label={t('description')} validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}><Input.TextArea rows={4} {...field} /></Form.Item>} />
-      <Controller name="ttsScript" control={control} render={({ field }) => <Form.Item label={t('tts_script')}><Input.TextArea rows={3} {...field} /></Form.Item>} />
+      <Controller
+        name="ttsScript"
+        control={control}
+        render={({ field }) => (
+          <Form.Item label={t('tts_script')} extra={t('tts_script_hint')}>
+            <Input.TextArea rows={3} {...field} />
+          </Form.Item>
+        )}
+      />
       <Controller name="audioUrl" control={control} render={({ field }) => <Form.Item label={t('audio_url')}><Input {...field} /></Form.Item>} />
       <Controller name="isFallback" control={control} render={({ field }) => <Form.Item label={t('fallback')}><Switch checked={field.value} onChange={field.onChange} /></Form.Item>} />
       <Button type="primary" htmlType="submit" loading={loading} block>

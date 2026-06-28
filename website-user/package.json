@@ -3,11 +3,16 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "scripts": { "dev": "vite", "build": "tsc -b && vite build", "lint": "eslint ." },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint ."
+  },
   "dependencies": {
     "@tanstack/react-query": "^5.66.8",
     "axios": "^1.8.4",
     "framer-motion": "^12.6.3",
+    "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.468.0",
     "maplibre-gl": "^5.1.0",
     "react": "^19.0.0",

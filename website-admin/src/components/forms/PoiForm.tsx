@@ -148,7 +148,15 @@ export function PoiForm({ categories, initialValues, loading, onSubmit }: PoiFor
             <Controller name="mapUrl" control={control} render={({ field }) => <Form.Item label={t('map_url')}><Input {...field} /></Form.Item>} />
           </Col>
           <Col span={24}>
-            <Controller name="ttsScript" control={control} render={({ field }) => <Form.Item label={t('tts_script')}><Input.TextArea rows={4} {...field} /></Form.Item>} />
+            <Controller
+              name="ttsScript"
+              control={control}
+              render={({ field }) => (
+                <Form.Item label={t('tts_script')} extra={t('tts_script_hint')}>
+                  <Input.TextArea rows={4} {...field} />
+                </Form.Item>
+              )}
+            />
           </Col>
           <Col xs={24} md={6}>
             <Controller name="ownerId" control={control} render={({ field }) => <Form.Item label={t('owner_id')}><Input {...field} /></Form.Item>} />

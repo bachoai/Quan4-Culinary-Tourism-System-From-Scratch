@@ -1,6 +1,8 @@
+using System.Reflection;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Quan4CulinaryTourism.Api.Database;
 using Quan4CulinaryTourism.Api.Helpers;
 using Quan4CulinaryTourism.Api.Repositories;
@@ -22,7 +24,42 @@ if (!builder.Environment.IsDevelopment() && jwtSettings.SecretKey.StartsWith("__
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Quan4 Culinary Tourism API",
+        Version = "v1",
+        Description = "Web API for culinary POIs, tours, owner workflows, QR activations, audio, and analytics."
+    });
+
+    var bearerScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Nhap JWT theo dinh dang: Bearer {token}"
+    };
+
+    options.AddSecurityDefinition("Bearer", bearerScheme);
+
+    options.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecuritySchemeReference("Bearer", hostDocument: null, externalResource: null),
+            []
+        }
+    });
+
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+    }
+});
 
 builder.Services.AddCors(options =>
 {
@@ -95,7 +132,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Quan4 Culinary Tourism API v1");
+        options.DisplayRequestDuration();
+    });
 }
 
 app.UseStaticFiles();

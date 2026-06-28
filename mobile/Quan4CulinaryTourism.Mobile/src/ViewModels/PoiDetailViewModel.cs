@@ -28,7 +28,7 @@ public partial class PoiDetailViewModel : BaseViewModel
     private string audioState = "Idle";
 
     [ObservableProperty]
-    private string audioMessage = "Địa điểm này chưa có audio thuyết minh.";
+    private string audioMessage = "Dia diem nay chua co noi dung thuyet minh.";
 
     [ObservableProperty]
     private string selectedLanguage = "vi";
@@ -58,7 +58,7 @@ public partial class PoiDetailViewModel : BaseViewModel
         _analyticsApiService = analyticsApiService;
         _settingsService = settingsService;
 
-        Title = "Chi tiết địa điểm";
+        Title = "Chi tiet dia diem";
     }
 
     public async Task InitializeAsync(string poiId, string? autoplayMode = null, string source = "detail")
@@ -92,10 +92,30 @@ public partial class PoiDetailViewModel : BaseViewModel
     [RelayCommand]
     private async Task PlayAudioAsync()
     {
+        if (Poi is not null && !string.IsNullOrWhiteSpace(Poi.NarrationText))
+        {
+            try
+            {
+                await _audioPlayerService.SpeakPoiDescriptionAsync(
+                    Poi.Id,
+                    SelectedLanguage,
+                    Poi.NarrationText,
+                    Poi.Name,
+                    "detail");
+            }
+            catch (Exception ex)
+            {
+                AudioState = "Error";
+                AudioMessage = ex.Message;
+            }
+
+            return;
+        }
+
         if (Audio is null)
         {
             AudioState = "Error";
-            AudioMessage = "Địa điểm này chưa có audio thuyết minh.";
+            AudioMessage = "Khong co noi dung thuyet minh de phat.";
             return;
         }
 
@@ -121,7 +141,7 @@ public partial class PoiDetailViewModel : BaseViewModel
     {
         await _audioPlayerService.PauseAsync();
         AudioState = "Paused";
-        AudioMessage = "Audio đã tạm dừng.";
+        AudioMessage = "Thuyet minh da tam dung.";
     }
 
     [RelayCommand]
@@ -129,7 +149,7 @@ public partial class PoiDetailViewModel : BaseViewModel
     {
         await _audioPlayerService.StopAsync();
         AudioState = "Idle";
-        AudioMessage = "Đã dừng audio.";
+        AudioMessage = "Da dung thuyet minh.";
     }
 
     [RelayCommand]
@@ -138,18 +158,18 @@ public partial class PoiDetailViewModel : BaseViewModel
         if (Audio is null)
         {
             OfflineAudioState = "Failed";
-            AudioMessage = "Chưa có audio để tải offline.";
+            AudioMessage = "Chua co audio de tai offline.";
             return;
         }
 
         try
         {
             OfflineAudioState = "Downloading";
-            AudioMessage = "Đang tải audio offline...";
+            AudioMessage = "Dang tai audio offline...";
             Audio.LocalAudioPath = await _audioDownloadService.DownloadAsync(Audio);
             HasOfflineAudio = File.Exists(Audio.LocalAudioPath);
             OfflineAudioState = HasOfflineAudio ? "Downloaded" : "Failed";
-            AudioMessage = HasOfflineAudio ? "Đã tải audio offline." : "Không lưu được audio offline.";
+            AudioMessage = HasOfflineAudio ? "Da tai audio offline." : "Khong luu duoc audio offline.";
 
             await _analyticsApiService.CollectAsync(new CollectAnalyticsRequest
             {
@@ -170,7 +190,7 @@ public partial class PoiDetailViewModel : BaseViewModel
     {
         if (Poi is null || string.IsNullOrWhiteSpace(Poi.NarrationText))
         {
-            AudioMessage = "Không có mô tả để đọc bằng TTS.";
+            AudioMessage = "Khong co mo ta de doc bang TTS.";
             return;
         }
 
@@ -186,7 +206,7 @@ public partial class PoiDetailViewModel : BaseViewModel
         catch
         {
             AudioState = "Error";
-            AudioMessage = "Thiết bị không phát được TTS ở thời điểm này.";
+            AudioMessage = "Thiet bi khong phat duoc TTS o thoi diem nay.";
         }
     }
 
@@ -240,7 +260,7 @@ public partial class PoiDetailViewModel : BaseViewModel
 
             if (Poi is null)
             {
-                SetError("Không tìm thấy dữ liệu chi tiết cho địa điểm này.");
+                SetError("Khong tim thay du lieu chi tiet cho dia diem nay.");
                 return;
             }
 
@@ -248,7 +268,7 @@ public partial class PoiDetailViewModel : BaseViewModel
             if (string.IsNullOrWhiteSpace(Poi.CategoryName))
             {
                 var categories = await _offlineDatabaseService.GetCategoriesAsync();
-                Poi.CategoryName = categories.FirstOrDefault(item => item.Id == Poi.CategoryId)?.Name ?? "Khác";
+                Poi.CategoryName = categories.FirstOrDefault(item => item.Id == Poi.CategoryId)?.Name ?? "Khac";
             }
 
             HasOfflineAudio = !string.IsNullOrWhiteSpace(Audio?.LocalAudioPath) && File.Exists(Audio.LocalAudioPath);
@@ -269,7 +289,7 @@ public partial class PoiDetailViewModel : BaseViewModel
             {
                 await TryAutoplayAsync(autoplayMode, source);
             }
-        }, "Không tải được chi tiết địa điểm.");
+        }, "Khong tai duoc chi tiet dia diem.");
     }
 
     private async Task TryAutoplayAsync(string autoplayMode, string source)
@@ -283,15 +303,15 @@ public partial class PoiDetailViewModel : BaseViewModel
         var hasAudio = Audio is not null && (!string.IsNullOrWhiteSpace(Audio.AudioUrl) || !string.IsNullOrWhiteSpace(Audio.LocalAudioPath));
         var hasTts = !string.IsNullOrWhiteSpace(Poi.NarrationText);
 
-        if ((normalizedMode == "audio" || normalizedMode == "prefer_audio") && hasAudio)
+        if (hasTts)
         {
-            await _audioPlayerService.PlayPoiAudioAsync(Poi.Id, SelectedLanguage, Audio!.AudioUrl, Audio.LocalAudioPath, Poi.Name, source);
+            await _audioPlayerService.SpeakPoiDescriptionAsync(Poi.Id, SelectedLanguage, Poi.NarrationText, Poi.Name, source);
             return;
         }
 
-        if ((normalizedMode == "tts" || normalizedMode == "prefer_audio") && hasTts)
+        if ((normalizedMode == "audio" || normalizedMode == "prefer_audio" || normalizedMode == "tts") && hasAudio)
         {
-            await _audioPlayerService.SpeakPoiDescriptionAsync(Poi.Id, SelectedLanguage, Poi.NarrationText, Poi.Name, source);
+            await _audioPlayerService.PlayPoiAudioAsync(Poi.Id, SelectedLanguage, Audio!.AudioUrl, Audio.LocalAudioPath, Poi.Name, source);
         }
     }
 
@@ -313,19 +333,19 @@ public partial class PoiDetailViewModel : BaseViewModel
     {
         return args.State switch
         {
-            AudioPlaybackState.Queued => "Đã thêm vào hàng chờ thuyết minh.",
+            AudioPlaybackState.Queued => "Da them vao hang cho thuyet minh.",
             AudioPlaybackState.Preparing => args.ContentType == AudioPlaybackContentType.TextToSpeech
-                ? "Đang chuẩn bị TTS..."
-                : "Đang chuẩn bị audio...",
+                ? "Dang chuan bi TTS..."
+                : "Dang chuan bi audio...",
             AudioPlaybackState.Playing => args.ContentType == AudioPlaybackContentType.TextToSpeech
-                ? "Đang đọc mô tả bằng TTS."
+                ? "Dang doc mo ta bang TTS."
                 : args.Message,
-            AudioPlaybackState.Paused => "Audio đã tạm dừng.",
-            AudioPlaybackState.Stopped => "Đã dừng audio.",
-            AudioPlaybackState.Completed => "Đã phát xong thuyết minh.",
-            AudioPlaybackState.Interrupted => "Audio bị dừng vì có nguồn âm thanh khác hoặc thông báo chen vào.",
+            AudioPlaybackState.Paused => "Thuyet minh da tam dung.",
+            AudioPlaybackState.Stopped => "Da dung thuyet minh.",
+            AudioPlaybackState.Completed => "Da phat xong thuyet minh.",
+            AudioPlaybackState.Interrupted => "Thuyet minh bi dung vi co nguon am thanh khac chen vao.",
             AudioPlaybackState.Error => args.Message,
-            _ => "Sẵn sàng phát thuyết minh."
+            _ => "San sang phat thuyet minh."
         };
     }
 }

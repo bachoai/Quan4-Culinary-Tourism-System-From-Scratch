@@ -9,6 +9,9 @@ namespace Quan4CulinaryTourism.Api.Repositories;
 
 public class AnalyticsRepository
 {
+    private static readonly string[] AudioEventNames = ["audio_played", "tts_played"];
+    private static readonly string[] OwnerTrackedEventNames = ["poi_viewed", "audio_played", "tts_played", "qr_scanned"];
+
     private readonly MongoDbContext _context;
     public AnalyticsRepository(MongoDbContext context) => _context = context;
 
@@ -36,11 +39,120 @@ public class AnalyticsRepository
             cancellationToken: cancellationToken);
     }
 
+    public async Task<Dictionary<string, OwnerPoiEngagementResponse>> GetPoiEngagementStatsAsync(
+        IEnumerable<string> poiIds,
+        CancellationToken cancellationToken = default)
+    {
+        var poiIdList = poiIds
+            .Where(static poiId => !string.IsNullOrWhiteSpace(poiId))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (poiIdList.Count == 0)
+        {
+            return new Dictionary<string, OwnerPoiEngagementResponse>(StringComparer.Ordinal);
+        }
+
+        var results = await _context.AnalyticsEvents.Aggregate()
+            .Match(new BsonDocument
+            {
+                { "PoiId", new BsonDocument("$in", new BsonArray(poiIdList)) },
+                { "EventName", new BsonDocument("$in", new BsonArray(OwnerTrackedEventNames)) }
+            })
+            .Group(new BsonDocument
+            {
+                { "_id", "$PoiId" },
+                { "viewCount", CreateConditionalCountExpression(CreateEventEqualsExpression("poi_viewed")) },
+                { "visitorKeys", CreateTrackedUserSetExpression(CreateEventEqualsExpression("poi_viewed")) },
+                { "audioPlayCount", CreateConditionalCountExpression(CreateEventInExpression(AudioEventNames)) },
+                { "audioListenerKeys", CreateTrackedUserSetExpression(CreateEventInExpression(AudioEventNames)) },
+                { "qrScanCount", CreateConditionalCountExpression(CreateEventEqualsExpression("qr_scanned")) }
+            })
+            .Project(new BsonDocument
+            {
+                { "_id", 1 },
+                { "viewCount", 1 },
+                { "audioPlayCount", 1 },
+                { "qrScanCount", 1 },
+                { "uniqueVisitorCount", CreateDistinctTrackedUserCountExpression("$visitorKeys") },
+                { "uniqueAudioListenerCount", CreateDistinctTrackedUserCountExpression("$audioListenerKeys") }
+            })
+            .ToListAsync(cancellationToken);
+
+        return results.ToDictionary(
+            item => item["_id"].AsString,
+            item => new OwnerPoiEngagementResponse
+            {
+                PoiId = item["_id"].AsString,
+                ViewCount = item["viewCount"].ToInt64(),
+                UniqueVisitorCount = item["uniqueVisitorCount"].ToInt64(),
+                AudioPlayCount = item["audioPlayCount"].ToInt64(),
+                UniqueAudioListenerCount = item["uniqueAudioListenerCount"].ToInt64(),
+                QrScanCount = item["qrScanCount"].ToInt64()
+            },
+            StringComparer.Ordinal);
+    }
+
+    public async Task<OwnerPortfolioEngagementResponse> GetPortfolioEngagementStatsAsync(
+        IEnumerable<string> poiIds,
+        CancellationToken cancellationToken = default)
+    {
+        var poiIdList = poiIds
+            .Where(static poiId => !string.IsNullOrWhiteSpace(poiId))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (poiIdList.Count == 0)
+        {
+            return new OwnerPortfolioEngagementResponse();
+        }
+
+        var result = await _context.AnalyticsEvents.Aggregate()
+            .Match(new BsonDocument
+            {
+                { "PoiId", new BsonDocument("$in", new BsonArray(poiIdList)) },
+                { "EventName", new BsonDocument("$in", new BsonArray(OwnerTrackedEventNames)) }
+            })
+            .Group(new BsonDocument
+            {
+                { "_id", BsonNull.Value },
+                { "viewCount", CreateConditionalCountExpression(CreateEventEqualsExpression("poi_viewed")) },
+                { "visitorKeys", CreateTrackedUserSetExpression(CreateEventEqualsExpression("poi_viewed")) },
+                { "audioPlayCount", CreateConditionalCountExpression(CreateEventInExpression(AudioEventNames)) },
+                { "audioListenerKeys", CreateTrackedUserSetExpression(CreateEventInExpression(AudioEventNames)) },
+                { "qrScanCount", CreateConditionalCountExpression(CreateEventEqualsExpression("qr_scanned")) }
+            })
+            .Project(new BsonDocument
+            {
+                { "_id", 0 },
+                { "viewCount", 1 },
+                { "audioPlayCount", 1 },
+                { "qrScanCount", 1 },
+                { "uniqueVisitorCount", CreateDistinctTrackedUserCountExpression("$visitorKeys") },
+                { "uniqueAudioListenerCount", CreateDistinctTrackedUserCountExpression("$audioListenerKeys") }
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (result == null)
+        {
+            return new OwnerPortfolioEngagementResponse();
+        }
+
+        return new OwnerPortfolioEngagementResponse
+        {
+            ViewCount = result["viewCount"].ToInt64(),
+            UniqueVisitorCount = result["uniqueVisitorCount"].ToInt64(),
+            AudioPlayCount = result["audioPlayCount"].ToInt64(),
+            UniqueAudioListenerCount = result["uniqueAudioListenerCount"].ToInt64(),
+            QrScanCount = result["qrScanCount"].ToInt64()
+        };
+    }
+
     public async Task<List<TopPoiAnalyticsResponse>> GetTopPoiViewsAsync(CancellationToken cancellationToken = default) =>
         await GetTopByEventAsync("poi_viewed", cancellationToken);
 
     public async Task<List<TopPoiAnalyticsResponse>> GetTopAudioPlaysAsync(CancellationToken cancellationToken = default) =>
-        await GetTopByEventsAsync(["audio_played", "tts_played"], cancellationToken);
+        await GetTopByEventsAsync(AudioEventNames, cancellationToken);
 
     public async Task<double> GetAverageListenDurationSecondsAsync(CancellationToken cancellationToken = default)
     {
@@ -157,8 +269,8 @@ public class AnalyticsRepository
         };
     }
 
-    private async Task<List<TopPoiAnalyticsResponse>> GetTopByEventAsync(string eventName, CancellationToken cancellationToken)
-        => await GetTopByEventsAsync([eventName], cancellationToken);
+    private async Task<List<TopPoiAnalyticsResponse>> GetTopByEventAsync(string eventName, CancellationToken cancellationToken) =>
+        await GetTopByEventsAsync([eventName], cancellationToken);
 
     private async Task<List<TopPoiAnalyticsResponse>> GetTopByEventsAsync(IEnumerable<string> eventNames, CancellationToken cancellationToken)
     {
@@ -203,4 +315,63 @@ public class AnalyticsRepository
 
         return filter;
     }
+
+    private static BsonDocument CreateEventEqualsExpression(string eventName) =>
+        new("$eq", new BsonArray { "$EventName", eventName });
+
+    private static BsonDocument CreateEventInExpression(IEnumerable<string> eventNames) =>
+        new("$in", new BsonArray { "$EventName", new BsonArray(eventNames) });
+
+    private static BsonDocument CreateConditionalCountExpression(BsonValue condition) =>
+        new("$sum", new BsonDocument("$cond", new BsonArray { condition, 1, 0 }));
+
+    private static BsonDocument CreateTrackedUserSetExpression(BsonValue condition) =>
+        new("$addToSet", new BsonDocument("$cond", new BsonArray
+        {
+            condition,
+            CreateTrackedUserKeyExpression(),
+            BsonNull.Value
+        }));
+
+    private static BsonDocument CreateTrackedUserKeyExpression() =>
+        new("$let", new BsonDocument
+        {
+            {
+                "vars",
+                new BsonDocument
+                {
+                    { "anonymousId", new BsonDocument("$ifNull", new BsonArray { "$AnonymousId", string.Empty }) },
+                    { "sessionId", new BsonDocument("$ifNull", new BsonArray { "$SessionId", string.Empty }) }
+                }
+            },
+            {
+                "in",
+                new BsonDocument("$cond", new BsonArray
+                {
+                    new BsonDocument("$ne", new BsonArray { "$$anonymousId", string.Empty }),
+                    "$$anonymousId",
+                    new BsonDocument("$cond", new BsonArray
+                    {
+                        new BsonDocument("$ne", new BsonArray { "$$sessionId", string.Empty }),
+                        "$$sessionId",
+                        BsonNull.Value
+                    })
+                })
+            }
+        });
+
+    private static BsonDocument CreateDistinctTrackedUserCountExpression(string inputArrayField) =>
+        new("$size", new BsonDocument("$filter", new BsonDocument
+        {
+            { "input", inputArrayField },
+            { "as", "userKey" },
+            {
+                "cond",
+                new BsonDocument("$and", new BsonArray
+                {
+                    new BsonDocument("$ne", new BsonArray { "$$userKey", BsonNull.Value }),
+                    new BsonDocument("$ne", new BsonArray { "$$userKey", string.Empty })
+                })
+            }
+        }));
 }

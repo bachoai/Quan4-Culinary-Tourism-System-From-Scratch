@@ -120,7 +120,41 @@ public class OwnerDashboardResponse
     public int ApprovedSubmissions { get; set; }
     public int RejectedSubmissions { get; set; }
     public long TotalViews { get; set; }
+    public long UniqueVisitors { get; set; }
     public long TotalAudioPlays { get; set; }
+    public long UniqueAudioListeners { get; set; }
+    public long TotalQrScans { get; set; }
+}
+
+public class OwnerPortfolioEngagementResponse
+{
+    public long ViewCount { get; set; }
+    public long UniqueVisitorCount { get; set; }
+    public long AudioPlayCount { get; set; }
+    public long UniqueAudioListenerCount { get; set; }
+    public long QrScanCount { get; set; }
+}
+
+public class OwnerPoiEngagementResponse
+{
+    public string PoiId { get; set; } = string.Empty;
+    public long ViewCount { get; set; }
+    public long UniqueVisitorCount { get; set; }
+    public long AudioPlayCount { get; set; }
+    public long UniqueAudioListenerCount { get; set; }
+    public long QrScanCount { get; set; }
+}
+
+public class OwnerManagedPoiResponse : PoiDetailResponse
+{
+    public bool ActivationRequested { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public long ViewCount { get; set; }
+    public long UniqueVisitorCount { get; set; }
+    public long AudioPlayCount { get; set; }
+    public long UniqueAudioListenerCount { get; set; }
+    public long QrScanCount { get; set; }
 }
 
 public class AdminDashboardResponse

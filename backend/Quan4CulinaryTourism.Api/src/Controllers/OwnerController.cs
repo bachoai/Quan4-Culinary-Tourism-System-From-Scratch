@@ -23,22 +23,29 @@ public class OwnerController : BaseApiController
 
     [HttpPost("register")]
     public Task<IActionResult> Register([FromBody] CreateOwnerRegistrationRequest request) =>
-        ExecuteAsync(() => _ownerService.RegisterAsync(_claimsHelper.GetUserId(User), request), "Gửi đăng ký owner thành công");
+        ExecuteAsync(() => _ownerService.RegisterAsync(_claimsHelper.GetUserId(User), request), "Gui dang ky owner thanh cong");
 
     [HttpGet("dashboard")]
-    public Task<IActionResult> Dashboard() => ExecuteAsync(() => _ownerService.GetDashboardAsync(_claimsHelper.GetUserId(User)), "Lấy dashboard owner thành công");
+    public Task<IActionResult> Dashboard() =>
+        ExecuteAsync(() => _ownerService.GetDashboardAsync(_claimsHelper.GetUserId(User)), "Lay dashboard owner thanh cong");
+
+    [HttpGet("pois")]
+    public Task<IActionResult> GetPois([FromQuery] string? lang) =>
+        ExecuteAsync(() => _ownerService.GetMyPoisAsync(_claimsHelper.GetUserId(User), lang), "Lay danh sach POI cua owner thanh cong");
 
     [HttpPost("submissions")]
     public Task<IActionResult> CreateSubmission([FromBody] CreateOwnerSubmissionRequest request) =>
-        ExecuteAsync(() => _ownerService.CreateSubmissionAsync(_claimsHelper.GetUserId(User), request), "Tạo submission thành công");
+        ExecuteAsync(() => _ownerService.CreateSubmissionAsync(_claimsHelper.GetUserId(User), request), "Tao submission thanh cong");
 
     [HttpGet("submissions")]
-    public Task<IActionResult> GetSubmissions() => ExecuteAsync(() => _ownerService.GetMySubmissionsAsync(_claimsHelper.GetUserId(User)), "Lấy submissions thành công");
+    public Task<IActionResult> GetSubmissions() =>
+        ExecuteAsync(() => _ownerService.GetMySubmissionsAsync(_claimsHelper.GetUserId(User)), "Lay submissions thanh cong");
 
     [HttpGet("submissions/{id}")]
-    public Task<IActionResult> GetSubmissionById(string id) => ExecuteAsync(() => _ownerService.GetMySubmissionByIdAsync(_claimsHelper.GetUserId(User), id), "Lấy submission thành công");
+    public Task<IActionResult> GetSubmissionById(string id) =>
+        ExecuteAsync(() => _ownerService.GetMySubmissionByIdAsync(_claimsHelper.GetUserId(User), id), "Lay submission thanh cong");
 
     [HttpPut("submissions/{id}")]
     public Task<IActionResult> UpdateSubmission(string id, [FromBody] CreateOwnerSubmissionRequest request) =>
-        ExecuteAsync(() => _ownerService.UpdateMySubmissionAsync(_claimsHelper.GetUserId(User), id, request), "Cập nhật submission thành công");
+        ExecuteAsync(() => _ownerService.UpdateMySubmissionAsync(_claimsHelper.GetUserId(User), id, request), "Cap nhat submission thanh cong");
 }
