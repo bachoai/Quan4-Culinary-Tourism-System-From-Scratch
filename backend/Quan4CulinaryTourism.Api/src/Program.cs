@@ -9,6 +9,10 @@ using Quan4CulinaryTourism.Api.Helpers;
 using Quan4CulinaryTourism.Api.Repositories;
 using Quan4CulinaryTourism.Api.Services;
 
+EnvFileLoader.LoadIfPresent(
+    Path.Combine(Directory.GetCurrentDirectory(), ".env"),
+    Path.Combine(AppContext.BaseDirectory, ".env"));
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection(nameof(MongoDbSettings)));

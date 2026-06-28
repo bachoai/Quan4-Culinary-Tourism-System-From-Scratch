@@ -10,6 +10,7 @@ namespace Quan4CulinaryTourism.Api.Services;
 public class AudioService
 {
     private readonly PoiRepository _poiRepository;
+    private readonly PoiLocalizationRepository _poiLocalizationRepository;
     private readonly PoiAudioRepository _poiAudioRepository;
     private readonly FileUploadHelper _fileUploadHelper;
     private readonly PythonTextToSpeechService _pythonTextToSpeechService;
@@ -17,12 +18,14 @@ public class AudioService
 
     public AudioService(
         PoiRepository poiRepository,
+        PoiLocalizationRepository poiLocalizationRepository,
         PoiAudioRepository poiAudioRepository,
         FileUploadHelper fileUploadHelper,
         PythonTextToSpeechService pythonTextToSpeechService,
         ILogger<AudioService> logger)
     {
         _poiRepository = poiRepository;
+        _poiLocalizationRepository = poiLocalizationRepository;
         _poiAudioRepository = poiAudioRepository;
         _fileUploadHelper = fileUploadHelper;
         _pythonTextToSpeechService = pythonTextToSpeechService;
@@ -37,14 +40,10 @@ public class AudioService
 
     public async Task<PoiAudioResponse?> GetPoiAudioAsync(string poiId, string? lang, CancellationToken cancellationToken = default)
     {
-        var normalizedLang = string.IsNullOrWhiteSpace(lang) ? "vi" : lang.Trim().ToLowerInvariant();
-        PoiAudio? audio = null;
-        if (!string.IsNullOrWhiteSpace(normalizedLang))
-        {
-            audio = await _poiAudioRepository.GetByPoiAndLangAsync(poiId, normalizedLang, cancellationToken);
-        }
+        var normalizedLang = NormalizeLanguage(lang);
+        var audio = await _poiAudioRepository.GetByPoiAndLangAsync(poiId, normalizedLang, cancellationToken);
 
-        if (audio is null && normalizedLang == "vi")
+        if (audio is null)
         {
             var generated = await GenerateNarrationAudioAsync(poiId, normalizedLang, cancellationToken);
             if (generated is not null)
@@ -53,7 +52,11 @@ public class AudioService
             }
         }
 
-        audio ??= (await _poiAudioRepository.GetByPoiIdAsync(poiId, cancellationToken)).FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(lang))
+        {
+            audio ??= (await _poiAudioRepository.GetByPoiIdAsync(poiId, cancellationToken)).FirstOrDefault();
+        }
+
         return audio is null ? null : ToResponse(audio);
     }
 
@@ -142,13 +145,15 @@ public class AudioService
                 return null;
             }
 
-            var narrationText = string.IsNullOrWhiteSpace(poi.TtsScript) ? poi.Description : poi.TtsScript;
+            var localization = await _poiLocalizationRepository.GetByPoiAndLangAsync(poiId, lang, cancellationToken);
+            var narrationText = ResolveNarrationText(lang, poi, localization);
+
             if (string.IsNullOrWhiteSpace(narrationText))
             {
                 return null;
             }
 
-            var generated = await _pythonTextToSpeechService.GenerateVietnameseAudioAsync(narrationText, cancellationToken);
+            var generated = await _pythonTextToSpeechService.GenerateAudioAsync(narrationText, lang, cancellationToken);
             if (generated is null)
             {
                 return null;
@@ -175,5 +180,30 @@ public class AudioService
             _logger.LogError(exception, "Unable to auto-generate narration audio for POI {PoiId}", poiId);
             return null;
         }
+    }
+
+    private static string NormalizeLanguage(string? lang)
+    {
+        var normalized = string.IsNullOrWhiteSpace(lang) ? "vi" : lang.Trim().ToLowerInvariant();
+        return SharedConstants.SupportedLanguages.Contains(normalized) ? normalized : "vi";
+    }
+
+    private static string? FirstNonEmpty(params string?[] values) =>
+        values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim();
+
+    private static string? ResolveNarrationText(string lang, Poi poi, PoiLocalization? localization)
+    {
+        if (lang == "vi")
+        {
+            return FirstNonEmpty(
+                localization?.TtsScript,
+                localization?.Description,
+                poi.TtsScript,
+                poi.Description);
+        }
+
+        return FirstNonEmpty(
+            localization?.TtsScript,
+            localization?.Description);
     }
 }

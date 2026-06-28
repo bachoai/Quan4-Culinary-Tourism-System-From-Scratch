@@ -14,19 +14,10 @@ import {
 import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { healthApi } from '../../api/healthApi';
+import { getCopy } from '../../i18n/copy';
 import { useAppStore } from '../../store/appStore';
 import type { Lang } from '../../types/responses';
 import { hasRole } from '../../utils/auth';
-
-const baseNav = [
-  ['/', 'Trang chu'],
-  ['/explore', 'Kham pha'],
-  ['/tours', 'Tours'],
-  ['/qr', 'Quet QR'],
-  ['/nearby', 'Gan toi'],
-  ['/map', 'Ban do'],
-  ['/about', 'Ve du an'],
-] as const;
 
 export function PublicLayout() {
   const {
@@ -38,6 +29,7 @@ export function PublicLayout() {
     isAuthenticated,
     logout,
   } = useAppStore();
+  const ui = getCopy(lang);
   const [open, setOpen] = useState(false);
   const healthQuery = useQuery({
     queryKey: ['api-health'],
@@ -46,8 +38,18 @@ export function PublicLayout() {
     retry: false,
   });
 
+  const baseNav = [
+    ['/', ui.nav.home],
+    ['/explore', ui.nav.explore],
+    ['/tours', ui.nav.tours],
+    ['/qr', ui.nav.qr],
+    ['/nearby', ui.nav.nearby],
+    ['/map', ui.nav.map],
+    ['/about', ui.nav.about],
+  ] as const;
+
   const nav = hasRole(currentUser?.roles, 'Owner')
-    ? [...baseNav, ['/owner', 'Owner']]
+    ? [...baseNav, ['/owner', ui.nav.owner] as const]
     : baseNav;
 
   const healthOk = healthQuery.data?.mongoConnected && healthQuery.data.status === 'Healthy';
@@ -87,20 +89,17 @@ export function PublicLayout() {
             <select
               value={lang}
               onChange={(event) => setLang(event.target.value as Lang)}
-              aria-label="Ngon ngu"
+              aria-label={ui.common.languageLabel}
               className="rounded-full bg-transparent px-2 py-2 text-sm font-semibold"
             >
               <option value="vi">VI</option>
               <option value="en">EN</option>
-              <option value="zh">ZH</option>
-              <option value="ja">JA</option>
-              <option value="ko">KO</option>
             </select>
 
             <button
               onClick={toggleTheme}
               className="rounded-full p-2.5 hover:bg-slate-200 dark:hover:bg-slate-800"
-              aria-label="Doi giao dien"
+              aria-label={ui.common.themeLabel}
             >
               {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
             </button>
@@ -110,19 +109,19 @@ export function PublicLayout() {
                 <>
                   <Link to="/account" className="btn-secondary !px-4 !py-2">
                     <UserRound size={16} />
-                    {currentUser?.fullName?.split(' ')[0] || 'Tai khoan'}
+                    {currentUser?.fullName?.split(' ')[0] || ui.common.account}
                   </Link>
                   <button onClick={logout} className="pill hover:border-coral hover:text-coral">
-                    Dang xuat
+                    {ui.common.logout}
                   </button>
                 </>
               ) : (
                 <>
                   <Link to="/login" className="pill hover:border-coral hover:text-coral">
-                    Dang nhap
+                    {ui.common.login}
                   </Link>
                   <Link to="/register" className="btn-primary !px-4 !py-2">
-                    Tao tai khoan
+                    {ui.common.createAccount}
                   </Link>
                 </>
               )}
@@ -152,7 +151,7 @@ export function PublicLayout() {
                 <>
                   <Link to="/account" onClick={() => setOpen(false)} className="btn-secondary">
                     <UserRound size={16} />
-                    Tai khoan
+                    {ui.common.account}
                   </Link>
                   <button
                     onClick={() => {
@@ -161,16 +160,16 @@ export function PublicLayout() {
                     }}
                     className="pill py-3 text-left font-semibold"
                   >
-                    Dang xuat
+                    {ui.common.logout}
                   </button>
                 </>
               ) : (
                 <>
                   <Link to="/login" onClick={() => setOpen(false)} className="btn-secondary">
-                    Dang nhap
+                    {ui.common.login}
                   </Link>
                   <Link to="/register" onClick={() => setOpen(false)} className="btn-primary">
-                    Tao tai khoan
+                    {ui.common.createAccount}
                   </Link>
                 </>
               )}
@@ -188,20 +187,20 @@ export function PublicLayout() {
           <div className="space-y-3">
             <p className="text-xl font-bold text-white">Quan4 Food Stories</p>
             <p className="max-w-sm text-sm leading-6">
-              Kham pha nhung cau chuyen am thuc song dong o Quan 4, Thanh pho Ho Chi Minh.
+              {ui.layout.footerDescription}
             </p>
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
                 <HeartPulse size={15} className={healthOk ? 'text-emerald-400' : 'text-amber-300'} />
-                {healthOk ? 'API healthy' : 'API dang kiem tra'}
+                {healthOk ? ui.layout.apiHealthy : ui.layout.apiChecking}
               </span>
               <Link to="/qr" className="inline-flex items-center gap-2 text-coral">
                 <QrCode size={15} />
-                QR user flow
+                {ui.layout.qrFlow}
               </Link>
               <Link to="/tours" className="inline-flex items-center gap-2 text-teal">
                 <Route size={15} />
-                Public tours
+                {ui.layout.publicTours}
               </Link>
             </div>
           </div>
@@ -209,15 +208,16 @@ export function PublicLayout() {
           <div className="space-y-2 text-sm">
             <div className="flex items-center gap-2">
               <Map size={16} className="text-teal" />
-              Quan 4, TP. Ho Chi Minh
+              {ui.layout.location}
             </div>
             {isAuthenticated ? (
               <p>
-                Xin chao {currentUser?.fullName || 'ban'}.
-                {hasRole(currentUser?.roles, 'Owner') ? ' Ban dang co quyen owner.' : ' Ban dang dung che do user.'}
+                {ui.layout.helloUser} {currentUser?.fullName || ui.common.account.toLowerCase()}.
+                {' '}
+                {hasRole(currentUser?.roles, 'Owner') ? ui.layout.ownerMode : ui.layout.userMode}
               </p>
             ) : (
-              <p>Dang nhap de gui dang ky owner va quan ly submission cua ban.</p>
+              <p>{ui.layout.loginPrompt}</p>
             )}
           </div>
         </div>

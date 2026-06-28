@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -42,6 +42,7 @@ import { PublicLayout } from './components/layout/PublicLayout';
 import { PoiCard } from './components/common/PoiCard';
 import { AudioPlayer } from './components/common/AudioPlayer';
 import { PoiMap } from './components/map/PoiMap';
+import { getCopy } from './i18n/copy';
 import { useAppStore } from './store/appStore';
 import type {
   CurrentUser,
@@ -73,9 +74,12 @@ function Spinner() {
 }
 
 function ErrorBox({ text }: { text?: string }) {
+  const lang = useAppStore((state) => state.lang);
+  const ui = getCopy(lang);
+
   return (
     <div className="rounded-3xl border border-orange-200 bg-orange-50 p-8 text-center text-orange-800">
-      {text || 'Chua the tai du lieu. Hay kiem tra ket noi API.'}
+      {text || ui.common.loadError}
     </div>
   );
 }
@@ -199,6 +203,8 @@ function Categories({
   selected?: string;
   onSelect?: (id?: string) => void;
 }) {
+  const lang = useAppStore((state) => state.lang);
+  const ui = getCopy(lang);
   const { data = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: categoryApi.list,
@@ -210,7 +216,7 @@ function Categories({
         onClick={() => onSelect?.()}
         className={`pill whitespace-nowrap ${!selected ? 'border-coral bg-orange-50 text-coral dark:bg-orange-500/15' : ''}`}
       >
-        Tat ca
+        {ui.common.all}
       </button>
 
       {data.map((category) => (
@@ -229,6 +235,7 @@ function Categories({
 function Home() {
   const navigate = useNavigate();
   const { lang } = useAppStore();
+  const ui = getCopy(lang);
   const { data: pois = [], isLoading, isError } = useQuery({
     queryKey: ['pois', lang],
     queryFn: () => poiApi.list({ lang }),
@@ -251,25 +258,25 @@ function Home() {
           <div className="absolute inset-0 -z-10 bg-gradient-to-r from-slate-950 via-slate-950/75 to-transparent" />
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl">
-            <span className="section-kicker text-orange-300">QUAN 4 · SAIGON FOOD STORIES</span>
+            <p className="section-kicker !text-white/70">{ui.home.heroKicker}</p>
             <h1 className="mt-4 font-serif text-4xl font-bold leading-tight sm:text-6xl">
-              Kham pha am thuc <span className="text-orange-400">Quan 4</span>
+              {ui.home.heroTitleLead} <span className="text-coral">{ui.home.heroTitleAccent}</span>
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-slate-200 sm:text-lg">
-              Ban do am thuc thong minh voi audio thuyet minh, da ngon ngu va goi y dia diem gan ban.
+              {ui.home.heroDescription}
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Link className="btn-primary" to="/explore">
-                Kham pha ngay <ArrowRight size={18} />
+                {ui.home.heroExplore} <ArrowRight size={18} />
               </Link>
               <Link className="btn-secondary !border-white/20 !bg-white/10 !text-white" to="/qr">
                 <QrCode size={18} />
-                Quet QR user
+                {ui.home.heroQr}
               </Link>
               <Link className="btn-secondary !border-white/20 !bg-white/10 !text-white" to="/tours">
                 <RouteIcon size={18} />
-                Xem tours
+                {ui.home.heroTours}
               </Link>
             </div>
           </motion.div>
@@ -285,17 +292,19 @@ function Home() {
             <input
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
-              placeholder="Ban dang them mon gi?"
+              placeholder={ui.home.heroSearchPlaceholder}
               className="min-w-0 flex-1 bg-transparent py-2 text-slate-900 outline-none"
             />
-            <button className="rounded-xl bg-ink px-4 py-2 font-semibold">Tim</button>
+            <button className="btn-primary shrink-0">
+              {ui.common.search}
+            </button>
           </form>
         </div>
       </section>
 
       <section className="shell py-14">
-        <p className="section-kicker">CHON THEO GU CUA BAN</p>
-        <h2 className="mt-2 text-3xl font-bold">Hom nay an gi?</h2>
+        <p className="section-kicker">{ui.home.categoryKicker}</p>
+        <h2 className="mt-2 text-3xl font-bold sm:text-4xl">{ui.home.categoryTitle}</h2>
         <div className="mt-6">
           <Categories onSelect={(id) => navigate(`/explore${id ? `?category=${id}` : ''}`)} />
         </div>
@@ -304,15 +313,15 @@ function Home() {
       <section className="shell">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="section-kicker">GOI Y CHO BAN</p>
-            <h2 className="mt-2 text-3xl font-bold">Diem den noi bat</h2>
+            <p className="section-kicker">{ui.home.featuredKicker}</p>
+            <h2 className="mt-2 text-3xl font-bold sm:text-4xl">{ui.home.featuredTitle}</h2>
           </div>
           <div className="flex gap-3">
             <Link to="/explore" className="hidden font-bold text-coral sm:block">
-              Xem tat ca
+              {ui.home.viewAll}
             </Link>
             <Link to="/tours" className="hidden font-bold text-teal sm:block">
-              Tours cong khai
+              {ui.layout.publicTours}
             </Link>
           </div>
         </div>
@@ -337,10 +346,10 @@ function Home() {
       <section className="shell py-20">
         <div className="grid gap-5 md:grid-cols-4">
           {[
-            [Compass, 'Ban do thong minh', 'Tim diem an dung gu ngay tren ban do.'],
-            [Volume2, 'Audio thuyet minh', 'Moi dia diem deu co mot cau chuyen de nghe.'],
-            [Sparkles, 'Da ngon ngu', 'Chao don du khach bang nhieu ngon ngu.'],
-            [QrCode, 'QR activation', 'Mo nhanh POI va audio ngay tu ma QR.'],
+            [Compass, ui.home.featureMapTitle, ui.home.featureMapText],
+            [Volume2, ui.home.featureAudioTitle, ui.home.featureAudioText],
+            [Sparkles, ui.home.featureI18nTitle, ui.home.featureI18nText],
+            [QrCode, ui.home.featureQrTitle, ui.home.featureQrText],
           ].map(([Icon, title, text]) => {
             const CurrentIcon = Icon as typeof Compass;
 
@@ -361,17 +370,17 @@ function Home() {
 
         <div className="mt-8 grid gap-6 rounded-[2rem] bg-teal p-8 text-ink md:grid-cols-[1fr_auto_auto_auto] md:items-center">
           <div>
-            <p className="text-sm font-bold uppercase tracking-widest">MO DAY DU CONTRACT PUBLIC TU BACKEND</p>
-            <h2 className="mt-1 text-3xl font-bold">Tours, QR, auth, owner va POI tren web user</h2>
+            <p className="section-kicker !text-ink/70">{ui.home.contractKicker}</p>
+            <h2 className="mt-2 text-3xl font-bold">{ui.home.contractTitle}</h2>
           </div>
           <Link className="btn-secondary !border-ink !bg-ink !text-white" to="/map">
-            Xem ban do <MapPin size={18} />
+            {ui.home.mapCta} <MapPin size={18} />
           </Link>
           <Link className="btn-secondary !border-ink !bg-white/20 !text-ink" to="/qr">
-            Quet QR <QrCode size={18} />
+            {ui.home.qrCta} <QrCode size={18} />
           </Link>
           <Link className="btn-secondary !border-ink !bg-white/20 !text-ink" to="/account">
-            Tai khoan <UserRound size={18} />
+            {ui.home.accountCta} <UserRound size={18} />
           </Link>
         </div>
       </section>
@@ -382,6 +391,7 @@ function Home() {
 function Explore() {
   const { lang } = useAppStore();
   const navigate = useNavigate();
+  const ui = getCopy(lang);
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const [keyword, setKeyword] = useState(params.get('q') || '');
@@ -418,9 +428,11 @@ function Explore() {
 
   return (
     <section className="shell py-12">
-      <p className="section-kicker">KHAM PHA HUONG VI</p>
-      <h1 className="mt-2 text-4xl font-bold">An gi o Quan 4?</h1>
-      <p className="mt-2 text-slate-500">Loc theo cam hung, muc gia va khu vuc ban muon ghe.</p>
+      <p className="section-kicker">{ui.explore.kicker}</p>
+      <h1 className="mt-2 text-4xl font-bold">{ui.explore.title}</h1>
+      <p className="mt-3 max-w-2xl text-slate-500">
+        {ui.explore.subtitle}
+      </p>
 
       <form
         onSubmit={runSearch}
@@ -431,9 +443,11 @@ function Explore() {
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
           className="min-w-0 flex-1 bg-transparent outline-none"
-          placeholder="Tim mon, ten quan, con duong..."
+          placeholder={ui.explore.searchPlaceholder}
         />
-        <button className="btn-primary !py-2">Tim</button>
+        <button className="btn-primary shrink-0">
+          {ui.common.search}
+        </button>
       </form>
 
       <div className="mt-6">
@@ -441,7 +455,9 @@ function Explore() {
       </div>
 
       <div className="mt-4 flex gap-2">
-        <span className="py-1.5 text-sm text-slate-500">Muc gia:</span>
+        <span className="self-center text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+          {ui.explore.priceLabel}
+        </span>
         {['$', '$$', '$$$'].map((price) => (
           <button
             key={price}
@@ -466,8 +482,8 @@ function Explore() {
       ) : (
         <div className="mt-8 rounded-3xl bg-slate-100 p-12 text-center dark:bg-slate-900">
           <Utensils className="mx-auto text-teal" />
-          <h2 className="mt-3 text-xl font-bold">Chua tim thay dia diem phu hop</h2>
-          <p className="mt-1 text-slate-500">Thu doi tu khoa hoac bo loc cua ban.</p>
+          <h2 className="mt-3 text-xl font-bold">{ui.explore.emptyTitle}</h2>
+          <p className="mt-1 text-slate-500">{ui.explore.emptyDescription}</p>
         </div>
       )}
     </section>
@@ -478,18 +494,14 @@ function Detail() {
   const { id = '' } = useParams();
   const location = useLocation();
   const { lang } = useAppStore();
-  const narrationLang: Lang = 'vi';
+  const ui = getCopy(lang);
   const queryParams = new URLSearchParams(location.search);
+  const narrationLang: Lang = lang;
   const autoplay = queryParams.get('autoplay');
   const source = queryParams.get('source');
   const { data: poi, isLoading, isError } = useQuery({
     queryKey: ['detail', id, lang],
     queryFn: () => poiApi.detail(id, lang),
-  });
-  const { data: narrationPoi } = useQuery({
-    queryKey: ['detail-narration', id, narrationLang],
-    queryFn: () => poiApi.detail(id, narrationLang),
-    enabled: Boolean(id) && lang !== narrationLang,
   });
   const audioQuery = useQuery({
     queryKey: ['audio', id, narrationLang],
@@ -516,20 +528,17 @@ function Detail() {
   }
 
   const mapUrl = `https://www.google.com/maps/dir/?api=1&destination=${poi.latitude},${poi.longitude}`;
-  const narrationText =
-    narrationLang === lang
-      ? (poi.ttsScript || poi.description)
-      : (narrationPoi?.ttsScript || narrationPoi?.description || '');
+  const narrationText = poi.ttsScript || poi.description || '';
 
   return (
     <section className="shell py-8">
       <Link to="/explore" className="text-sm font-bold text-coral">
-        ← Quay lai kham pha
+        {ui.detail.back}
       </Link>
 
       {source === 'qr' ? (
         <div className="mt-5 rounded-2xl border border-teal/20 bg-teal/10 px-4 py-3 text-sm text-teal-900 dark:text-teal-100">
-          POI nay duoc mo tu luong QR user.
+          {ui.detail.qrOpened}
         </div>
       ) : null}
 
@@ -543,8 +552,8 @@ function Detail() {
         />
 
         <div className="py-3">
-          <p className="section-kicker">AM THUC QUAN 4</p>
-          <h1 className="mt-2 text-4xl font-bold leading-tight">{poi.name}</h1>
+          <p className="section-kicker">{ui.detail.kicker}</p>
+          <h1 className="mt-2 text-4xl font-bold">{poi.name}</h1>
 
           <div className="mt-4 flex flex-wrap gap-2">
             <span className="pill border-coral text-coral">{poi.priceRange}</span>
@@ -569,7 +578,7 @@ function Detail() {
               lang={narrationLang}
               autoplay={Boolean(autoplay)}
               loading={audioQuery.isLoading}
-              errorText={audioQuery.isError ? 'Khong tai duoc audio thuyet minh tu backend.' : undefined}
+              errorText={audioQuery.isError ? ui.detail.audioError : undefined}
               onPlay={(mode) =>
                 track(
                   mode === 'audio' ? 'audio_played' : 'tts_played',
@@ -584,10 +593,10 @@ function Detail() {
           <div className="mt-5 flex gap-3">
             <a className="btn-primary" target="_blank" rel="noreferrer" href={mapUrl}>
               <Navigation size={17} />
-              Chi duong
+              {ui.detail.direction}
             </a>
             <Link className="btn-secondary" to={`/map?poi=${poi.id}`}>
-              Xem tren ban do
+              {ui.detail.viewMap}
             </Link>
           </div>
         </div>
@@ -595,23 +604,23 @@ function Detail() {
 
       <div className="mt-9 grid gap-6 md:grid-cols-2">
         <div className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
-          <h2 className="font-bold">Gio hoat dong</h2>
+          <h2 className="text-xl font-bold">{ui.detail.hoursTitle}</h2>
           <div className="mt-3 space-y-2 text-sm">
             {poi.openingHours?.length ? (
               poi.openingHours.map((item) => (
                 <p key={item.dayOfWeek} className="flex justify-between gap-6">
                   <span>{item.dayOfWeek}</span>
-                  <b>{item.isClosed ? 'Dong cua' : `${item.openTime} - ${item.closeTime}`}</b>
+                  <b>{item.isClosed ? ui.detail.closed : `${item.openTime} - ${item.closeTime}`}</b>
                 </p>
               ))
             ) : (
-              <p className="text-slate-500">Chua cap nhat.</p>
+              <p className="text-slate-500">{ui.detail.notUpdated}</p>
             )}
           </div>
         </div>
 
         <div className="rounded-3xl bg-white p-6 shadow-soft dark:bg-slate-900">
-          <h2 className="font-bold">Thong tin va the</h2>
+          <h2 className="text-xl font-bold">{ui.detail.infoTagsTitle}</h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {poi.tags?.map((tag) => (
               <span key={tag} className="pill bg-slate-50 dark:bg-slate-800">
@@ -620,7 +629,7 @@ function Detail() {
             ))}
           </div>
           {poi.contactInfo?.phone ? (
-            <p className="mt-4 text-sm text-slate-500">Lien he: {poi.contactInfo.phone}</p>
+            <p className="mt-5 text-sm text-slate-500">{poi.contactInfo.phone}</p>
           ) : null}
         </div>
       </div>
@@ -870,9 +879,10 @@ function TourCard({
 function QrPage() {
   const { lang } = useAppStore();
   const navigate = useNavigate();
+  const ui = getCopy(lang);
   const [searchParams] = useSearchParams();
   const [code, setCode] = useState('');
-  const [statusText, setStatusText] = useState('Dang khoi dong camera QR...');
+  const [statusText, setStatusText] = useState<string>(ui.qr.startingCamera);
   const [lastResolved, setLastResolved] = useState<QrActivationResponse | null>(null);
   const [errorText, setErrorText] = useState('');
   const scanLockRef = useRef(false);
@@ -902,6 +912,14 @@ function QrPage() {
 
           if (/\/qr\/?$/i.test(url.pathname)) {
             return url.searchParams.get('code');
+          }
+
+          const hash = url.hash.startsWith('#') ? url.hash.slice(1) : url.hash;
+          if (hash) {
+            const [hashPath, hashQuery = ''] = hash.split('?');
+            if (/^\/qr\/?$/i.test(hashPath)) {
+              return new URLSearchParams(hashQuery).get('code');
+            }
           }
 
           return null;
@@ -943,7 +961,7 @@ function QrPage() {
       navigate(`/poi/${activation.poiId}?autoplay=${encodeURIComponent(activation.scanMode)}&source=qr`);
     } catch (error) {
       setErrorText((error as Error).message);
-      setStatusText('Khong resolve duoc QR nay. Ban co the thu nhap ma thu cong.');
+      setStatusText(ui.qr.resolveFailed);
     } finally {
       scanLockRef.current = false;
     }
@@ -957,7 +975,7 @@ function QrPage() {
     }
 
     setCode(codeFromQuery);
-    setStatusText('Dang mo noi dung tu lien ket QR...');
+    setStatusText(ui.qr.openingFromLink);
     void resolveValue(codeFromQuery);
   }, [codeFromQuery]);
 
@@ -966,7 +984,7 @@ function QrPage() {
 
     async function startScanner() {
       if (!navigator.mediaDevices?.getUserMedia) {
-        setStatusText('Trinh duyet nay khong ho tro camera. Ban van co the nhap ma QR thu cong.');
+        setStatusText(ui.qr.cameraUnsupported);
         return;
       }
 
@@ -978,7 +996,7 @@ function QrPage() {
 
         const scanner = new Html5Qrcode('qr-reader');
         scannerRef.current = scanner;
-        setStatusText('Huong camera vao ma QR de mo POI ngay lap tuc.');
+        setStatusText(ui.qr.cameraReady);
 
         await scanner.start(
           { facingMode: 'environment' },
@@ -989,7 +1007,7 @@ function QrPage() {
           () => undefined,
         );
       } catch {
-        setStatusText('Khong khoi dong duoc camera QR. Ban van co the nhap ma thu cong.');
+        setStatusText(ui.qr.cameraFailed);
       }
     }
 
@@ -1012,10 +1030,10 @@ function QrPage() {
 
   return (
     <section className="shell py-12">
-      <p className="section-kicker">QR USER FLOW</p>
-      <h1 className="mt-2 text-4xl font-bold">Quet QR hoac nhap ma kich hoat</h1>
+      <p className="section-kicker">{ui.qr.kicker}</p>
+      <h1 className="mt-2 text-4xl font-bold">{ui.qr.title}</h1>
       <p className="mt-3 max-w-2xl text-slate-500">
-        Website-user nay da duoc noi vao public endpoint `qr-activations/resolve`, co camera scan va fallback nhap ma POI / deep link.
+        {ui.qr.subtitle}
       </p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_.9fr]">
@@ -1025,7 +1043,7 @@ function QrPage() {
               <QrCode />
             </div>
             <div>
-              <p className="font-bold">Camera scanner</p>
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-slate-500">{ui.qr.cameraTitle}</p>
               <p className="text-sm text-slate-500">{statusText}</p>
             </div>
           </div>
@@ -1033,9 +1051,9 @@ function QrPage() {
         </div>
 
         <div className="rounded-[2rem] bg-white p-6 shadow-soft dark:bg-slate-900">
-          <h2 className="text-xl font-bold">Nhap ma thu cong</h2>
+          <h2 className="text-2xl font-bold">{ui.qr.manualTitle}</h2>
           <p className="mt-2 text-sm text-slate-500">
-            Ho tro `KHANHHOI-01`, `https://.../qr?code=...`, `quan4tourism://qr/...`, `quan4tourism://poi/...` hoac Mongo POI id 24 ky tu.
+            {ui.qr.manualSupport}
           </p>
 
           <form
@@ -1048,11 +1066,11 @@ function QrPage() {
             <TextInput
               value={code}
               onChange={(event) => setCode(event.target.value)}
-              placeholder="Nhap ma QR, deep link hoac poi id"
+              placeholder={ui.qr.manualPlaceholder}
             />
             <button className="btn-primary justify-center">
               <QrCode size={16} />
-              Mo noi dung tu QR
+              {ui.qr.openFromQr}
             </button>
           </form>
 
@@ -1926,7 +1944,7 @@ function OwnerPoiCard({
             <MapPin size={16} className="mt-0.5 shrink-0 text-coral" />
             <span>{poi.address}, {poi.ward}, {poi.district}</span>
           </p>
-          <p>Gia: {poi.priceRange} · Priority: {poi.priority}</p>
+          <p>Gia: {poi.priceRange} Â· Priority: {poi.priority}</p>
           <p>Cap nhat: {new Date(poi.updatedAt).toLocaleString()}</p>
         </div>
 
@@ -2008,7 +2026,7 @@ function About() {
               'Tours cong khai va owner workspace',
             ].map((item) => (
               <li key={item} className="flex gap-2">
-                <span className="text-teal">✦</span>
+                <span className="text-teal">âœ¦</span>
                 {item}
               </li>
             ))}

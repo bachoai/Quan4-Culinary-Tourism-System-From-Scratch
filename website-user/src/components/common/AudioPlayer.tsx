@@ -1,5 +1,6 @@
 import { Pause, Play, Volume2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { getCopy } from '../../i18n/copy';
 import { normalizeMediaUrl } from '../../utils/media';
 
 type AudioPlayerProps = {
@@ -33,6 +34,7 @@ function resolveVoice(lang: string, voices: SpeechSynthesisVoice[]) {
 }
 
 export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, loading = false, errorText }: AudioPlayerProps) {
+  const ui = getCopy(lang);
   const audio = useRef<HTMLAudioElement>(null);
   const autoStarted = useRef(false);
   const utterance = useRef<SpeechSynthesisUtterance | null>(null);
@@ -44,8 +46,8 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, lo
   const hasSpeechSynthesis = typeof window !== 'undefined' && 'speechSynthesis' in window;
   const hasNarration = Boolean(narrationText);
   const hasAudio = Boolean(audioUrl);
-  const hasVietnameseVoice = Boolean(ttsVoice);
-  const canUseTts = hasNarration && hasSpeechSynthesis && hasVietnameseVoice;
+  const hasMatchingVoice = Boolean(ttsVoice);
+  const canUseTts = hasNarration && hasSpeechSynthesis && hasMatchingVoice;
 
   useEffect(() => {
     if (!hasSpeechSynthesis) {
@@ -121,7 +123,7 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, lo
   if (!hasAudio && !hasNarration) {
     return (
       <div className="rounded-2xl bg-slate-100 p-4 text-sm text-slate-500 dark:bg-slate-800">
-        Dia diem nay chua co noi dung thuyet minh.
+        {ui.audio.noNarration}
       </div>
     );
   }
@@ -129,7 +131,7 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, lo
   if (!hasAudio && !hasSpeechSynthesis) {
     return (
       <div className="rounded-2xl bg-slate-100 p-4 text-sm text-slate-500 dark:bg-slate-800">
-        Trinh duyet nay khong ho tro doc thuyet minh.
+        {ui.audio.browserUnsupported}
       </div>
     );
   }
@@ -137,15 +139,15 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, lo
   if (!hasAudio && loading) {
     return (
       <div className="rounded-2xl bg-slate-100 p-4 text-sm text-slate-500 dark:bg-slate-800">
-        Dang tai audio thuyet minh tieng Viet tu backend...
+        {ui.audio.loadingAudio}
       </div>
     );
   }
 
-  if (!hasAudio && voiceChecked && !hasVietnameseVoice) {
+  if (!hasAudio && voiceChecked && !hasMatchingVoice) {
     return (
       <div className="rounded-2xl bg-slate-100 p-4 text-sm text-slate-500 dark:bg-slate-800">
-        Chua lay duoc audio tu backend, va may nay cung chua co giong doc tieng Viet.
+        {ui.audio.noVoice}
       </div>
     );
   }
@@ -176,7 +178,7 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, lo
       onPlay('audio');
     } catch {
       setPlaying(false);
-      setPlaybackError('Khong phat duoc file audio nay. Hay thu tai lai trang.');
+      setPlaybackError(ui.audio.cannotPlayFile);
     }
   };
 
@@ -202,7 +204,7 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, lo
     };
     nextUtterance.onerror = () => {
       setPlaying(false);
-      setPlaybackError('Trinh duyet khong doc duoc noi dung thuyet minh luc nay.');
+      setPlaybackError(ui.audio.cannotReadNow);
     };
 
     utterance.current = nextUtterance;
@@ -239,14 +241,14 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, lo
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2 text-sm font-bold">
           <Volume2 size={16} />
-          {hasAudio ? 'Audio thuyet minh' : 'Thuyet minh bang giong doc'}
+          {hasAudio ? ui.audio.audioGuideTitle : ui.audio.ttsGuideTitle}
         </p>
         <p className="text-xs text-slate-500">
           {hasAudio
-            ? 'Phat audio tieng Viet do backend tao tu noi dung thuyet minh.'
+            ? ui.audio.audioGuideText
             : voiceChecked
-              ? 'Doc tu kich ban thuyet minh bang giong tieng Viet cua trinh duyet.'
-              : 'Dang kiem tra giong doc tieng Viet tren trinh duyet.'}
+              ? ui.audio.ttsGuideText
+              : ui.audio.checkingVoice}
         </p>
         {errorText || playbackError ? (
           <p className="mt-1 text-xs text-rose-600">{errorText || playbackError}</p>
@@ -263,7 +265,7 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, lo
         }}
         onError={() => {
           setPlaying(false);
-          setPlaybackError('File audio dang loi hoac khong con truy cap duoc.');
+          setPlaybackError(ui.audio.fileUnavailable);
         }}
       />
     </div>

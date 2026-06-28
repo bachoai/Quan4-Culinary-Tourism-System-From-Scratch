@@ -261,8 +261,7 @@ public class DbSeeder
             }
 
             var narrationSource = string.IsNullOrWhiteSpace(poi.Description) ? seed?.Description : poi.Description;
-            if (string.IsNullOrWhiteSpace(poi.TtsScript)
-                || poi.TtsScript.StartsWith("Gioi thieu nhanh ve ", StringComparison.Ordinal))
+            if (ShouldRefreshVietnameseNarrationScript(poi.TtsScript, poi.Name))
             {
                 if (!string.IsNullOrWhiteSpace(narrationSource))
                 {
@@ -863,7 +862,27 @@ public class DbSeeder
         $"Welcome to {poiName}, one of the notable food stops in District 4.";
 
     private static string BuildVietnameseNarrationScript(string poiName, string description) =>
-        $"Giới thiệu nhanh về {poiName}: {description}";
+        $"Gi\u1edbi thi\u1ec7u nhanh v\u1ec1 {poiName}: {description}";
+
+    private static bool ShouldRefreshVietnameseNarrationScript(string? currentScript, string poiName)
+    {
+        if (string.IsNullOrWhiteSpace(currentScript))
+        {
+            return true;
+        }
+
+        var normalized = currentScript.Trim();
+        if (normalized.StartsWith("Gioi thieu nhanh ve ", StringComparison.Ordinal)
+            || normalized.StartsWith("Gi\u1edbi thi\u1ec7u nhanh v\u1ec1 ", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return normalized.StartsWith("G", StringComparison.Ordinal)
+            && normalized.Contains(poiName, StringComparison.Ordinal)
+            && normalized.Contains(":", StringComparison.Ordinal)
+            && normalized.Contains("nhanh", StringComparison.OrdinalIgnoreCase);
+    }
 
     private static Dictionary<string, object> BuildAnalyticsMetadata(string eventName, int index)
     {

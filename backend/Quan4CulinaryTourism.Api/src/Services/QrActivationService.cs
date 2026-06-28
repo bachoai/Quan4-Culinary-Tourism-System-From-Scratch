@@ -159,7 +159,20 @@ public class QrActivationService
             ? "http://localhost:5173"
             : settings.BaseUrl.Trim();
 
-        return $"{baseUrl.TrimEnd('/')}/qr?code={Uri.EscapeDataString(code)}";
+        if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var siteUri))
+        {
+            baseUrl = "http://localhost:5173";
+            siteUri = new Uri(baseUrl);
+        }
+
+        var builder = new UriBuilder(siteUri)
+        {
+            Path = siteUri.AbsolutePath,
+            Query = string.Empty,
+            Fragment = $"/qr?code={Uri.EscapeDataString(code)}"
+        };
+
+        return builder.Uri.ToString();
     }
 
     private static string NormalizeCode(string rawCode)

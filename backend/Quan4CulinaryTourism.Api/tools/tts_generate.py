@@ -19,6 +19,12 @@ def resolve_lang(voice_name: str) -> str:
         return "vi"
     if normalized.startswith("en"):
         return "en"
+    if normalized.startswith("zh") or normalized.startswith("cmn"):
+        return "zh-CN"
+    if normalized.startswith("ja"):
+        return "ja"
+    if normalized.startswith("ko"):
+        return "ko"
     return "vi"
 
 

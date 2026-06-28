@@ -24,7 +24,10 @@ public class PythonTextToSpeechService
         _logger = logger;
     }
 
-    public async Task<GeneratedAudioResult?> GenerateVietnameseAudioAsync(string text, CancellationToken cancellationToken = default)
+    public async Task<GeneratedAudioResult?> GenerateAudioAsync(
+        string text,
+        string? voiceHint = null,
+        CancellationToken cancellationToken = default)
     {
         if (!_settings.Enabled || string.IsNullOrWhiteSpace(text))
         {
@@ -39,6 +42,7 @@ public class PythonTextToSpeechService
         }
 
         var (fullPath, publicUrl) = _fileUploadHelper.CreateManagedFilePath("audio", ".mp3");
+        var resolvedVoice = string.IsNullOrWhiteSpace(voiceHint) ? _settings.DefaultVoice : voiceHint.Trim();
         var process = new Process
         {
             StartInfo = new ProcessStartInfo
@@ -58,7 +62,7 @@ public class PythonTextToSpeechService
         process.StartInfo.ArgumentList.Add("--output");
         process.StartInfo.ArgumentList.Add(fullPath);
         process.StartInfo.ArgumentList.Add("--voice");
-        process.StartInfo.ArgumentList.Add(_settings.DefaultVoice);
+        process.StartInfo.ArgumentList.Add(resolvedVoice);
         process.StartInfo.ArgumentList.Add("--rate");
         process.StartInfo.ArgumentList.Add(_settings.Rate);
         process.StartInfo.Environment["PYTHONIOENCODING"] = "utf-8";
@@ -88,7 +92,7 @@ public class PythonTextToSpeechService
             }
 
             var fileInfo = new FileInfo(fullPath);
-            return new GeneratedAudioResult(publicUrl, _settings.DefaultVoice, fileInfo.Length);
+            return new GeneratedAudioResult(publicUrl, resolvedVoice, fileInfo.Length);
         }
         catch (OperationCanceledException)
         {
