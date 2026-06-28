@@ -58,6 +58,7 @@ import type {
   RegisterRequest,
 } from './types/requests';
 import { distance, track } from './utils/analytics';
+import { hasRole } from './utils/auth';
 import { normalizeMediaUrl, poiImage } from './utils/media';
 
 const heroImage =
@@ -160,9 +161,31 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 }
 
 function RequireOwner({ children }: { children: React.ReactNode }) {
+  const token = useAppStore((state) => state.token);
   const currentUser = useAppStore((state) => state.currentUser);
+  const setCurrentUser = useAppStore((state) => state.setCurrentUser);
+  const meQuery = useQuery({
+    queryKey: ['owner-guard-me', token],
+    queryFn: authApi.me,
+    enabled: Boolean(token),
+    staleTime: 0,
+    refetchOnMount: 'always',
+    retry: false,
+  });
 
-  if (!currentUser?.roles.includes('OWNER')) {
+  useEffect(() => {
+    if (meQuery.data) {
+      setCurrentUser(meQuery.data);
+    }
+  }, [meQuery.data, setCurrentUser]);
+
+  const resolvedCurrentUser = meQuery.data ?? currentUser;
+
+  if (meQuery.isLoading && !resolvedCurrentUser) {
+    return <Spinner />;
+  }
+
+  if (!hasRole(resolvedCurrentUser?.roles, 'Owner')) {
     return <Navigate to="/account" replace />;
   }
 
@@ -1168,7 +1191,9 @@ function RegisterPage() {
 function AccountPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const currentUser = useAppStore((state) => state.currentUser) as CurrentUser;
+  const token = useAppStore((state) => state.token);
+  const currentUser = useAppStore((state) => state.currentUser);
+  const setCurrentUser = useAppStore((state) => state.setCurrentUser);
   const logout = useAppStore((state) => state.logout);
   const [ownerForm, setOwnerForm] = useState({
     businessName: '',
@@ -1184,30 +1209,58 @@ function AccountPage() {
       alert('Da gui dang ky owner thanh cong.');
     },
   });
+  const currentUserQuery = useQuery({
+    queryKey: ['account-me', token],
+    queryFn: authApi.me,
+    enabled: Boolean(token),
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
+
+  useEffect(() => {
+    if (currentUserQuery.data) {
+      setCurrentUser(currentUserQuery.data);
+    }
+  }, [currentUserQuery.data, setCurrentUser]);
+
+  const resolvedCurrentUser = currentUserQuery.data ?? currentUser;
+  const canOpenOwnerWorkspace = hasRole(resolvedCurrentUser?.roles, 'Owner');
+  const ownerApprovedWithoutRole =
+    resolvedCurrentUser?.ownerStatus === 'approved' && !canOpenOwnerWorkspace;
+
+  if (!resolvedCurrentUser) {
+    return (
+      <section className="shell py-12">
+        <div className="rounded-[2rem] bg-white p-8 shadow-soft dark:bg-slate-900">
+          <Spinner />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="shell py-12">
       <div className="grid gap-6 lg:grid-cols-[.95fr_1.05fr]">
         <div className="rounded-[2rem] bg-white p-8 shadow-soft dark:bg-slate-900">
           <p className="section-kicker">TAI KHOAN</p>
-          <h1 className="mt-2 text-4xl font-bold">{currentUser.fullName}</h1>
-          <p className="mt-2 text-slate-500">{currentUser.email}</p>
+          <h1 className="mt-2 text-4xl font-bold">{resolvedCurrentUser.fullName}</h1>
+          <p className="mt-2 text-slate-500">{resolvedCurrentUser.email}</p>
 
           <div className="mt-6 grid gap-3">
             <div className="rounded-2xl bg-slate-100 p-4 dark:bg-slate-800">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-coral">Roles</p>
-              <p className="mt-1 font-semibold">{currentUser.roles.join(', ')}</p>
+              <p className="mt-1 font-semibold">{resolvedCurrentUser.roles.join(', ')}</p>
             </div>
             <div className="rounded-2xl bg-slate-100 p-4 dark:bg-slate-800">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-coral">Owner status</p>
               <div className="mt-2">
-                <StatusPill status={currentUser.ownerStatus} />
+                <StatusPill status={resolvedCurrentUser.ownerStatus} />
               </div>
             </div>
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            {currentUser.roles.includes('OWNER') ? (
+            {canOpenOwnerWorkspace ? (
               <Link className="btn-primary" to="/owner">
                 Workspace owner <ArrowRight size={18} />
               </Link>
@@ -1226,63 +1279,96 @@ function AccountPage() {
         </div>
 
         <div className="rounded-[2rem] bg-white p-8 shadow-soft dark:bg-slate-900">
-          <p className="section-kicker">REGISTER OWNER</p>
-          <h2 className="mt-2 text-3xl font-bold">Gui yeu cau owner</h2>
-          <p className="mt-2 text-slate-500">
-            FE nay da noi thang vao `POST /api/v1/auth/register-owner`. Khi duoc approve, tai khoan se co role `OWNER`.
-          </p>
-
-          <form
-            className="mt-8 grid gap-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              registerOwnerMutation.mutate(ownerForm);
-            }}
-          >
-            <Field label="Ten co so">
-              <TextInput
-                value={ownerForm.businessName}
-                onChange={(event) => setOwnerForm((current) => ({ ...current, businessName: event.target.value }))}
-                required
-              />
-            </Field>
-            <Field label="Dia chi kinh doanh">
-              <TextInput
-                value={ownerForm.businessAddress}
-                onChange={(event) => setOwnerForm((current) => ({ ...current, businessAddress: event.target.value }))}
-                required
-              />
-            </Field>
-            <Field label="So dien thoai">
-              <TextInput
-                value={ownerForm.phoneNumber}
-                onChange={(event) => setOwnerForm((current) => ({ ...current, phoneNumber: event.target.value }))}
-                required
-              />
-            </Field>
-            <Field label="Mo ta">
-              <TextArea
-                value={ownerForm.description}
-                onChange={(event) => setOwnerForm((current) => ({ ...current, description: event.target.value }))}
-                placeholder="Mo ta ngan ve co so cua ban"
-              />
-            </Field>
-
-            {registerOwnerMutation.error ? (
-              <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {(registerOwnerMutation.error as Error).message}
+          {canOpenOwnerWorkspace ? (
+            <>
+              <p className="section-kicker">OWNER DA DUOC DUYET</p>
+              <h2 className="mt-2 text-3xl font-bold">Tai khoan nay da la owner</h2>
+              <p className="mt-2 text-slate-500">
+                Admin da xac nhan quyen owner cho tai khoan nay. Ban khong can gui lai form dang ky.
+              </p>
+              <div className="mt-6 rounded-2xl bg-emerald-50 p-5 text-emerald-800">
+                <p className="font-bold">Trang quan ly owner da san sang.</p>
+                <p className="mt-1 text-sm">Ban co the vao workspace owner de xem dia diem, luot xem, luot nghe audio va luot quet QR.</p>
               </div>
-            ) : null}
+              <div className="mt-6">
+                <Link className="btn-primary" to="/owner">
+                  Mo workspace owner <ArrowRight size={18} />
+                </Link>
+              </div>
+            </>
+          ) : ownerApprovedWithoutRole ? (
+            <>
+              <p className="section-kicker">OWNER CHUA SAN SANG</p>
+              <h2 className="mt-2 text-3xl font-bold">Tai khoan nay chua co quyen owner de vao workspace</h2>
+              <p className="mt-2 text-slate-500">
+                He thong dang ghi nhan trang thai owner da duoc duyet, nhung tai khoan hien tai chua co role `OWNER` de mo trang quan ly owner.
+              </p>
+              <div className="mt-6 rounded-2xl bg-amber-50 p-5 text-amber-900">
+                <p className="font-bold">Neu day la tai khoan owner vua duoc duyet:</p>
+                <p className="mt-1 text-sm">Hay dang xuat dang nhap lai. Neu van khong vao duoc, admin can kiem tra role `OWNER` tren tai khoan nay.</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="section-kicker">REGISTER OWNER</p>
+              <h2 className="mt-2 text-3xl font-bold">Gui yeu cau owner</h2>
+              <p className="mt-2 text-slate-500">
+                FE nay da noi thang vao `POST /api/v1/auth/register-owner`. Khi duoc approve, tai khoan se co role `OWNER`.
+              </p>
 
-            <button className="btn-primary justify-center" disabled={registerOwnerMutation.isPending}>
-              {registerOwnerMutation.isPending ? (
-                <LoaderCircle className="animate-spin" size={18} />
-              ) : (
-                <ShieldCheck size={18} />
-              )}
-              Gui yeu cau owner
-            </button>
-          </form>
+              <form
+                className="mt-8 grid gap-4"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  registerOwnerMutation.mutate(ownerForm);
+                }}
+              >
+                <Field label="Ten co so">
+                  <TextInput
+                    value={ownerForm.businessName}
+                    onChange={(event) => setOwnerForm((current) => ({ ...current, businessName: event.target.value }))}
+                    required
+                  />
+                </Field>
+                <Field label="Dia chi kinh doanh">
+                  <TextInput
+                    value={ownerForm.businessAddress}
+                    onChange={(event) => setOwnerForm((current) => ({ ...current, businessAddress: event.target.value }))}
+                    required
+                  />
+                </Field>
+                <Field label="So dien thoai">
+                  <TextInput
+                    value={ownerForm.phoneNumber}
+                    onChange={(event) => setOwnerForm((current) => ({ ...current, phoneNumber: event.target.value }))}
+                    required
+                  />
+                </Field>
+                <Field label="Mo ta">
+                  <TextArea
+                    value={ownerForm.description}
+                    onChange={(event) => setOwnerForm((current) => ({ ...current, description: event.target.value }))}
+                    placeholder="Mo ta ngan ve co so cua ban"
+                  />
+                </Field>
+
+                {registerOwnerMutation.error ? (
+                  <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {(registerOwnerMutation.error as Error).message}
+                  </div>
+                ) : null}
+
+                <button className="btn-primary justify-center" disabled={registerOwnerMutation.isPending}>
+                  {registerOwnerMutation.isPending ? (
+                    <LoaderCircle className="animate-spin" size={18} />
+                  ) : (
+                    <ShieldCheck size={18} />
+                  )}
+                  Gui yeu cau owner
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </section>

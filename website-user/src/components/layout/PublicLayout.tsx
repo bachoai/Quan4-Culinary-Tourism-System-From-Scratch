@@ -16,6 +16,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom';
 import { healthApi } from '../../api/healthApi';
 import { useAppStore } from '../../store/appStore';
 import type { Lang } from '../../types/responses';
+import { hasRole } from '../../utils/auth';
 
 const baseNav = [
   ['/', 'Trang chu'],
@@ -45,7 +46,7 @@ export function PublicLayout() {
     retry: false,
   });
 
-  const nav = currentUser?.roles.includes('OWNER')
+  const nav = hasRole(currentUser?.roles, 'Owner')
     ? [...baseNav, ['/owner', 'Owner']]
     : baseNav;
 
@@ -213,7 +214,7 @@ export function PublicLayout() {
             {isAuthenticated ? (
               <p>
                 Xin chao {currentUser?.fullName || 'ban'}.
-                {currentUser?.roles.includes('OWNER') ? ' Ban dang co quyen owner.' : ' Ban dang dung che do user.'}
+                {hasRole(currentUser?.roles, 'Owner') ? ' Ban dang co quyen owner.' : ' Ban dang dung che do user.'}
               </p>
             ) : (
               <p>Dang nhap de gui dang ky owner va quan ly submission cua ban.</p>

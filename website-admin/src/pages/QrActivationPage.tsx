@@ -125,16 +125,74 @@ function downloadTextFile(fileName: string, content: string, contentType: string
   URL.revokeObjectURL(url);
 }
 
+function toFileSafeName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'qr-code';
+}
+
+function loadImage(url: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Failed to load QR image.'));
+    image.src = url;
+  });
+}
+
+async function downloadSvgAsPng(svgElement: SVGSVGElement, fileName: string) {
+  const serializer = new XMLSerializer();
+  let source = serializer.serializeToString(svgElement);
+
+  if (!source.includes('xmlns="http://www.w3.org/2000/svg"')) {
+    source = source.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+
+  const svgBlob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+  const svgUrl = URL.createObjectURL(svgBlob);
+
+  try {
+    const image = await loadImage(svgUrl);
+    const viewBox = svgElement.viewBox.baseVal;
+    const width = viewBox?.width || Number(svgElement.getAttribute('width')) || image.width || 256;
+    const height = viewBox?.height || Number(svgElement.getAttribute('height')) || image.height || 256;
+    const canvas = document.createElement('canvas');
+    const scale = 4;
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+
+    const context = canvas.getContext('2d');
+    if (!context) {
+      throw new Error('Canvas context is unavailable.');
+    }
+
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    const anchor = document.createElement('a');
+    anchor.href = canvas.toDataURL('image/png');
+    anchor.download = fileName;
+    anchor.click();
+  } finally {
+    URL.revokeObjectURL(svgUrl);
+  }
+}
+
 export function QrActivationPage() {
   const { t } = useI18n();
   const { notification } = App.useApp();
   const queryClient = useQueryClient();
   const previewRef = useRef<HTMLDivElement | null>(null);
+  const qrImageRef = useRef<HTMLDivElement | null>(null);
   const [keyword, setKeyword] = useState('');
   const [zoneFilter, setZoneFilter] = useState(ALL_ZONES);
   const [activeOnly, setActiveOnly] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const [editing, setEditing] = useState<QrActivationResponse | null>(null);
+  const [previewingQr, setPreviewingQr] = useState<QrActivationResponse | null>(null);
   const [open, setOpen] = useState(false);
 
   const query = useQuery({ queryKey: ['qr-activations'], queryFn: qrActivationApi.getAll });
@@ -267,6 +325,26 @@ export function QrActivationPage() {
     notification.success({ message: t('qr_exported_csv') });
   };
 
+  const handleDownloadQrImage = async () => {
+    if (!previewingQr || !qrImageRef.current) {
+      notification.warning({ message: t('qr_image_unavailable') });
+      return;
+    }
+
+    const svgElement = qrImageRef.current.querySelector('svg');
+    if (!svgElement) {
+      notification.warning({ message: t('qr_image_unavailable') });
+      return;
+    }
+
+    try {
+      await downloadSvgAsPng(svgElement, `${toFileSafeName(`${previewingQr.code}-${previewingQr.title}`)}.png`);
+      notification.success({ message: t('qr_image_downloaded') });
+    } catch {
+      notification.error({ message: t('qr_image_download_failed') });
+    }
+  };
+
   if (query.isLoading) {
     return <LoadingScreen />;
   }
@@ -356,6 +434,9 @@ export function QrActivationPage() {
               title: t('actions'),
               render: (_, record) => (
                 <Space>
+                  <Button icon={<Download size={16} />} onClick={() => setPreviewingQr(record)}>
+                    {t('qr_preview_image')}
+                  </Button>
                   <Button onClick={() => { setEditing(record); setOpen(true); }}>{t('edit')}</Button>
                   <ConfirmDeleteButton onConfirm={() => deleteMutation.mutate(record.id)} loading={deleteMutation.isPending} />
                 </Space>
@@ -450,6 +531,44 @@ export function QrActivationPage() {
             await createMutation.mutateAsync(values);
           }}
         />
+      </Modal>
+
+      <Modal
+        open={Boolean(previewingQr)}
+        onCancel={() => setPreviewingQr(null)}
+        title={t('qr_preview_image_title')}
+        destroyOnClose
+        footer={(
+          <Space>
+            <Button onClick={() => setPreviewingQr(null)}>Dong</Button>
+            <Button type="primary" icon={<Download size={16} />} onClick={() => void handleDownloadQrImage()}>
+              {t('qr_download_image')}
+            </Button>
+          </Space>
+        )}
+      >
+        {previewingQr ? (
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <div
+              ref={qrImageRef}
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                padding: 20,
+                borderRadius: 18,
+                background: 'linear-gradient(180deg, rgba(248,250,252,1) 0%, rgba(241,245,249,1) 100%)',
+              }}
+            >
+              <QRCode value={previewingQr.deepLink} type="svg" size={240} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <Typography.Text strong>{previewingQr.title}</Typography.Text>
+              <Typography.Text>{previewingQr.stopZone} | {previewingQr.code}</Typography.Text>
+              <Typography.Text type="secondary">{previewingQr.stopAddress || previewingQr.poiAddress || '--'}</Typography.Text>
+              <Typography.Text type="secondary" style={{ wordBreak: 'break-all' }}>{previewingQr.deepLink}</Typography.Text>
+            </div>
+          </Space>
+        ) : null}
       </Modal>
     </PageContainer>
   );

@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -97,6 +98,7 @@ builder.Services.AddSingleton<DistanceHelper>();
 builder.Services.AddScoped<FileUploadHelper>();
 builder.Services.AddSingleton<ClaimsHelper>();
 builder.Services.AddSingleton<DbSeeder>();
+builder.Services.AddScoped<IClaimsTransformation, UserRoleClaimsTransformation>();
 
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<RoleRepository>();
