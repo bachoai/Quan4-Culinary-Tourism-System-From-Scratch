@@ -1,12 +1,10 @@
 import { Pause, Play, Volume2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { normalizeMediaUrl } from '../../utils/media';
 
 type AudioPlayerProps = {
-  audioUrl?: string;
   text?: string;
   lang: string;
-  onPlay: (mode: 'audio' | 'tts') => void;
+  onPlay: () => void;
   autoplay?: boolean;
 };
 
@@ -18,60 +16,86 @@ const narrationLangMap: Record<string, string> = {
   ko: 'ko-KR',
 };
 
-function resolveVoice(lang: string) {
-  const preferredLang = narrationLangMap[lang] ?? lang;
-  const voices = window.speechSynthesis.getVoices();
+function resolveVoice(lang: string, voices: SpeechSynthesisVoice[]) {
+  const preferredLang = (narrationLangMap[lang] ?? lang).toLowerCase();
+  const baseLang = preferredLang.split('-')[0];
 
   return (
-    voices.find((voice) => voice.lang.toLowerCase() === preferredLang.toLowerCase()) ??
-    voices.find((voice) => voice.lang.toLowerCase().startsWith(lang.toLowerCase())) ??
+    voices.find((voice) => voice.lang.toLowerCase() === preferredLang) ??
+    voices.find((voice) => voice.lang.toLowerCase().startsWith(`${baseLang}-`)) ??
+    voices.find((voice) => voice.lang.toLowerCase() === baseLang) ??
     null
   );
 }
 
-export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false }: AudioPlayerProps) {
-  const audio = useRef<HTMLAudioElement>(null);
+export function AudioPlayer({ text, lang, onPlay, autoplay = false }: AudioPlayerProps) {
   const autoStarted = useRef(false);
   const utterance = useRef<SpeechSynthesisUtterance | null>(null);
   const [playing, setPlaying] = useState(false);
-  const [mode, setMode] = useState<'audio' | 'tts' | null>(null);
+  const [ttsVoice, setTtsVoice] = useState<SpeechSynthesisVoice | null>(null);
+  const [voiceChecked, setVoiceChecked] = useState(false);
   const narrationText = text?.trim() || '';
-  const hasTts = Boolean(narrationText) && typeof window !== 'undefined' && 'speechSynthesis' in window;
-  const hasAudio = Boolean(audioUrl);
+  const hasSpeechSynthesis = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  const hasNarration = Boolean(narrationText);
+  const hasVietnameseVoice = Boolean(ttsVoice);
+  const canUseTts = hasNarration && hasSpeechSynthesis && hasVietnameseVoice;
+
+  useEffect(() => {
+    if (!hasSpeechSynthesis) {
+      setTtsVoice(null);
+      setVoiceChecked(true);
+      return;
+    }
+
+    const syncVoice = () => {
+      const nextVoice = resolveVoice(lang, window.speechSynthesis.getVoices());
+      setTtsVoice(nextVoice);
+      setVoiceChecked(true);
+    };
+
+    syncVoice();
+    window.speechSynthesis.addEventListener('voiceschanged', syncVoice);
+
+    return () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', syncVoice);
+    };
+  }, [hasSpeechSynthesis, lang]);
 
   useEffect(() => {
     autoStarted.current = false;
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    if (hasSpeechSynthesis) {
       window.speechSynthesis.cancel();
     }
 
-    if (audio.current) {
-      audio.current.pause();
-      audio.current.currentTime = 0;
-    }
-
     setPlaying(false);
-    setMode(null);
-  }, [audioUrl, narrationText, lang]);
+  }, [narrationText, hasSpeechSynthesis, lang]);
 
   useEffect(() => {
     return () => {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      if (hasSpeechSynthesis) {
         window.speechSynthesis.cancel();
       }
     };
-  }, []);
+  }, [hasSpeechSynthesis]);
 
   useEffect(() => {
-    if (!autoplay || autoStarted.current || (!hasTts && !hasAudio)) {
+    if (!autoplay || autoStarted.current) {
+      return;
+    }
+
+    if (!voiceChecked && hasNarration && hasSpeechSynthesis) {
+      return;
+    }
+
+    if (!canUseTts) {
       return;
     }
 
     autoStarted.current = true;
     void startNarration();
-  }, [autoplay, hasAudio, hasTts, lang, narrationText]);
+  }, [autoplay, canUseTts, hasNarration, hasSpeechSynthesis, voiceChecked]);
 
-  if (!hasTts && !hasAudio) {
+  if (!hasNarration) {
     return (
       <div className="rounded-2xl bg-slate-100 p-4 text-sm text-slate-500 dark:bg-slate-800">
         Dia diem nay chua co noi dung thuyet minh.
@@ -79,34 +103,32 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false }: 
     );
   }
 
-  const stopNarration = () => {
-    if (audio.current) {
-      audio.current.pause();
-      audio.current.currentTime = 0;
-    }
+  if (!hasSpeechSynthesis) {
+    return (
+      <div className="rounded-2xl bg-slate-100 p-4 text-sm text-slate-500 dark:bg-slate-800">
+        Trinh duyet nay khong ho tro doc thuyet minh.
+      </div>
+    );
+  }
 
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  if (voiceChecked && !hasVietnameseVoice) {
+    return (
+      <div className="rounded-2xl bg-slate-100 p-4 text-sm text-slate-500 dark:bg-slate-800">
+        May nay chua co giong doc tieng Viet, nen web khong phat de tranh doc sai ngon ngu.
+      </div>
+    );
+  }
+
+  const stopNarration = () => {
+    if (hasSpeechSynthesis) {
       window.speechSynthesis.cancel();
     }
 
     setPlaying(false);
-    setMode(null);
-  };
-
-  const startAudio = async () => {
-    if (!audio.current || !hasAudio) {
-      return;
-    }
-
-    await audio.current.play();
-    setMode('audio');
-    setPlaying(true);
-    onPlay('audio');
   };
 
   const startTts = async () => {
-    if (!hasTts || typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      await startAudio();
+    if (!canUseTts || !hasSpeechSynthesis) {
       return;
     }
 
@@ -114,22 +136,18 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false }: 
 
     const nextUtterance = new SpeechSynthesisUtterance(narrationText);
     nextUtterance.lang = narrationLangMap[lang] ?? lang;
-    nextUtterance.voice = resolveVoice(lang);
+    if (ttsVoice) {
+      nextUtterance.voice = ttsVoice;
+    }
     nextUtterance.onstart = () => {
-      setMode('tts');
       setPlaying(true);
-      onPlay('tts');
+      onPlay();
     };
     nextUtterance.onend = () => {
       setPlaying(false);
-      setMode(null);
     };
     nextUtterance.onerror = () => {
       setPlaying(false);
-      setMode(null);
-      if (hasAudio) {
-        void startAudio();
-      }
     };
 
     utterance.current = nextUtterance;
@@ -137,12 +155,7 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false }: 
   };
 
   async function startNarration() {
-    if (hasTts) {
-      await startTts();
-      return;
-    }
-
-    await startAudio();
+    await startTts();
   }
 
   const toggle = async () => {
@@ -166,24 +179,14 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false }: 
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2 text-sm font-bold">
           <Volume2 size={16} />
-          {mode === 'tts' || hasTts ? 'Thuyet minh bang giong doc' : 'Audio thuyet minh'}
+          Thuyet minh bang giong doc
         </p>
         <p className="text-xs text-slate-500">
-          {hasTts
-            ? 'Doc tu kich ban thuyet minh hoac phan mo ta da chinh sua.'
-            : 'Lang nghe cau chuyen cua dia diem nay.'}
+          {voiceChecked
+            ? 'Doc tu kich ban thuyet minh bang giong tieng Viet cua trinh duyet.'
+            : 'Dang kiem tra giong doc tieng Viet tren trinh duyet.'}
         </p>
       </div>
-
-      <audio
-        ref={audio}
-        src={normalizeMediaUrl(audioUrl)}
-        onPause={() => setPlaying(false)}
-        onEnded={() => {
-          setPlaying(false);
-          setMode(null);
-        }}
-      />
     </div>
   );
 }

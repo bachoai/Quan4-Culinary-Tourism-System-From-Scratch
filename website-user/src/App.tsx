@@ -37,7 +37,6 @@ import { ownerApi } from './api/ownerApi';
 import { poiApi } from './api/poiApi';
 import { qrApi } from './api/qrApi';
 import { tourApi } from './api/tourApi';
-import { audioApi } from './api/audioApi';
 import { PublicLayout } from './components/layout/PublicLayout';
 import { PoiCard } from './components/common/PoiCard';
 import { AudioPlayer } from './components/common/AudioPlayer';
@@ -455,6 +454,7 @@ function Detail() {
   const { id = '' } = useParams();
   const location = useLocation();
   const { lang } = useAppStore();
+  const narrationLang: Lang = 'vi';
   const queryParams = new URLSearchParams(location.search);
   const autoplay = queryParams.get('autoplay');
   const source = queryParams.get('source');
@@ -462,10 +462,10 @@ function Detail() {
     queryKey: ['detail', id, lang],
     queryFn: () => poiApi.detail(id, lang),
   });
-  const { data: audio } = useQuery({
-    queryKey: ['audio', id, lang],
-    queryFn: () => audioApi.byPoi(id, lang),
-    enabled: Boolean(id),
+  const { data: narrationPoi } = useQuery({
+    queryKey: ['detail-narration', id, narrationLang],
+    queryFn: () => poiApi.detail(id, narrationLang),
+    enabled: Boolean(id) && lang !== narrationLang,
   });
 
   useEffect(() => {
@@ -487,6 +487,10 @@ function Detail() {
   }
 
   const mapUrl = `https://www.google.com/maps/dir/?api=1&destination=${poi.latitude},${poi.longitude}`;
+  const narrationText =
+    narrationLang === lang
+      ? (poi.ttsScript || poi.description)
+      : (narrationPoi?.ttsScript || narrationPoi?.description || '');
 
   return (
     <section className="shell py-8">
@@ -531,16 +535,15 @@ function Detail() {
 
           <div className="mt-6">
             <AudioPlayer
-              audioUrl={audio?.audioUrl}
-              text={poi.ttsScript || poi.description}
-              lang={lang}
+              text={narrationText}
+              lang={narrationLang}
               autoplay={Boolean(autoplay)}
-              onPlay={(mode) =>
+              onPlay={() =>
                 track(
-                  mode === 'tts' ? 'tts_played' : 'audio_played',
-                  lang,
+                  'tts_played',
+                  narrationLang,
                   poi.id,
-                  autoplay ? { autoplay, mode } : { mode },
+                  autoplay ? { autoplay, mode: 'tts' } : { mode: 'tts' },
                 )
               }
             />

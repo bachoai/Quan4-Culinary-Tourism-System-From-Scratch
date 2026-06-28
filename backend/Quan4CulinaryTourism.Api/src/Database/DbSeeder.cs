@@ -246,27 +246,29 @@ public class DbSeeder
     private async Task BackfillPoiDescriptionsAsync(CancellationToken cancellationToken)
     {
         var seedMap = PoiSeeds.ToDictionary(seed => seed.Name, StringComparer.OrdinalIgnoreCase);
-        var pois = await _context.Pois.Find(x => seedMap.Keys.Contains(x.Name)).ToListAsync(cancellationToken);
+        var pois = await _context.Pois.Find(FilterDefinition<Poi>.Empty).ToListAsync(cancellationToken);
 
         foreach (var poi in pois)
         {
-            if (!seedMap.TryGetValue(poi.Name, out var seed))
-            {
-                continue;
-            }
+            seedMap.TryGetValue(poi.Name, out var seed);
 
             var shouldUpdate = false;
 
-            if (string.IsNullOrWhiteSpace(poi.Description))
+            if (string.IsNullOrWhiteSpace(poi.Description) && !string.IsNullOrWhiteSpace(seed?.Description))
             {
-                poi.Description = seed.Description;
+                poi.Description = seed!.Description;
                 shouldUpdate = true;
             }
 
-            if (string.IsNullOrWhiteSpace(poi.TtsScript))
+            var narrationSource = string.IsNullOrWhiteSpace(poi.Description) ? seed?.Description : poi.Description;
+            if (string.IsNullOrWhiteSpace(poi.TtsScript)
+                || poi.TtsScript.StartsWith("Gioi thieu nhanh ve ", StringComparison.Ordinal))
             {
-                poi.TtsScript = BuildVietnameseNarrationScript(seed.Name, seed.Description);
-                shouldUpdate = true;
+                if (!string.IsNullOrWhiteSpace(narrationSource))
+                {
+                    poi.TtsScript = BuildVietnameseNarrationScript(poi.Name, narrationSource);
+                    shouldUpdate = true;
+                }
             }
 
             if (!shouldUpdate)
@@ -890,7 +892,7 @@ public class DbSeeder
         $"Welcome to {poiName}, one of the notable food stops in District 4.";
 
     private static string BuildVietnameseNarrationScript(string poiName, string description) =>
-        $"Gioi thieu nhanh ve {poiName}: {description}";
+        $"Giới thiệu nhanh về {poiName}: {description}";
 
     private static Dictionary<string, object> BuildAnalyticsMetadata(string eventName, int index)
     {
