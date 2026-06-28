@@ -983,6 +983,10 @@ function QrPage() {
     let disposed = false;
 
     async function startScanner() {
+      if (codeFromQuery) {
+        return;
+      }
+
       if (!navigator.mediaDevices?.getUserMedia) {
         setStatusText(ui.qr.cameraUnsupported);
         return;
@@ -1026,7 +1030,7 @@ function QrPage() {
           });
       }
     };
-  }, []);
+  }, [codeFromQuery, ui.qr.cameraFailed, ui.qr.cameraReady, ui.qr.cameraUnsupported]);
 
   return (
     <section className="shell py-12">

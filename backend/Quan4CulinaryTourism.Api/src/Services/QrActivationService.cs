@@ -147,13 +147,13 @@ public class QrActivationService
             SortOrder = entity.SortOrder,
             Description = entity.Description,
             ScanMode = entity.ScanMode,
-            DeepLink = BuildDeepLink(entity.Code, publicSiteSettings),
+            DeepLink = BuildDeepLink(entity, publicSiteSettings),
             IsActive = entity.IsActive,
             UpdatedAt = entity.UpdatedAt
         };
     }
 
-    private static string BuildDeepLink(string code, PublicSiteSettings settings)
+    private static string BuildDeepLink(QrActivation entity, PublicSiteSettings settings)
     {
         var baseUrl = string.IsNullOrWhiteSpace(settings.BaseUrl)
             ? "http://localhost:5173"
@@ -169,7 +169,7 @@ public class QrActivationService
         {
             Path = siteUri.AbsolutePath,
             Query = string.Empty,
-            Fragment = $"/qr?code={Uri.EscapeDataString(code)}"
+            Fragment = $"/poi/{Uri.EscapeDataString(entity.PoiId)}?autoplay={Uri.EscapeDataString(entity.ScanMode)}&source=qr&code={Uri.EscapeDataString(entity.Code)}"
         };
 
         return builder.Uri.ToString();
