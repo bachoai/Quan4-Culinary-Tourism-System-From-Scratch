@@ -1,4 +1,4 @@
-import { Layout, Menu } from 'antd';
+import { Drawer, Layout, Menu } from 'antd';
 import {
   AudioLines,
   ChartColumn,
@@ -19,9 +19,12 @@ import { useI18n } from '../../i18n/provider';
 
 interface SidebarProps {
   collapsed: boolean;
+  mobile?: boolean;
+  open?: boolean;
+  onClose?: () => void;
 }
 
-export function Sidebar({ collapsed }: SidebarProps) {
+export function Sidebar({ collapsed, mobile = false, open = false, onClose }: SidebarProps) {
   const { t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
@@ -41,9 +44,8 @@ export function Sidebar({ collapsed }: SidebarProps) {
     { key: '/admin/maps', icon: <Map size={16} />, label: t('sidebar_maps') },
   ];
   const selectedKey = items.find((item) => location.pathname.startsWith(item.key))?.key ?? '/admin/dashboard';
-
-  return (
-    <Layout.Sider width={272} collapsedWidth={96} collapsible trigger={null} collapsed={collapsed} className="app-sider">
+  const sidebarContent = (
+    <>
       <div className="brand-block">
         <div className="brand-badge">Q4</div>
         {!collapsed ? (
@@ -53,7 +55,39 @@ export function Sidebar({ collapsed }: SidebarProps) {
           </div>
         ) : null}
       </div>
-      <Menu mode="inline" selectedKeys={[selectedKey]} items={items} onClick={({ key }) => navigate(key)} className="sidebar-menu" />
+      <Menu
+        mode="inline"
+        selectedKeys={[selectedKey]}
+        items={items}
+        onClick={({ key }) => {
+          navigate(key);
+          onClose?.();
+        }}
+        className="sidebar-menu"
+      />
+    </>
+  );
+
+  if (mobile) {
+    return (
+      <Drawer
+        placement="left"
+        width={288}
+        open={open}
+        onClose={onClose}
+        closable={false}
+        className="sidebar-drawer"
+        rootClassName="sidebar-drawer-root"
+        styles={{ body: { padding: 0 } }}
+      >
+        <div className="app-sider app-sider-mobile">{sidebarContent}</div>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Layout.Sider width={272} collapsedWidth={96} collapsible trigger={null} collapsed={collapsed} className="app-sider">
+      {sidebarContent}
     </Layout.Sider>
   );
 }

@@ -167,6 +167,9 @@ public class AdminDashboardResponse
     public long PendingSubmissions { get; set; }
     public long TotalPoiViews { get; set; }
     public long TotalAudioPlays { get; set; }
+    public long ActiveVisitorsNow { get; set; }
+    public long AnonymousVisitorsNow { get; set; }
+    public int ActiveWindowSeconds { get; set; }
 }
 
 public class PoiLocalizationResponse
@@ -210,6 +213,28 @@ public class AnalyticsSummaryResponse
     public List<TopPoiAnalyticsResponse> TopPoiAudioPlays { get; set; } = [];
     public List<AnalyticsHeatmapPointResponse> HeatmapPoints { get; set; } = [];
     public List<AnalyticsRouteTraceResponse> RecentRouteTraces { get; set; } = [];
+    public AnalyticsRealtimeSnapshotResponse RealtimeSnapshot { get; set; } = new();
+}
+
+public class AnalyticsRealtimeSnapshotResponse
+{
+    public long ActiveVisitorCount { get; set; }
+    public long AnonymousVisitorCount { get; set; }
+    public long AuthenticatedVisitorCount { get; set; }
+    public int ActiveWindowSeconds { get; set; }
+    public List<AnalyticsActiveVisitorResponse> ActiveVisitors { get; set; } = [];
+}
+
+public class AnalyticsActiveVisitorResponse
+{
+    public string VisitorKey { get; set; } = string.Empty;
+    public string? AnonymousId { get; set; }
+    public string? SessionId { get; set; }
+    public string? Lang { get; set; }
+    public string? Path { get; set; }
+    public string? PageTitle { get; set; }
+    public bool IsAuthenticated { get; set; }
+    public DateTime LastSeenAt { get; set; }
 }
 
 public class TopPoiAnalyticsResponse

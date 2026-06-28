@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Text;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -47,7 +47,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Nhap JWT theo dinh dang: Bearer {token}"
+        Description = "Nhập JWT theo định dạng: Bearer {token}"
     };
 
     options.AddSecurityDefinition("Bearer", bearerScheme);
@@ -165,3 +165,4 @@ using (var scope = app.Services.CreateScope())
 app.MapControllers();
 
 app.Run();
+

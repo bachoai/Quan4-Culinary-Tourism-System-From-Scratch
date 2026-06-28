@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 import type { AxiosError } from 'axios';
 import type { ApiResponse } from '../types/responses';
 
@@ -23,7 +23,7 @@ client.interceptors.request.use((config) => {
 
 function unwrap<T>(payload: ApiResponse<T>): T {
   if (!payload.success) {
-    throw new Error(payload.message || 'Khong the xu ly yeu cau');
+    throw new Error(payload.message || 'Không thể xử lý yêu cầu');
   }
 
   return payload.data;
@@ -34,7 +34,7 @@ function toError(error: unknown): Error {
   const message =
     axiosError.response?.data?.message ||
     axiosError.message ||
-    'Khong the ket noi den may chu';
+    'Không thể kết nối đến máy chủ';
 
   return new Error(message);
 }
@@ -74,3 +74,4 @@ export async function deleteData<T>(url: string): Promise<T> {
     throw toError(error);
   }
 }
+

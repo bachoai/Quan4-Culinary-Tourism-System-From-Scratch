@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using Quan4CulinaryTourism.Api.Helpers;
 using Quan4CulinaryTourism.Api.Models;
@@ -445,17 +445,17 @@ public class DbSeeder
                 PoiId = index % 2 == 0 ? linkedPoi.Id : null,
                 SubmissionType = SharedConstants.SubmissionTypes[index % SharedConstants.SubmissionTypes.Length],
                 PoiName = poiName,
-                Description = $"Chu quan de xuat cap nhat noi dung, hinh anh va thong tin thu hut khach cho diem {OwnerSubmissionAreas[index % OwnerSubmissionAreas.Length]}.",
+                Description = $"Chủ quán đề xuất cập nhật nội dung, hình ảnh và thông tin thu hút khách cho điểm {OwnerSubmissionAreas[index % OwnerSubmissionAreas.Length]}.",
                 CategoryId = category.Id,
                 Location = GeoLocationFactory.Create(106.7005 + index * 0.00033, 10.7520 + index * 0.00024),
                 Address = $"{20 + index} {OwnerSubmissionStreets[index % OwnerSubmissionStreets.Length]}",
                 Ward = $"Phuong {(index % 4) + 1}",
-                District = "Quận 4",
-                City = "TP. Hồ Chí Minh",
+                District = "Quáº­n 4",
+                City = "TP. Há»“ ChĂ­ Minh",
                 PriceRange = SharedConstants.PriceRanges[index % SharedConstants.PriceRanges.Length],
                 Priority = 20 - index,
                 MapUrl = $"https://www.google.com/maps/search/?api=1&query={10.7520 + index * 0.00024},{106.7005 + index * 0.00033}",
-                TtsScript = $"Noi dung de xuat cho diem am thuc {OwnerSubmissionAreas[index % OwnerSubmissionAreas.Length]}.",
+                TtsScript = $"Nội dung đề xuất cho điểm ẩm thực {OwnerSubmissionAreas[index % OwnerSubmissionAreas.Length]}.",
                 GeofenceRadiusMeters = 90 + index * 5,
                 AutoNarrationEnabled = index % 4 != 0,
                 Images =
@@ -463,7 +463,7 @@ public class DbSeeder
                     new PoiImage
                     {
                         Url = PoiSeeds[index % PoiSeeds.Length].ImageUrl,
-                        Caption = "Anh de xuat tu chu quan",
+                        Caption = "Ảnh đề xuất từ chủ quán",
                         IsThumbnail = true
                     }
                 ],
@@ -479,7 +479,7 @@ public class DbSeeder
                 Status = status,
                 AdminNote = status switch
                 {
-                    SharedConstants.SubmissionApproved => "Da thong qua de cho cap nhat vao kho du lieu demo.",
+                    SharedConstants.SubmissionApproved => "Đã thông qua để chờ cập nhật vào kho dữ liệu demo.",
                     SharedConstants.SubmissionRejected => "Can bo sung hinh anh va thong tin gia.",
                     _ => null
                 },
@@ -729,8 +729,8 @@ public class DbSeeder
                 StopAddress = QrAddresses[index],
                 SortOrder = (index % 4) + 1,
                 Description = index % 2 == 0
-                    ? "Quet la mo ngay noi dung thuyet minh tai diem dung."
-                    : "Ma QR danh cho khach du lich muon nghe audio nhanh.",
+                    ? "Quét là mở ngay nội dung thuyết minh tại điểm dừng."
+                    : "Mã QR dành cho khách du lịch muốn nghe audio nhanh.",
                 ScanMode = SharedConstants.QrScanModes[index % SharedConstants.QrScanModes.Length],
                 IsActive = true,
                 UpdatedAt = DateTime.UtcNow.AddDays(-(index % 6))
@@ -798,8 +798,8 @@ public class DbSeeder
         Location = GeoLocationFactory.Create(seed.Longitude, seed.Latitude),
         Address = seed.Address,
         Ward = seed.Ward,
-        District = "Quận 4",
-        City = "TP. Hồ Chí Minh",
+        District = "Quáº­n 4",
+        City = "TP. Há»“ ChĂ­ Minh",
         PriceRange = seed.PriceRange,
         Rating = seed.Rating,
         ReviewCount = seed.ReviewCount,
@@ -835,8 +835,8 @@ public class DbSeeder
         {
             return
             [
-                new OpeningHour { DayOfWeek = "Thứ Hai", OpenTime = "", CloseTime = "", IsClosed = true },
-                new OpeningHour { DayOfWeek = "Thứ Ba - Chủ Nhật", OpenTime = "09:30", CloseTime = "22:00" }
+                new OpeningHour { DayOfWeek = "Thá»© Hai", OpenTime = "", CloseTime = "", IsClosed = true },
+                new OpeningHour { DayOfWeek = "Thá»© Ba - Chá»§ Nháº­t", OpenTime = "09:30", CloseTime = "22:00" }
             ];
         }
 
@@ -844,14 +844,14 @@ public class DbSeeder
         {
             return
             [
-                new OpeningHour { DayOfWeek = "Thứ Hai - Thứ Sáu", OpenTime = "07:00", CloseTime = "21:30" },
-                new OpeningHour { DayOfWeek = "Thứ Bảy - Chủ Nhật", OpenTime = "08:00", CloseTime = "22:30" }
+                new OpeningHour { DayOfWeek = "Thá»© Hai - Thá»© SĂ¡u", OpenTime = "07:00", CloseTime = "21:30" },
+                new OpeningHour { DayOfWeek = "Thá»© Báº£y - Chá»§ Nháº­t", OpenTime = "08:00", CloseTime = "22:30" }
             ];
         }
 
         return
         [
-            new OpeningHour { DayOfWeek = "Thứ Hai - Chủ Nhật", OpenTime = "10:00", CloseTime = "22:30" }
+            new OpeningHour { DayOfWeek = "Thá»© Hai - Chá»§ Nháº­t", OpenTime = "10:00", CloseTime = "22:30" }
         ];
     }
 
@@ -962,14 +962,14 @@ public class DbSeeder
 
     private static readonly string[] SearchKeywords =
     [
-        "ốc",
-        "cơm tấm",
-        "bún",
-        "chè",
-        "cà phê",
-        "hải sản",
-        "tráng miệng",
-        "ăn đêm"
+        "á»‘c",
+        "cÆ¡m táº¥m",
+        "bĂºn",
+        "chĂ¨",
+        "cĂ  phĂª",
+        "háº£i sáº£n",
+        "trĂ¡ng miá»‡ng",
+        "Äƒn Ä‘Ăªm"
     ];
 
     private static readonly string[] SampleAudioUrls =
@@ -1004,12 +1004,12 @@ public class DbSeeder
 
     private static readonly string[] OwnerSubmissionStreets =
     [
-        "Vĩnh Khánh",
-        "Khánh Hội",
-        "Xóm Chiếu",
-        "Đoàn Văn Bơ",
-        "Tôn Đản",
-        "Hoàng Diệu"
+        "VÄ©nh KhĂ¡nh",
+        "KhĂ¡nh Há»™i",
+        "XĂ³m Chiáº¿u",
+        "ÄoĂ n VÄƒn BÆ¡",
+        "TĂ´n Äáº£n",
+        "HoĂ ng Diá»‡u"
     ];
 
     private static readonly string[] QrCodes =
@@ -1038,146 +1038,146 @@ public class DbSeeder
 
     private static readonly string[] QrTitles =
     [
-        "Trạm xe buýt Khánh Hội",
-        "Trạm xe buýt Vĩnh Hội",
-        "Trạm xe buýt Xóm Chiếu",
-        "Điểm dừng Vĩnh Khánh",
-        "Điểm dừng Đoàn Văn Bơ",
-        "Điểm dừng Tôn Đản",
-        "Điểm dừng Hoàng Diệu",
-        "Điểm dừng Kênh Tẻ",
-        "Điểm dừng Bến Vân Đồn",
-        "Trạm Khánh Hội hướng cầu",
-        "Điểm check-in Vĩnh Khánh",
-        "Điểm chợ Xóm Chiếu",
-        "Đoàn Văn Bơ giao lộ",
-        "Điểm xe buýt Tôn Đản",
-        "Hoàng Diệu khu ẩm thực",
-        "Bến Vân Đồn ven kênh",
-        "Trạm Vĩnh Hội hướng chợ",
-        "Phường 3 - cổng chợ",
-        "Phường 13 - khu ăn đêm",
-        "Điểm giới thiệu ẩm thực Quận 4"
+        "Tráº¡m xe buĂ½t KhĂ¡nh Há»™i",
+        "Tráº¡m xe buĂ½t VÄ©nh Há»™i",
+        "Tráº¡m xe buĂ½t XĂ³m Chiáº¿u",
+        "Äiá»ƒm dá»«ng VÄ©nh KhĂ¡nh",
+        "Äiá»ƒm dá»«ng ÄoĂ n VÄƒn BÆ¡",
+        "Äiá»ƒm dá»«ng TĂ´n Äáº£n",
+        "Äiá»ƒm dá»«ng HoĂ ng Diá»‡u",
+        "Äiá»ƒm dá»«ng KĂªnh Táº»",
+        "Äiá»ƒm dá»«ng Báº¿n VĂ¢n Äá»“n",
+        "Tráº¡m KhĂ¡nh Há»™i hÆ°á»›ng cáº§u",
+        "Äiá»ƒm check-in VÄ©nh KhĂ¡nh",
+        "Äiá»ƒm chá»£ XĂ³m Chiáº¿u",
+        "ÄoĂ n VÄƒn BÆ¡ giao lá»™",
+        "Äiá»ƒm xe buĂ½t TĂ´n Äáº£n",
+        "HoĂ ng Diá»‡u khu áº©m thá»±c",
+        "Báº¿n VĂ¢n Äá»“n ven kĂªnh",
+        "Tráº¡m VÄ©nh Há»™i hÆ°á»›ng chá»£",
+        "PhÆ°á»ng 3 - cá»•ng chá»£",
+        "PhÆ°á»ng 13 - khu Äƒn Ä‘Ăªm",
+        "Äiá»ƒm giá»›i thiá»‡u áº©m thá»±c Quáº­n 4"
     ];
 
     private static readonly string[] QrZones =
     [
-        "Khánh Hội",
-        "Vĩnh Hội",
-        "Xóm Chiếu",
-        "Vĩnh Khánh",
-        "Đoàn Văn Bơ",
-        "Tôn Đản",
-        "Hoàng Diệu",
-        "Kênh Tẻ",
-        "Bến Vân Đồn",
-        "Khánh Hội",
-        "Vĩnh Khánh",
-        "Xóm Chiếu",
-        "Đoàn Văn Bơ",
-        "Tôn Đản",
-        "Hoàng Diệu",
-        "Bến Vân Đồn",
-        "Vĩnh Hội",
-        "Phường 3",
-        "Phường 13",
-        "Trung tâm Quận 4"
+        "KhĂ¡nh Há»™i",
+        "VÄ©nh Há»™i",
+        "XĂ³m Chiáº¿u",
+        "VÄ©nh KhĂ¡nh",
+        "ÄoĂ n VÄƒn BÆ¡",
+        "TĂ´n Äáº£n",
+        "HoĂ ng Diá»‡u",
+        "KĂªnh Táº»",
+        "Báº¿n VĂ¢n Äá»“n",
+        "KhĂ¡nh Há»™i",
+        "VÄ©nh KhĂ¡nh",
+        "XĂ³m Chiáº¿u",
+        "ÄoĂ n VÄƒn BÆ¡",
+        "TĂ´n Äáº£n",
+        "HoĂ ng Diá»‡u",
+        "Báº¿n VĂ¢n Äá»“n",
+        "VÄ©nh Há»™i",
+        "PhÆ°á»ng 3",
+        "PhÆ°á»ng 13",
+        "Trung tĂ¢m Quáº­n 4"
     ];
 
     private static readonly string[] QrAddresses =
     [
-        "Bến Vân Đồn - cầu Khánh Hội",
-        "Tôn Đản - khu Vĩnh Hội",
-        "Chợ Xóm Chiếu - đường Xóm Chiếu",
-        "Phố ẩm thực Vĩnh Khánh",
-        "Ngã tư Đoàn Văn Bơ - Nguyễn Khoái",
-        "Khu dân cư Tôn Đản",
-        "Hoàng Diệu - đoạn chợ chiều",
-        "Lối xuống Kênh Tẻ",
-        "Bờ kênh Bến Vân Đồn",
-        "Cầu Khánh Hội hướng Quận 1",
-        "Đầu đường Vĩnh Khánh",
-        "Cổng chợ Xóm Chiếu",
-        "Đoàn Văn Bơ gần trường học",
-        "Bến xe buýt Tôn Đản",
-        "Vỉa hè Hoàng Diệu",
-        "Bến Vân Đồn hướng cầu Calmette",
-        "Trạm Vĩnh Hội gần chung cư",
-        "Phường 3 - khu dân cư",
-        "Phường 13 - khu hàng quán",
-        "Điểm tổng hợp thông tin du lịch"
+        "Báº¿n VĂ¢n Äá»“n - cáº§u KhĂ¡nh Há»™i",
+        "TĂ´n Äáº£n - khu VÄ©nh Há»™i",
+        "Chá»£ XĂ³m Chiáº¿u - Ä‘Æ°á»ng XĂ³m Chiáº¿u",
+        "Phá»‘ áº©m thá»±c VÄ©nh KhĂ¡nh",
+        "NgĂ£ tÆ° ÄoĂ n VÄƒn BÆ¡ - Nguyá»…n KhoĂ¡i",
+        "Khu dĂ¢n cÆ° TĂ´n Äáº£n",
+        "HoĂ ng Diá»‡u - Ä‘oáº¡n chá»£ chiá»u",
+        "Lá»‘i xuá»‘ng KĂªnh Táº»",
+        "Bá» kĂªnh Báº¿n VĂ¢n Äá»“n",
+        "Cáº§u KhĂ¡nh Há»™i hÆ°á»›ng Quáº­n 1",
+        "Äáº§u Ä‘Æ°á»ng VÄ©nh KhĂ¡nh",
+        "Cá»•ng chá»£ XĂ³m Chiáº¿u",
+        "ÄoĂ n VÄƒn BÆ¡ gáº§n trÆ°á»ng há»c",
+        "Báº¿n xe buĂ½t TĂ´n Äáº£n",
+        "Vá»‰a hĂ¨ HoĂ ng Diá»‡u",
+        "Báº¿n VĂ¢n Äá»“n hÆ°á»›ng cáº§u Calmette",
+        "Tráº¡m VÄ©nh Há»™i gáº§n chung cÆ°",
+        "PhÆ°á»ng 3 - khu dĂ¢n cÆ°",
+        "PhÆ°á»ng 13 - khu hĂ ng quĂ¡n",
+        "Äiá»ƒm tá»•ng há»£p thĂ´ng tin du lá»‹ch"
     ];
 
     private static readonly DemoUserSeed[] DemoUsers =
     [
-        new(1, "tran.minh.hieu@quan4tourism.local", "Trần Minh Hiếu", "0908000101", SharedConstants.OwnerApproved, "Ốc Đêm Hiếu", "102 Vĩnh Khánh", "Quán hải sản bình dân mở khuya.", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80"),
-        new(2, "nguyen.thao.my@quan4tourism.local", "Nguyễn Thảo My", "0908000102", SharedConstants.OwnerApproved, "Bếp Nhà My", "18 Đoàn Văn Bơ", "Quán cơm gia đình chuyên món Việt.", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80"),
-        new(3, "pham.quoc.an@quan4tourism.local", "Phạm Quốc An", "0908000103", SharedConstants.OwnerApproved, "Bún Phố An", "29 Xóm Chiếu", "Tiệm bún sáng phục vụ dân địa phương.", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80"),
-        new(4, "le.kim.ngan@quan4tourism.local", "Lê Kim Ngân", "0908000104", SharedConstants.OwnerApproved, "Chè Ngân 1988", "44 Tôn Đản", "Quầy chè và tráng miệng lâu năm.", "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=400&q=80"),
-        new(5, "vo.huu.phuc@quan4tourism.local", "Võ Hữu Phúc", "0908000105", SharedConstants.OwnerApproved, "Cà phê Bờ Kênh Phúc", "75 Bến Vân Đồn", "Quán cà phê nhỏ nhìn ra kênh.", "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?auto=format&fit=crop&w=400&q=80"),
-        new(6, "doan.nhat.linh@quan4tourism.local", "Đoàn Nhật Linh", "0908000106", SharedConstants.OwnerApproved, "Bánh Tráng Linh", "12 Khánh Hội", "Quầy bánh tráng trộn và đồ ăn vặt.", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80"),
-        new(7, "truong.bao.chau@quan4tourism.local", "Trương Bảo Châu", "0908000107", SharedConstants.OwnerApproved, "Lẩu Nướng Bảo Châu", "131 Hoàng Diệu", "Quán lẩu nướng cho nhóm bạn trẻ.", "https://images.unsplash.com/photo-1546961329-78bef0414d7c?auto=format&fit=crop&w=400&q=80"),
-        new(8, "bui.gia.khanh@quan4tourism.local", "Bùi Gia Khánh", "0908000108", SharedConstants.OwnerApproved, "Mì Khuya Gia Khánh", "9 Nguyễn Khoái", "Quán mì và hủ tiếu mở tối.", "https://images.unsplash.com/photo-1504257432389-52343af06ae3?auto=format&fit=crop&w=400&q=80"),
-        new(9, "hoang.mai.phuong@quan4tourism.local", "Hoàng Mai Phương", "0908000109", SharedConstants.OwnerPending, "Bún Bò Mai Phương", "22 Vĩnh Hội", "Đang xin duyệt gian hàng bún bò.", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=400&q=80"),
-        new(10, "dang.thanh.tung@quan4tourism.local", "Đặng Thanh Tùng", "0908000110", SharedConstants.OwnerPending, "Cơm Tối Thanh Tùng", "48 Tôn Đản", "Quán cơm tối phục vụ dân văn phòng.", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80"),
-        new(11, "phan.ngoc.ha@quan4tourism.local", "Phan Ngọc Hà", "0908000111", SharedConstants.OwnerPending, "Kem Dừa Ngọc Hà", "63 Xóm Chiếu", "Quầy kem dừa và món mát.", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80"),
-        new(12, "ngo.minh.duc@quan4tourism.local", "Ngô Minh Đức", "0908000112", SharedConstants.OwnerPending, "Bánh Canh Minh Đức", "88 Khánh Hội", "Bánh canh và súp nóng phục vụ sáng.", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80"),
-        new(13, "ly.thu.trang@quan4tourism.local", "Lý Thu Trang", "0908000113", SharedConstants.OwnerPending, "Tiệm Ăn Thu Trang", "37 Đoàn Văn Bơ", "Đề xuất mở điểm ăn gia đình.", "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=400&q=80"),
-        new(14, "cao.viet.long@quan4tourism.local", "Cao Việt Long", "0908000114", SharedConstants.OwnerPending, "Ốc Long Sài Gòn", "118 Vĩnh Khánh", "Quán ốc cần bổ sung giấy phép.", "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?auto=format&fit=crop&w=400&q=80"),
-        new(15, "lam.gia.han@quan4tourism.local", "Lâm Gia Hân", "0908000115", SharedConstants.OwnerRejected, "Trà Sữa Gia Hân", "11 Hoàng Diệu", "Hồ sơ chưa đủ minh chứng nguồn gốc.", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80"),
-        new(16, "ta.huu.nghia@quan4tourism.local", "Tạ Hữu Nghĩa", "0908000116", SharedConstants.OwnerRejected, "Bò Lá Lốt Hữu Nghĩa", "55 Tôn Đản", "Thông tin liên hệ chưa xác thực.", "https://images.unsplash.com/photo-1546961329-78bef0414d7c?auto=format&fit=crop&w=400&q=80"),
-        new(17, "mai.khanh.ly@quan4tourism.local", "Mai Khánh Ly", "0908000117", SharedConstants.OwnerRejected, "Tiệm Chè Khánh Ly", "70 Bến Vân Đồn", "Ảnh minh họa chưa đúng địa điểm.", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=400&q=80"),
-        new(18, "duong.anh.khoa@quan4tourism.local", "Dương Anh Khoa", "0908000118", SharedConstants.OwnerRejected, "Bánh Mì Anh Khoa", "94 Xóm Chiếu", "Thiếu mô tả sản phẩm và giờ mở cửa.", "https://images.unsplash.com/photo-1504257432389-52343af06ae3?auto=format&fit=crop&w=400&q=80"),
-        new(19, "chau.ngoc.nhu@quan4tourism.local", "Châu Ngọc Như", "0908000119", SharedConstants.OwnerRejected, "Tiệm Ăn Ngọc Như", "19 Vĩnh Hội", "Chưa cập nhật bảng giá rõ ràng.", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80"),
-        new(20, "luu.minh.quan@quan4tourism.local", "Lưu Minh Quân", "0908000120", SharedConstants.OwnerRejected, "Bún Mắm Minh Quân", "101 Nguyễn Tất Thành", "Địa chỉ đăng ký chưa khớp thực tế.", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80")
+        new(1, "tran.minh.hieu@quan4tourism.local", "Tráº§n Minh Hiáº¿u", "0908000101", SharedConstants.OwnerApproved, "á»c ÄĂªm Hiáº¿u", "102 VÄ©nh KhĂ¡nh", "QuĂ¡n háº£i sáº£n bĂ¬nh dĂ¢n má»Ÿ khuya.", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80"),
+        new(2, "nguyen.thao.my@quan4tourism.local", "Nguyá»…n Tháº£o My", "0908000102", SharedConstants.OwnerApproved, "Báº¿p NhĂ  My", "18 ÄoĂ n VÄƒn BÆ¡", "QuĂ¡n cÆ¡m gia Ä‘Ă¬nh chuyĂªn mĂ³n Viá»‡t.", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80"),
+        new(3, "pham.quoc.an@quan4tourism.local", "Pháº¡m Quá»‘c An", "0908000103", SharedConstants.OwnerApproved, "BĂºn Phá»‘ An", "29 XĂ³m Chiáº¿u", "Tiá»‡m bĂºn sĂ¡ng phá»¥c vá»¥ dĂ¢n Ä‘á»‹a phÆ°Æ¡ng.", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80"),
+        new(4, "le.kim.ngan@quan4tourism.local", "LĂª Kim NgĂ¢n", "0908000104", SharedConstants.OwnerApproved, "ChĂ¨ NgĂ¢n 1988", "44 TĂ´n Äáº£n", "Quáº§y chĂ¨ vĂ  trĂ¡ng miá»‡ng lĂ¢u nÄƒm.", "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=400&q=80"),
+        new(5, "vo.huu.phuc@quan4tourism.local", "VĂµ Há»¯u PhĂºc", "0908000105", SharedConstants.OwnerApproved, "CĂ  phĂª Bá» KĂªnh PhĂºc", "75 Báº¿n VĂ¢n Äá»“n", "QuĂ¡n cĂ  phĂª nhá» nhĂ¬n ra kĂªnh.", "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?auto=format&fit=crop&w=400&q=80"),
+        new(6, "doan.nhat.linh@quan4tourism.local", "ÄoĂ n Nháº­t Linh", "0908000106", SharedConstants.OwnerApproved, "BĂ¡nh TrĂ¡ng Linh", "12 KhĂ¡nh Há»™i", "Quáº§y bĂ¡nh trĂ¡ng trá»™n vĂ  Ä‘á»“ Äƒn váº·t.", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80"),
+        new(7, "truong.bao.chau@quan4tourism.local", "TrÆ°Æ¡ng Báº£o ChĂ¢u", "0908000107", SharedConstants.OwnerApproved, "Láº©u NÆ°á»›ng Báº£o ChĂ¢u", "131 HoĂ ng Diá»‡u", "QuĂ¡n láº©u nÆ°á»›ng cho nhĂ³m báº¡n tráº».", "https://images.unsplash.com/photo-1546961329-78bef0414d7c?auto=format&fit=crop&w=400&q=80"),
+        new(8, "bui.gia.khanh@quan4tourism.local", "BĂ¹i Gia KhĂ¡nh", "0908000108", SharedConstants.OwnerApproved, "MĂ¬ Khuya Gia KhĂ¡nh", "9 Nguyá»…n KhoĂ¡i", "QuĂ¡n mĂ¬ vĂ  há»§ tiáº¿u má»Ÿ tá»‘i.", "https://images.unsplash.com/photo-1504257432389-52343af06ae3?auto=format&fit=crop&w=400&q=80"),
+        new(9, "hoang.mai.phuong@quan4tourism.local", "HoĂ ng Mai PhÆ°Æ¡ng", "0908000109", SharedConstants.OwnerPending, "BĂºn BĂ² Mai PhÆ°Æ¡ng", "22 VÄ©nh Há»™i", "Äang xin duyá»‡t gian hĂ ng bĂºn bĂ².", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=400&q=80"),
+        new(10, "dang.thanh.tung@quan4tourism.local", "Äáº·ng Thanh TĂ¹ng", "0908000110", SharedConstants.OwnerPending, "CÆ¡m Tá»‘i Thanh TĂ¹ng", "48 TĂ´n Äáº£n", "QuĂ¡n cÆ¡m tá»‘i phá»¥c vá»¥ dĂ¢n vÄƒn phĂ²ng.", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80"),
+        new(11, "phan.ngoc.ha@quan4tourism.local", "Phan Ngá»c HĂ ", "0908000111", SharedConstants.OwnerPending, "Kem Dá»«a Ngá»c HĂ ", "63 XĂ³m Chiáº¿u", "Quáº§y kem dá»«a vĂ  mĂ³n mĂ¡t.", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80"),
+        new(12, "ngo.minh.duc@quan4tourism.local", "NgĂ´ Minh Äá»©c", "0908000112", SharedConstants.OwnerPending, "BĂ¡nh Canh Minh Äá»©c", "88 KhĂ¡nh Há»™i", "BĂ¡nh canh vĂ  sĂºp nĂ³ng phá»¥c vá»¥ sĂ¡ng.", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80"),
+        new(13, "ly.thu.trang@quan4tourism.local", "LĂ½ Thu Trang", "0908000113", SharedConstants.OwnerPending, "Tiá»‡m Ä‚n Thu Trang", "37 ÄoĂ n VÄƒn BÆ¡", "Äá» xuáº¥t má»Ÿ Ä‘iá»ƒm Äƒn gia Ä‘Ă¬nh.", "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=400&q=80"),
+        new(14, "cao.viet.long@quan4tourism.local", "Cao Viá»‡t Long", "0908000114", SharedConstants.OwnerPending, "á»c Long SĂ i GĂ²n", "118 VÄ©nh KhĂ¡nh", "QuĂ¡n á»‘c cáº§n bá»• sung giáº¥y phĂ©p.", "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?auto=format&fit=crop&w=400&q=80"),
+        new(15, "lam.gia.han@quan4tourism.local", "LĂ¢m Gia HĂ¢n", "0908000115", SharedConstants.OwnerRejected, "TrĂ  Sá»¯a Gia HĂ¢n", "11 HoĂ ng Diá»‡u", "Há»“ sÆ¡ chÆ°a Ä‘á»§ minh chá»©ng nguá»“n gá»‘c.", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80"),
+        new(16, "ta.huu.nghia@quan4tourism.local", "Táº¡ Há»¯u NghÄ©a", "0908000116", SharedConstants.OwnerRejected, "BĂ² LĂ¡ Lá»‘t Há»¯u NghÄ©a", "55 TĂ´n Äáº£n", "ThĂ´ng tin liĂªn há»‡ chÆ°a xĂ¡c thá»±c.", "https://images.unsplash.com/photo-1546961329-78bef0414d7c?auto=format&fit=crop&w=400&q=80"),
+        new(17, "mai.khanh.ly@quan4tourism.local", "Mai KhĂ¡nh Ly", "0908000117", SharedConstants.OwnerRejected, "Tiá»‡m ChĂ¨ KhĂ¡nh Ly", "70 Báº¿n VĂ¢n Äá»“n", "áº¢nh minh há»a chÆ°a Ä‘Ăºng Ä‘á»‹a Ä‘iá»ƒm.", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=400&q=80"),
+        new(18, "duong.anh.khoa@quan4tourism.local", "DÆ°Æ¡ng Anh Khoa", "0908000118", SharedConstants.OwnerRejected, "BĂ¡nh MĂ¬ Anh Khoa", "94 XĂ³m Chiáº¿u", "Thiáº¿u mĂ´ táº£ sáº£n pháº©m vĂ  giá» má»Ÿ cá»­a.", "https://images.unsplash.com/photo-1504257432389-52343af06ae3?auto=format&fit=crop&w=400&q=80"),
+        new(19, "chau.ngoc.nhu@quan4tourism.local", "ChĂ¢u Ngá»c NhÆ°", "0908000119", SharedConstants.OwnerRejected, "Tiá»‡m Ä‚n Ngá»c NhÆ°", "19 VÄ©nh Há»™i", "ChÆ°a cáº­p nháº­t báº£ng giĂ¡ rĂµ rĂ ng.", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80"),
+        new(20, "luu.minh.quan@quan4tourism.local", "LÆ°u Minh QuĂ¢n", "0908000120", SharedConstants.OwnerRejected, "BĂºn Máº¯m Minh QuĂ¢n", "101 Nguyá»…n Táº¥t ThĂ nh", "Äá»‹a chá»‰ Ä‘Äƒng kĂ½ chÆ°a khá»›p thá»±c táº¿.", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80")
     ];
 
     private static readonly CategorySeed[] CategorySeeds =
     [
-        new("street_food", "Ăn vặt", "Các món ăn nhanh, ăn chơi đặc trưng khu phố.", 1),
-        new("rice", "Cơm", "Cơm tấm, cơm gia đình và các phần cơm quen thuộc.", 2),
-        new("noodles", "Bún / Phở / Mì", "Các món nước và món sợi phổ biến.", 3),
-        new("seafood", "Hải sản", "Ốc, tôm, cua, nghêu và các món hải sản đêm.", 4),
-        new("coffee", "Cà phê", "Quán cà phê và điểm nghỉ chân ven kênh.", 5),
-        new("dessert", "Tráng miệng", "Chè, bánh ngọt, kem và món ngọt.", 6),
-        new("drink", "Đồ uống", "Nước ép, trà sữa, đồ uống giải khát.", 7),
-        new("hotpot_bbq", "Lẩu / Nướng", "Nhóm món lẩu và nướng tụ tập bạn bè.", 8),
-        new("vietnamese_food", "Món Việt", "Những quán món Việt địa phương.", 9),
-        new("night_food", "Quán đêm", "Điểm ăn khuya và hàng quán mở muộn.", 10),
-        new("banh_mi", "Bánh mì", "Bánh mì chảo, bánh mì thịt và biến tấu đường phố.", 11),
-        new("porridge_soup", "Cháo / Súp", "Cháo, súp cua và món nóng nhẹ bụng.", 12),
-        new("snails", "Ốc & nghêu", "Các quán ốc xào, hấp, rang muối đặc trưng.", 13),
-        new("tea_dessert", "Chè & trà", "Chè truyền thống, trà trái cây và món mát.", 14),
-        new("bakery", "Bánh & tiệm nướng", "Tiệm bánh mặn, ngọt và đồ nướng nhanh.", 15),
-        new("vegetarian", "Ăn chay", "Điểm ăn chay và món thanh đạm.", 16),
-        new("seafood_hotpot", "Lẩu hải sản", "Nhóm quán lẩu tập trung quanh khu đêm.", 17),
-        new("broken_rice", "Cơm tấm chuyên biệt", "Những quán cơm tấm nổi bật.", 18),
-        new("regional", "Đặc sản vùng miền", "Món Huế, miền Tây và đặc sản địa phương.", 19),
-        new("family_restaurant", "Quán gia đình", "Điểm ngồi lại lâu, phù hợp nhóm và gia đình.", 20)
+        new("street_food", "Ä‚n váº·t", "CĂ¡c mĂ³n Äƒn nhanh, Äƒn chÆ¡i Ä‘áº·c trÆ°ng khu phá»‘.", 1),
+        new("rice", "CÆ¡m", "CÆ¡m táº¥m, cÆ¡m gia Ä‘Ă¬nh vĂ  cĂ¡c pháº§n cÆ¡m quen thuá»™c.", 2),
+        new("noodles", "BĂºn / Phá»Ÿ / MĂ¬", "CĂ¡c mĂ³n nÆ°á»›c vĂ  mĂ³n sá»£i phá»• biáº¿n.", 3),
+        new("seafood", "Háº£i sáº£n", "á»c, tĂ´m, cua, nghĂªu vĂ  cĂ¡c mĂ³n háº£i sáº£n Ä‘Ăªm.", 4),
+        new("coffee", "CĂ  phĂª", "QuĂ¡n cĂ  phĂª vĂ  Ä‘iá»ƒm nghá»‰ chĂ¢n ven kĂªnh.", 5),
+        new("dessert", "TrĂ¡ng miá»‡ng", "ChĂ¨, bĂ¡nh ngá»t, kem vĂ  mĂ³n ngá»t.", 6),
+        new("drink", "Äá»“ uá»‘ng", "NÆ°á»›c Ă©p, trĂ  sá»¯a, Ä‘á»“ uá»‘ng giáº£i khĂ¡t.", 7),
+        new("hotpot_bbq", "Láº©u / NÆ°á»›ng", "NhĂ³m mĂ³n láº©u vĂ  nÆ°á»›ng tá»¥ táº­p báº¡n bĂ¨.", 8),
+        new("vietnamese_food", "MĂ³n Viá»‡t", "Nhá»¯ng quĂ¡n mĂ³n Viá»‡t Ä‘á»‹a phÆ°Æ¡ng.", 9),
+        new("night_food", "QuĂ¡n Ä‘Ăªm", "Äiá»ƒm Äƒn khuya vĂ  hĂ ng quĂ¡n má»Ÿ muá»™n.", 10),
+        new("banh_mi", "BĂ¡nh mĂ¬", "BĂ¡nh mĂ¬ cháº£o, bĂ¡nh mĂ¬ thá»‹t vĂ  biáº¿n táº¥u Ä‘Æ°á»ng phá»‘.", 11),
+        new("porridge_soup", "ChĂ¡o / SĂºp", "ChĂ¡o, sĂºp cua vĂ  mĂ³n nĂ³ng nháº¹ bá»¥ng.", 12),
+        new("snails", "á»c & nghĂªu", "CĂ¡c quĂ¡n á»‘c xĂ o, háº¥p, rang muá»‘i Ä‘áº·c trÆ°ng.", 13),
+        new("tea_dessert", "ChĂ¨ & trĂ ", "ChĂ¨ truyá»n thá»‘ng, trĂ  trĂ¡i cĂ¢y vĂ  mĂ³n mĂ¡t.", 14),
+        new("bakery", "BĂ¡nh & tiá»‡m nÆ°á»›ng", "Tiá»‡m bĂ¡nh máº·n, ngá»t vĂ  Ä‘á»“ nÆ°á»›ng nhanh.", 15),
+        new("vegetarian", "Ä‚n chay", "Äiá»ƒm Äƒn chay vĂ  mĂ³n thanh Ä‘áº¡m.", 16),
+        new("seafood_hotpot", "Láº©u háº£i sáº£n", "NhĂ³m quĂ¡n láº©u táº­p trung quanh khu Ä‘Ăªm.", 17),
+        new("broken_rice", "CÆ¡m táº¥m chuyĂªn biá»‡t", "Nhá»¯ng quĂ¡n cÆ¡m táº¥m ná»•i báº­t.", 18),
+        new("regional", "Äáº·c sáº£n vĂ¹ng miá»n", "MĂ³n Huáº¿, miá»n TĂ¢y vĂ  Ä‘áº·c sáº£n Ä‘á»‹a phÆ°Æ¡ng.", 19),
+        new("family_restaurant", "QuĂ¡n gia Ä‘Ă¬nh", "Äiá»ƒm ngá»“i láº¡i lĂ¢u, phĂ¹ há»£p nhĂ³m vĂ  gia Ä‘Ă¬nh.", 20)
     ];
 
     private static readonly PoiSeed[] PoiSeeds =
     [
-        new(0, "Ốc Oanh", "Quán ốc bình dân nổi tiếng với nhiều món xào bơ, rang muối và sốt me.", "seafood", "534 Vĩnh Khánh", "Phường 13", 10.7592, 106.7045, "$$", 4.6, 1240, 20, "https://images.unsplash.com/photo-1559737558-2f5a35f4523b?auto=format&fit=crop&w=1200&q=85", "Đĩa ốc xào bơ tỏi nóng hổi.", ["hải sản", "vĩnh khánh", "buổi tối"]),
-        new(1, "Bánh mì chảo Cô 3 Hậu", "Bánh mì chảo nóng hổi, phù hợp cho bữa sáng và bữa trưa nhanh.", "banh_mi", "36 Nguyễn Hữu Hào", "Phường 13", 10.7580, 106.7018, "$", 4.4, 630, 19, "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=1200&q=85", "Chảo bánh mì với trứng, pate và xúc xích.", ["bánh mì", "bữa sáng", "địa phương"]),
-        new(2, "Cơm tấm Cây Điệp", "Cơm tấm sườn nướng thơm, phục vụ nhanh trong không khí Quận 4 thân thuộc.", "broken_rice", "140/1 Đoàn Văn Bơ", "Phường 13", 10.7548, 106.7049, "$", 4.5, 890, 18, "https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=1200&q=85", "Phần cơm tấm sườn bì chả đầy đặn.", ["cơm tấm", "sườn nướng", "trưa"]),
-        new(3, "Súp cua Cô Bông", "Súp cua nóng với thịt cua, trứng cút và nấm, món ăn vặt quen thuộc.", "porridge_soup", "22 Đoàn Văn Bơ", "Phường 13", 10.7566, 106.7032, "$", 4.3, 410, 17, "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1200&q=85", "Chén súp cua nóng có trứng cút.", ["súp cua", "ăn vặt", "chiều tối"]),
-        new(4, "Cà phê bờ kênh Khánh Hội", "Không gian cà phê thoáng bên bờ kênh, thích hợp nghỉ chân sau hành trình khám phá.", "coffee", "Bến Vân Đồn", "Phường 13", 10.7610, 106.7068, "$$", 4.2, 245, 16, "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=85", "Ly cà phê và góc ngồi nhìn ra bờ kênh.", ["cà phê", "view kênh", "thư giãn"]),
-        new(5, "Bún bò Khánh Hội", "Quán bún bò vị đậm, nước dùng thơm sả và đông khách buổi sáng.", "regional", "91 Khánh Hội", "Phường 3", 10.7602, 106.7059, "$", 4.4, 380, 15, "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=85", "Tô bún bò đầy topping và rau sống.", ["bún bò", "huế", "buổi sáng"]),
-        new(6, "Bánh tráng trộn Chú Vi", "Xe bánh tráng trộn nhiều topping, vị chua cay đậm đà kiểu học sinh sinh viên.", "street_food", "17 Tôn Đản", "Phường 13", 10.7555, 106.7026, "$", 4.1, 210, 14, "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?auto=format&fit=crop&w=1200&q=85", "Hộp bánh tráng trộn với khô bò và trứng cút.", ["bánh tráng", "ăn vặt", "takeaway"]),
-        new(7, "Hủ tiếu mực Ông Già Cali", "Hủ tiếu mực vị ngọt thanh, topping mực giòn và tôm tươi.", "noodles", "45 Vĩnh Khánh", "Phường 8", 10.7587, 106.7051, "$$", 4.5, 570, 13, "https://images.unsplash.com/photo-1617093727343-374698b1b08d?auto=format&fit=crop&w=1200&q=85", "Tô hủ tiếu mực với mực ống và tôm.", ["hủ tiếu", "mực", "đặc sản"]),
-        new(8, "Chè dừa dầm Vĩnh Hội", "Ly chè dừa dầm mát lạnh, vị béo nhẹ phù hợp buổi chiều nóng.", "tea_dessert", "12 Vĩnh Hội", "Phường 4", 10.7571, 106.7080, "$", 4.0, 165, 12, "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=1200&q=85", "Cốc chè dừa dầm với đá bào và thạch.", ["chè", "dừa", "giải nhiệt"]),
-        new(9, "Lẩu cá kèo Bà Huyện", "Quán lẩu cá kèo chua cay, hợp nhóm bạn và gia đình ăn tối.", "seafood_hotpot", "102 Hoàng Diệu", "Phường 9", 10.7519, 106.7040, "$$$", 4.3, 290, 11, "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=85", "Nồi lẩu cá kèo nghi ngút khói.", ["lẩu", "cá kèo", "gia đình"]),
-        new(10, "Gỏi cuốn Cô Sáu", "Gỏi cuốn cuốn tay mỗi ngày, rau tươi và nước chấm đậu phộng đậm vị.", "vietnamese_food", "58 Xóm Chiếu", "Phường 15", 10.7545, 106.7071, "$", 4.2, 142, 10, "https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=1200&q=85", "Đĩa gỏi cuốn tôm thịt chấm sốt đậu.", ["gỏi cuốn", "nhẹ bụng", "buổi chiều"]),
-        new(11, "Phá lấu bò Chợ 200", "Phá lấu nước cốt dừa thơm béo, ăn kèm bánh mì hoặc mì gói.", "night_food", "200 Xóm Chiếu", "Phường 14", 10.7528, 106.7062, "$", 4.4, 335, 9, "https://images.unsplash.com/photo-1559847844-d721426d6edc?auto=format&fit=crop&w=1200&q=85", "Tô phá lấu nóng với bánh mì giòn.", ["phá lấu", "ăn khuya", "xóm chiếu"]),
-        new(12, "Cơm niêu Khói Bếp", "Quán cơm niêu phục vụ món nhà, phù hợp nhóm gia đình muốn ngồi lâu.", "family_restaurant", "84 Bến Vân Đồn", "Phường 1", 10.7606, 106.7085, "$$$", 4.5, 198, 8, "https://images.unsplash.com/photo-1563379091339-03246963d96c?auto=format&fit=crop&w=1200&q=85", "Bàn cơm niêu nhiều món mặn truyền thống.", ["cơm niêu", "gia đình", "món việt"]),
-        new(13, "Bánh flan Xóm Chiếu", "Quầy bánh flan mềm mịn, thêm cà phê và đá bào theo kiểu Sài Gòn.", "dessert", "73 Xóm Chiếu", "Phường 16", 10.7535, 106.7057, "$", 4.1, 188, 7, "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=1200&q=85", "Ly bánh flan cà phê và đá bào.", ["flan", "tráng miệng", "giá mềm"]),
-        new(14, "Bánh canh cua Hẻm 48", "Bánh canh cua sợi dày, nước dùng ngọt và topping chả cua đầy đủ.", "porridge_soup", "48/7 Tôn Đản", "Phường 13", 10.7560, 106.7040, "$$", 4.3, 256, 6, "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=1200&q=85", "Tô bánh canh cua với chả cua và thịt.", ["bánh canh", "cua", "tối"]),
-        new(15, "Ốc len xào dừa Chị Mười", "Ốc len xào dừa béo thơm, ăn cùng bánh mì nóng rất bắt vị.", "snails", "109 Vĩnh Khánh", "Phường 8", 10.7597, 106.7038, "$$", 4.6, 610, 5, "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=1200&q=85", "Đĩa ốc len xào dừa và bánh mì nướng.", ["ốc len", "xào dừa", "đặc sản"]),
-        new(16, "Trà trái cây Cầu Calmette", "Xe trà trái cây và nước ép mát lạnh gần khu bờ kênh, hợp khách đi bộ.", "drink", "28 Bến Vân Đồn", "Phường 12", 10.7622, 106.7034, "$", 4.0, 120, 4, "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=1200&q=85", "Ly trà trái cây với cam, dâu và bạc hà.", ["trà trái cây", "nước ép", "giải khát"]),
-        new(17, "Bún mắm Cầu Ông Lãnh", "Bún mắm đậm vị miền Tây, topping hải sản và heo quay đầy tô.", "regional", "16 Nguyễn Khoái", "Phường 1", 10.7589, 106.7089, "$$", 4.2, 174, 3, "https://images.unsplash.com/photo-1526318896980-cf78c088247c?auto=format&fit=crop&w=1200&q=85", "Tô bún mắm đầy rau sống và hải sản.", ["bún mắm", "miền tây", "đậm vị"]),
-        new(18, "Bánh xèo Tôm Nhảy 46", "Bánh xèo đổ giòn, nhân tôm thịt và rau sống ăn kèm phong phú.", "vietnamese_food", "46 Khánh Hội", "Phường 6", 10.7599, 106.7075, "$$", 4.3, 230, 2, "https://images.unsplash.com/photo-1625944524160-6cf6b4d5ad28?auto=format&fit=crop&w=1200&q=85", "Bánh xèo vàng giòn cuốn rau sống.", ["bánh xèo", "tôm nhảy", "món việt"]),
-        new(19, "Tiệm chay An Nhiên", "Quán chay nhỏ yên tĩnh với cơm phần, bún và món xào thanh đạm.", "vegetarian", "11 Hoàng Diệu", "Phường 10", 10.7512, 106.7067, "$$", 4.1, 98, 1, "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1200&q=85", "Mâm cơm chay nhiều rau và đậu hũ.", ["ăn chay", "thanh đạm", "gia đình"])
+        new(0, "á»c Oanh", "QuĂ¡n á»‘c bĂ¬nh dĂ¢n ná»•i tiáº¿ng vá»›i nhiá»u mĂ³n xĂ o bÆ¡, rang muá»‘i vĂ  sá»‘t me.", "seafood", "534 VÄ©nh KhĂ¡nh", "PhÆ°á»ng 13", 10.7592, 106.7045, "$$", 4.6, 1240, 20, "https://images.unsplash.com/photo-1559737558-2f5a35f4523b?auto=format&fit=crop&w=1200&q=85", "ÄÄ©a á»‘c xĂ o bÆ¡ tá»i nĂ³ng há»•i.", ["háº£i sáº£n", "vÄ©nh khĂ¡nh", "buá»•i tá»‘i"]),
+        new(1, "BĂ¡nh mĂ¬ cháº£o CĂ´ 3 Háº­u", "BĂ¡nh mĂ¬ cháº£o nĂ³ng há»•i, phĂ¹ há»£p cho bá»¯a sĂ¡ng vĂ  bá»¯a trÆ°a nhanh.", "banh_mi", "36 Nguyá»…n Há»¯u HĂ o", "PhÆ°á»ng 13", 10.7580, 106.7018, "$", 4.4, 630, 19, "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=1200&q=85", "Cháº£o bĂ¡nh mĂ¬ vá»›i trá»©ng, pate vĂ  xĂºc xĂ­ch.", ["bĂ¡nh mĂ¬", "bá»¯a sĂ¡ng", "Ä‘á»‹a phÆ°Æ¡ng"]),
+        new(2, "CÆ¡m táº¥m CĂ¢y Äiá»‡p", "CÆ¡m táº¥m sÆ°á»n nÆ°á»›ng thÆ¡m, phá»¥c vá»¥ nhanh trong khĂ´ng khĂ­ Quáº­n 4 thĂ¢n thuá»™c.", "broken_rice", "140/1 ÄoĂ n VÄƒn BÆ¡", "PhÆ°á»ng 13", 10.7548, 106.7049, "$", 4.5, 890, 18, "https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=1200&q=85", "Pháº§n cÆ¡m táº¥m sÆ°á»n bĂ¬ cháº£ Ä‘áº§y Ä‘áº·n.", ["cÆ¡m táº¥m", "sÆ°á»n nÆ°á»›ng", "trÆ°a"]),
+        new(3, "SĂºp cua CĂ´ BĂ´ng", "SĂºp cua nĂ³ng vá»›i thá»‹t cua, trá»©ng cĂºt vĂ  náº¥m, mĂ³n Äƒn váº·t quen thuá»™c.", "porridge_soup", "22 ÄoĂ n VÄƒn BÆ¡", "PhÆ°á»ng 13", 10.7566, 106.7032, "$", 4.3, 410, 17, "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1200&q=85", "ChĂ©n sĂºp cua nĂ³ng cĂ³ trá»©ng cĂºt.", ["sĂºp cua", "Äƒn váº·t", "chiá»u tá»‘i"]),
+        new(4, "CĂ  phĂª bá» kĂªnh KhĂ¡nh Há»™i", "KhĂ´ng gian cĂ  phĂª thoĂ¡ng bĂªn bá» kĂªnh, thĂ­ch há»£p nghá»‰ chĂ¢n sau hĂ nh trĂ¬nh khĂ¡m phĂ¡.", "coffee", "Báº¿n VĂ¢n Äá»“n", "PhÆ°á»ng 13", 10.7610, 106.7068, "$$", 4.2, 245, 16, "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=85", "Ly cĂ  phĂª vĂ  gĂ³c ngá»“i nhĂ¬n ra bá» kĂªnh.", ["cĂ  phĂª", "view kĂªnh", "thÆ° giĂ£n"]),
+        new(5, "BĂºn bĂ² KhĂ¡nh Há»™i", "QuĂ¡n bĂºn bĂ² vá»‹ Ä‘áº­m, nÆ°á»›c dĂ¹ng thÆ¡m sáº£ vĂ  Ä‘Ă´ng khĂ¡ch buá»•i sĂ¡ng.", "regional", "91 KhĂ¡nh Há»™i", "PhÆ°á»ng 3", 10.7602, 106.7059, "$", 4.4, 380, 15, "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=85", "TĂ´ bĂºn bĂ² Ä‘áº§y topping vĂ  rau sá»‘ng.", ["bĂºn bĂ²", "huáº¿", "buá»•i sĂ¡ng"]),
+        new(6, "BĂ¡nh trĂ¡ng trá»™n ChĂº Vi", "Xe bĂ¡nh trĂ¡ng trá»™n nhiá»u topping, vá»‹ chua cay Ä‘áº­m Ä‘Ă  kiá»ƒu há»c sinh sinh viĂªn.", "street_food", "17 TĂ´n Äáº£n", "PhÆ°á»ng 13", 10.7555, 106.7026, "$", 4.1, 210, 14, "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?auto=format&fit=crop&w=1200&q=85", "Há»™p bĂ¡nh trĂ¡ng trá»™n vá»›i khĂ´ bĂ² vĂ  trá»©ng cĂºt.", ["bĂ¡nh trĂ¡ng", "Äƒn váº·t", "takeaway"]),
+        new(7, "Há»§ tiáº¿u má»±c Ă”ng GiĂ  Cali", "Há»§ tiáº¿u má»±c vá»‹ ngá»t thanh, topping má»±c giĂ²n vĂ  tĂ´m tÆ°Æ¡i.", "noodles", "45 VÄ©nh KhĂ¡nh", "PhÆ°á»ng 8", 10.7587, 106.7051, "$$", 4.5, 570, 13, "https://images.unsplash.com/photo-1617093727343-374698b1b08d?auto=format&fit=crop&w=1200&q=85", "TĂ´ há»§ tiáº¿u má»±c vá»›i má»±c á»‘ng vĂ  tĂ´m.", ["há»§ tiáº¿u", "má»±c", "Ä‘áº·c sáº£n"]),
+        new(8, "ChĂ¨ dá»«a dáº§m VÄ©nh Há»™i", "Ly chĂ¨ dá»«a dáº§m mĂ¡t láº¡nh, vá»‹ bĂ©o nháº¹ phĂ¹ há»£p buá»•i chiá»u nĂ³ng.", "tea_dessert", "12 VÄ©nh Há»™i", "PhÆ°á»ng 4", 10.7571, 106.7080, "$", 4.0, 165, 12, "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=1200&q=85", "Cá»‘c chĂ¨ dá»«a dáº§m vá»›i Ä‘Ă¡ bĂ o vĂ  tháº¡ch.", ["chĂ¨", "dá»«a", "giáº£i nhiá»‡t"]),
+        new(9, "Láº©u cĂ¡ kĂ¨o BĂ  Huyá»‡n", "QuĂ¡n láº©u cĂ¡ kĂ¨o chua cay, há»£p nhĂ³m báº¡n vĂ  gia Ä‘Ă¬nh Äƒn tá»‘i.", "seafood_hotpot", "102 HoĂ ng Diá»‡u", "PhÆ°á»ng 9", 10.7519, 106.7040, "$$$", 4.3, 290, 11, "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=85", "Ná»“i láº©u cĂ¡ kĂ¨o nghi ngĂºt khĂ³i.", ["láº©u", "cĂ¡ kĂ¨o", "gia Ä‘Ă¬nh"]),
+        new(10, "Gá»i cuá»‘n CĂ´ SĂ¡u", "Gá»i cuá»‘n cuá»‘n tay má»—i ngĂ y, rau tÆ°Æ¡i vĂ  nÆ°á»›c cháº¥m Ä‘áº­u phá»™ng Ä‘áº­m vá»‹.", "vietnamese_food", "58 XĂ³m Chiáº¿u", "PhÆ°á»ng 15", 10.7545, 106.7071, "$", 4.2, 142, 10, "https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=1200&q=85", "ÄÄ©a gá»i cuá»‘n tĂ´m thá»‹t cháº¥m sá»‘t Ä‘áº­u.", ["gá»i cuá»‘n", "nháº¹ bá»¥ng", "buá»•i chiá»u"]),
+        new(11, "PhĂ¡ láº¥u bĂ² Chá»£ 200", "PhĂ¡ láº¥u nÆ°á»›c cá»‘t dá»«a thÆ¡m bĂ©o, Äƒn kĂ¨m bĂ¡nh mĂ¬ hoáº·c mĂ¬ gĂ³i.", "night_food", "200 XĂ³m Chiáº¿u", "PhÆ°á»ng 14", 10.7528, 106.7062, "$", 4.4, 335, 9, "https://images.unsplash.com/photo-1559847844-d721426d6edc?auto=format&fit=crop&w=1200&q=85", "TĂ´ phĂ¡ láº¥u nĂ³ng vá»›i bĂ¡nh mĂ¬ giĂ²n.", ["phĂ¡ láº¥u", "Äƒn khuya", "xĂ³m chiáº¿u"]),
+        new(12, "CÆ¡m niĂªu KhĂ³i Báº¿p", "QuĂ¡n cÆ¡m niĂªu phá»¥c vá»¥ mĂ³n nhĂ , phĂ¹ há»£p nhĂ³m gia Ä‘Ă¬nh muá»‘n ngá»“i lĂ¢u.", "family_restaurant", "84 Báº¿n VĂ¢n Äá»“n", "PhÆ°á»ng 1", 10.7606, 106.7085, "$$$", 4.5, 198, 8, "https://images.unsplash.com/photo-1563379091339-03246963d96c?auto=format&fit=crop&w=1200&q=85", "BĂ n cÆ¡m niĂªu nhiá»u mĂ³n máº·n truyá»n thá»‘ng.", ["cÆ¡m niĂªu", "gia Ä‘Ă¬nh", "mĂ³n viá»‡t"]),
+        new(13, "BĂ¡nh flan XĂ³m Chiáº¿u", "Quáº§y bĂ¡nh flan má»m má»‹n, thĂªm cĂ  phĂª vĂ  Ä‘Ă¡ bĂ o theo kiá»ƒu SĂ i GĂ²n.", "dessert", "73 XĂ³m Chiáº¿u", "PhÆ°á»ng 16", 10.7535, 106.7057, "$", 4.1, 188, 7, "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=1200&q=85", "Ly bĂ¡nh flan cĂ  phĂª vĂ  Ä‘Ă¡ bĂ o.", ["flan", "trĂ¡ng miá»‡ng", "giĂ¡ má»m"]),
+        new(14, "BĂ¡nh canh cua Háº»m 48", "BĂ¡nh canh cua sá»£i dĂ y, nÆ°á»›c dĂ¹ng ngá»t vĂ  topping cháº£ cua Ä‘áº§y Ä‘á»§.", "porridge_soup", "48/7 TĂ´n Äáº£n", "PhÆ°á»ng 13", 10.7560, 106.7040, "$$", 4.3, 256, 6, "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=1200&q=85", "TĂ´ bĂ¡nh canh cua vá»›i cháº£ cua vĂ  thá»‹t.", ["bĂ¡nh canh", "cua", "tá»‘i"]),
+        new(15, "á»c len xĂ o dá»«a Chá»‹ MÆ°á»i", "á»c len xĂ o dá»«a bĂ©o thÆ¡m, Äƒn cĂ¹ng bĂ¡nh mĂ¬ nĂ³ng ráº¥t báº¯t vá»‹.", "snails", "109 VÄ©nh KhĂ¡nh", "PhÆ°á»ng 8", 10.7597, 106.7038, "$$", 4.6, 610, 5, "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=1200&q=85", "ÄÄ©a á»‘c len xĂ o dá»«a vĂ  bĂ¡nh mĂ¬ nÆ°á»›ng.", ["á»‘c len", "xĂ o dá»«a", "Ä‘áº·c sáº£n"]),
+        new(16, "TrĂ  trĂ¡i cĂ¢y Cáº§u Calmette", "Xe trĂ  trĂ¡i cĂ¢y vĂ  nÆ°á»›c Ă©p mĂ¡t láº¡nh gáº§n khu bá» kĂªnh, há»£p khĂ¡ch Ä‘i bá»™.", "drink", "28 Báº¿n VĂ¢n Äá»“n", "PhÆ°á»ng 12", 10.7622, 106.7034, "$", 4.0, 120, 4, "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=1200&q=85", "Ly trĂ  trĂ¡i cĂ¢y vá»›i cam, dĂ¢u vĂ  báº¡c hĂ .", ["trĂ  trĂ¡i cĂ¢y", "nÆ°á»›c Ă©p", "giáº£i khĂ¡t"]),
+        new(17, "BĂºn máº¯m Cáº§u Ă”ng LĂ£nh", "BĂºn máº¯m Ä‘áº­m vá»‹ miá»n TĂ¢y, topping háº£i sáº£n vĂ  heo quay Ä‘áº§y tĂ´.", "regional", "16 Nguyá»…n KhoĂ¡i", "PhÆ°á»ng 1", 10.7589, 106.7089, "$$", 4.2, 174, 3, "https://images.unsplash.com/photo-1526318896980-cf78c088247c?auto=format&fit=crop&w=1200&q=85", "TĂ´ bĂºn máº¯m Ä‘áº§y rau sá»‘ng vĂ  háº£i sáº£n.", ["bĂºn máº¯m", "miá»n tĂ¢y", "Ä‘áº­m vá»‹"]),
+        new(18, "BĂ¡nh xĂ¨o TĂ´m Nháº£y 46", "BĂ¡nh xĂ¨o Ä‘á»• giĂ²n, nhĂ¢n tĂ´m thá»‹t vĂ  rau sá»‘ng Äƒn kĂ¨m phong phĂº.", "vietnamese_food", "46 KhĂ¡nh Há»™i", "PhÆ°á»ng 6", 10.7599, 106.7075, "$$", 4.3, 230, 2, "https://images.unsplash.com/photo-1625944524160-6cf6b4d5ad28?auto=format&fit=crop&w=1200&q=85", "BĂ¡nh xĂ¨o vĂ ng giĂ²n cuá»‘n rau sá»‘ng.", ["bĂ¡nh xĂ¨o", "tĂ´m nháº£y", "mĂ³n viá»‡t"]),
+        new(19, "Tiá»‡m chay An NhiĂªn", "QuĂ¡n chay nhá» yĂªn tÄ©nh vá»›i cÆ¡m pháº§n, bĂºn vĂ  mĂ³n xĂ o thanh Ä‘áº¡m.", "vegetarian", "11 HoĂ ng Diá»‡u", "PhÆ°á»ng 10", 10.7512, 106.7067, "$$", 4.1, 98, 1, "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1200&q=85", "MĂ¢m cÆ¡m chay nhiá»u rau vĂ  Ä‘áº­u hÅ©.", ["Äƒn chay", "thanh Ä‘áº¡m", "gia Ä‘Ă¬nh"])
     ];
 
     private sealed record DemoUserSeed(
@@ -1210,3 +1210,4 @@ public class DbSeeder
         string Caption,
         List<string> Tags);
 }
+

@@ -44,7 +44,7 @@ export function OwnerSubmissionPage() {
   return (
     <PageContainer title={t('submissions_title')} subtitle={t('submissions_subtitle')}>
       <Card className="glass-card">
-        <Space style={{ marginBottom: 16 }}>
+        <Space wrap className="page-toolbar" style={{ marginBottom: 16 }}>
           <Select allowClear placeholder={t('status')} style={{ width: 160 }} options={[{ value: 'pending', label: t('pending') }, { value: 'approved', label: t('approved') }, { value: 'rejected', label: t('rejected') }]} onChange={setStatus} />
           <Select allowClear placeholder={t('submission_type')} style={{ width: 180 }} options={[{ value: 'create', label: t('type_create') }, { value: 'update', label: t('type_update') }]} onChange={setSubmissionType} />
         </Space>
@@ -53,6 +53,7 @@ export function OwnerSubmissionPage() {
           rowKey="id"
           dataSource={data}
           loading={query.isFetching}
+          scroll={{ x: 1000 }}
           columns={[
             { title: t('name'), dataIndex: 'poiName' },
             { title: t('submission_type'), dataIndex: 'submissionType', render: (value) => <StatusBadge value={value} /> },

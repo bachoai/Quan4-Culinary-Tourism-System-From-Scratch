@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+﻿import { useQuery } from '@tanstack/react-query';
 import { Card, Col, Row, Space, Tag, Typography } from 'antd';
 import {
   Bar,
@@ -51,7 +51,11 @@ type EventChartDatum = {
 };
 
 function shortenLabel(label: string, maxLength = 18) {
-  return label.length <= maxLength ? label : `${label.slice(0, maxLength - 1)}…`;
+  return label.length <= maxLength ? label : `${label.slice(0, maxLength - 1)}â€¦`;
+}
+
+function shortKey(value?: string | null) {
+  return value ? value.slice(-8) : '--';
 }
 
 function getPoiThumbnailUrl(poi?: PoiLookupItem) {
@@ -135,7 +139,7 @@ function EventDistributionTooltip({
       </div>
       <div style={{ marginTop: 6, color: 'var(--muted-text)', fontSize: 12, lineHeight: 1.5 }}>{datum.description}</div>
       <div style={{ marginTop: 10, color: 'var(--app-text)', fontSize: 13 }}>
-        <strong>So luot:</strong> {formatNumber(datum.value)}
+        <strong>Số lượt:</strong> {formatNumber(datum.value)}
       </div>
     </div>
   );
@@ -143,7 +147,12 @@ function EventDistributionTooltip({
 
 export function AnalyticsPage() {
   const { t } = useI18n();
-  const summaryQuery = useQuery({ queryKey: ['analytics-summary'], queryFn: analyticsApi.summary });
+  const summaryQuery = useQuery({
+    queryKey: ['analytics-summary'],
+    queryFn: analyticsApi.summary,
+    refetchInterval: 10000,
+    refetchIntervalInBackground: true,
+  });
   const poiQuery = useQuery({ queryKey: ['analytics-poi-lookup'], queryFn: () => poiApi.loadAll({ lang: 'vi' }) });
 
   if (summaryQuery.isLoading || !summaryQuery.data) {
@@ -196,19 +205,19 @@ export function AnalyticsPage() {
       name: 'Mo chi tiet POI',
       value: summaryQuery.data.poiViewedCount,
       color: '#FF6B35',
-      description: 'So lan nguoi dung mo vao trang chi tiet cua dia diem.',
+      description: 'Số lần người dùng mở vào trang chi tiết của địa điểm.',
     },
     {
       name: 'Nghe audio',
       value: summaryQuery.data.audioPlayedCount,
       color: '#2EC4B6',
-      description: 'So lan phat audio file hoac thuyet minh tren trinh duyet.',
+      description: 'Số lần phát audio file hoặc thuyết minh trên trình duyệt.',
     },
     {
       name: 'Tim kiem',
       value: summaryQuery.data.searchExecutedCount,
       color: '#4F46E5',
-      description: 'So lan nguoi dung chu dong tim kiem noi dung trong app.',
+      description: 'Số lần người dùng chủ động tìm kiếm nội dung trong app.',
     },
   ];
 
@@ -217,6 +226,7 @@ export function AnalyticsPage() {
     lat: item.latitude,
     count: item.count,
   }));
+  const realtimeSnapshot = summaryQuery.data.realtimeSnapshot;
 
   const hasEventDistribution = eventDistributionData.some((item) => item.value > 0);
 
@@ -227,30 +237,36 @@ export function AnalyticsPage() {
           title={t('dashboard_poi_views')}
           value={formatNumber(summaryQuery.data.poiViewedCount)}
           accent="#FF6B35"
-          subtitle="So lan nguoi dung mo vao mot dia diem cu the."
+          subtitle="Số lần người dùng mở vào một địa điểm cụ thể."
         />
         <StatCard
           title={t('dashboard_audio_plays')}
           value={formatNumber(summaryQuery.data.audioPlayedCount)}
           accent="#2EC4B6"
-          subtitle="So lan phat audio va thuyet minh tren giao dien."
+          subtitle="Số lần phát audio và thuyết minh trên giao diện."
         />
         <StatCard
-          title="Luot tim kiem"
+          title="Lượt tìm kiếm"
           value={formatNumber(summaryQuery.data.searchExecutedCount)}
           accent="#4F46E5"
-          subtitle="So lan tim kiem mon an, quan an hoac khu vuc."
+          subtitle="Số lần tìm kiếm món ăn, quán ăn hoặc khu vực."
         />
         <StatCard
           title={t('analytics_average_listen_duration')}
           value={`${summaryQuery.data.averageListenDurationSeconds.toFixed(1)}s`}
           accent="#E76F51"
-          subtitle="Thoi gian nghe trung binh tren moi lan phat thuyet minh."
+          subtitle="Thời gian nghe trung bình trên mỗi lần phát thuyết minh."
+        />
+        <StatCard
+          title={t('dashboard_active_visitors_now')}
+          value={formatNumber(realtimeSnapshot.activeVisitorCount)}
+          accent="#E11D48"
+          subtitle={`${formatNumber(realtimeSnapshot.anonymousVisitorCount)} ${t('dashboard_anonymous_visitors_now').toLowerCase()} · ${t('dashboard_active_window_label')}: ${realtimeSnapshot.activeWindowSeconds}s`}
         />
         <Card className="glass-card">
           <Typography.Title level={5}>Goc nhin nhanh</Typography.Title>
           <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-            Khi re chuot vao cot va bieu do tron, admin se thay ngay ten dia diem, anh dai dien va y nghia cua tung nhom du lieu.
+            Khi rê chuột vào cột và biểu đồ tròn, admin sẽ thấy ngay tên địa điểm, ảnh đại diện và ý nghĩa của từng nhóm dữ liệu.
           </Typography.Paragraph>
         </Card>
       </div>
@@ -271,8 +287,8 @@ export function AnalyticsPage() {
             ) : (
               <div className="chart-empty">
                 <EmptyState
-                  title="Chua co du lieu luot xem"
-                  description="Khi nguoi dung mo chi tiet dia diem, bieu do nay se hien ten dia diem de nhin nhanh hon."
+                  title="Chưa có dữ liệu lượt xem"
+                  description="Khi người dùng mở chi tiết địa điểm, biểu đồ này sẽ hiện tên địa điểm để nhìn nhanh hơn."
                 />
               </div>
             )}
@@ -301,8 +317,8 @@ export function AnalyticsPage() {
             ) : (
               <div className="chart-empty">
                 <EmptyState
-                  title="Bieu do dang trong"
-                  description="Hien chua co luong su kien du de ve phan bo event de nhin nhanh."
+                  title="Biểu đồ đang trống"
+                  description="Hiện chưa có lượng sự kiện đủ để vẽ phân bổ event để nhìn nhanh."
                 />
               </div>
             )}
@@ -326,8 +342,8 @@ export function AnalyticsPage() {
             ) : (
               <div className="chart-empty">
                 <EmptyState
-                  title="Chua co du lieu luot nghe"
-                  description="Khi nguoi dung phat audio hoac thuyet minh, bieu do nay se cho biet dia diem nao duoc nghe nhieu nhat."
+                  title="Chưa có dữ liệu lượt nghe"
+                  description="Khi người dùng phát audio hoặc thuyết minh, biểu đồ này sẽ cho biết địa điểm nào được nghe nhiều nhất."
                 />
               </div>
             )}
@@ -371,6 +387,40 @@ export function AnalyticsPage() {
 
       <Row gutter={18} style={{ marginTop: 18 }}>
         <Col span={24}>
+          <Card className="glass-card" title={t('analytics_active_visitors')}>
+            {realtimeSnapshot.activeVisitors.length ? (
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                {realtimeSnapshot.activeVisitors.map((visitor) => (
+                  <Card key={visitor.visitorKey} size="small">
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Space wrap>
+                        <Tag color={visitor.isAuthenticated ? 'green' : 'blue'}>
+                          {visitor.isAuthenticated ? t('analytics_authenticated_user') : t('analytics_anonymous_user')}
+                        </Tag>
+                        <Tag>{shortKey(visitor.anonymousId)}</Tag>
+                        <Tag>{shortKey(visitor.sessionId)}</Tag>
+                        <Tag color="magenta">{visitor.lang?.toUpperCase() ?? 'VI'}</Tag>
+                      </Space>
+                      <Typography.Text strong>{visitor.pageTitle || visitor.path || '/'}</Typography.Text>
+                      <Typography.Text type="secondary">
+                        {visitor.path || '/'} · {t('analytics_last_seen_at')} {formatDateTime(visitor.lastSeenAt)}
+                      </Typography.Text>
+                    </Space>
+                  </Card>
+                ))}
+              </Space>
+            ) : (
+              <EmptyState
+                title={t('analytics_active_visitors')}
+                description={t('analytics_active_visitors_empty')}
+              />
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={18} style={{ marginTop: 18 }}>
+        <Col span={24}>
           <Card className="glass-card" title={t('analytics_recent_routes')}>
             {summaryQuery.data.recentRouteTraces.length ? (
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
@@ -401,3 +451,4 @@ export function AnalyticsPage() {
     </PageContainer>
   );
 }
+

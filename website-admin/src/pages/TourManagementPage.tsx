@@ -67,7 +67,7 @@ export function TourManagementPage() {
       title={t('tours_title')}
       subtitle={t('tours_subtitle')}
       extra={(
-        <Space>
+        <Space wrap className="page-toolbar">
           <Input.Search placeholder={t('tours_search')} allowClear onChange={(event) => setKeyword(event.target.value)} />
           <Button type="primary" icon={<Plus size={16} />} onClick={() => { setEditing(null); setOpen(true); }}>
             {t('tours_new')}
@@ -77,9 +77,11 @@ export function TourManagementPage() {
     >
       <Card className="glass-card">
         <Table
+          className="table-responsive"
           rowKey="id"
           dataSource={data}
           loading={toursQuery.isFetching}
+          scroll={{ x: 980 }}
           columns={[
             { title: t('name'), dataIndex: 'title' },
             { title: t('language'), dataIndex: 'lang' },

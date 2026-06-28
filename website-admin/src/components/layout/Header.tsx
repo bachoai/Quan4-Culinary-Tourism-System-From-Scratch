@@ -8,10 +8,11 @@ import { ThemeToggle } from '../common/ThemeToggle';
 
 interface HeaderProps {
   collapsed: boolean;
+  mobile?: boolean;
   onToggle: () => void;
 }
 
-export function Header({ collapsed, onToggle }: HeaderProps) {
+export function Header({ collapsed, mobile = false, onToggle }: HeaderProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { user, clearAuth } = useAuthStore();
@@ -20,12 +21,14 @@ export function Header({ collapsed, onToggle }: HeaderProps) {
     <Layout.Header className="app-header">
       <div className="header-left">
         <Button icon={<Menu size={16} />} onClick={onToggle} />
-        <div>
+        <div className="header-title-group">
           <Typography.Text strong>{t('header_title')}</Typography.Text>
-          <div className="muted-text">{collapsed ? t('header_subtitle_compact') : t('header_subtitle')}</div>
+          <div className="muted-text">
+            {mobile || collapsed ? t('header_subtitle_compact') : t('header_subtitle')}
+          </div>
         </div>
       </div>
-      <Space size="middle">
+      <Space size="middle" wrap className="header-actions">
         <LanguageToggle />
         <ThemeToggle />
         <Dropdown
@@ -46,7 +49,7 @@ export function Header({ collapsed, onToggle }: HeaderProps) {
           <Button className="user-button">
             <Space>
               <Avatar icon={<UserCircle2 size={16} />} />
-              <span>{user?.fullName ?? 'Admin'}</span>
+              {!mobile ? <span>{user?.fullName ?? 'Admin'}</span> : null}
             </Space>
           </Button>
         </Dropdown>

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Quan4CulinaryTourism.Api.Common;
 using Quan4CulinaryTourism.Api.DTOs;
@@ -33,7 +33,7 @@ public class QrActivationService
     public async Task<QrActivationResponse> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
         var entity = await _qrActivationRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new ApiException("Khong tim thay ma kich hoat QR.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("Không tìm thấy mã kích hoạt QR.", StatusCodes.Status404NotFound);
         return await MapAsync(entity, cancellationToken);
     }
 
@@ -41,11 +41,11 @@ public class QrActivationService
     {
         var code = NormalizeCode(rawCode);
         var entity = await _qrActivationRepository.GetByCodeAsync(code, cancellationToken)
-            ?? throw new ApiException("Khong tim thay ma kich hoat QR.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("Không tìm thấy mã kích hoạt QR.", StatusCodes.Status404NotFound);
 
         if (!entity.IsActive)
         {
-            throw new ApiException("Ma kich hoat QR hien dang tam khoa.", StatusCodes.Status400BadRequest);
+            throw new ApiException("Mã kích hoạt QR hiện đang tạm khóa.", StatusCodes.Status400BadRequest);
         }
 
         return await MapAsync(entity, cancellationToken);
@@ -77,7 +77,7 @@ public class QrActivationService
         await EnsurePoiExistsAsync(request.PoiId, cancellationToken);
 
         var entity = await _qrActivationRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new ApiException("Khong tim thay ma kich hoat QR.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("Không tìm thấy mã kích hoạt QR.", StatusCodes.Status404NotFound);
 
         entity.Code = NormalizeCode(request.Code);
         entity.PoiId = request.PoiId.Trim();
@@ -96,14 +96,14 @@ public class QrActivationService
     public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
     {
         _ = await _qrActivationRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new ApiException("Khong tim thay ma kich hoat QR.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("Không tìm thấy mã kích hoạt QR.", StatusCodes.Status404NotFound);
         await _qrActivationRepository.DeleteAsync(id, cancellationToken);
     }
 
     private async Task EnsurePoiExistsAsync(string poiId, CancellationToken cancellationToken)
     {
         _ = await _poiRepository.GetByIdAsync(poiId.Trim(), cancellationToken)
-            ?? throw new ApiException("Khong tim thay POI de gan ma QR.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("Không tìm thấy POI để gắn mã QR.", StatusCodes.Status404NotFound);
     }
 
     private async Task<List<QrActivationResponse>> MapManyAsync(List<QrActivation> entities, CancellationToken cancellationToken)
@@ -122,7 +122,7 @@ public class QrActivationService
     private async Task<QrActivationResponse> MapAsync(QrActivation entity, CancellationToken cancellationToken)
     {
         var poi = await _poiRepository.GetByIdAsync(entity.PoiId, cancellationToken)
-            ?? throw new ApiException("POI gan voi ma QR khong con ton tai.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("POI gắn với mã QR không còn tồn tại.", StatusCodes.Status404NotFound);
         return Map(entity, new Dictionary<string, Poi>(StringComparer.Ordinal) { [poi.Id] = poi }, _publicSiteSettings);
     }
 
@@ -142,7 +142,7 @@ public class QrActivationService
             PoiAddress = poi?.Address ?? string.Empty,
             PoiWard = poi?.Ward ?? string.Empty,
             Title = entity.Title,
-            StopZone = string.IsNullOrWhiteSpace(entity.StopZone) ? "Chua phan khu" : entity.StopZone,
+            StopZone = string.IsNullOrWhiteSpace(entity.StopZone) ? "Chưa phân khu" : entity.StopZone,
             StopAddress = entity.StopAddress,
             SortOrder = entity.SortOrder,
             Description = entity.Description,
@@ -180,7 +180,7 @@ public class QrActivationService
         var normalized = rawCode.Trim().ToUpperInvariant();
         if (string.IsNullOrWhiteSpace(normalized))
         {
-            throw new ApiException("Code QR khong duoc de trong.");
+            throw new ApiException("Code QR không được để trống.");
         }
 
         return normalized;
@@ -191,7 +191,7 @@ public class QrActivationService
         var normalized = string.IsNullOrWhiteSpace(scanMode) ? "prefer_audio" : scanMode.Trim().ToLowerInvariant();
         if (!SharedConstants.QrScanModes.Contains(normalized, StringComparer.Ordinal))
         {
-            throw new ApiException("ScanMode khong hop le.");
+            throw new ApiException("ScanMode không hợp lệ.");
         }
 
         return normalized;
@@ -202,7 +202,7 @@ public class QrActivationService
         var normalized = rawStopZone.Trim();
         if (string.IsNullOrWhiteSpace(normalized))
         {
-            throw new ApiException("Khu vuc diem dung khong duoc de trong.");
+            throw new ApiException("Khu vực điểm dừng không được để trống.");
         }
 
         return normalized;
@@ -211,3 +211,4 @@ public class QrActivationService
     private static string? NormalizeOptionalText(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
+

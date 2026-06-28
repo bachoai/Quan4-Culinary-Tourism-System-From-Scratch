@@ -61,7 +61,7 @@ export function CategoryPage() {
       title={t('categories_title')}
       subtitle={t('categories_subtitle')}
       extra={
-        <Space>
+        <Space wrap className="page-toolbar">
           <Input.Search placeholder={t('categories_search')} allowClear onChange={(event) => setKeyword(event.target.value)} />
           <Button
             type="primary"
@@ -78,9 +78,11 @@ export function CategoryPage() {
     >
       <Card className="glass-card">
         <Table
+          className="table-responsive"
           rowKey="id"
           dataSource={data}
           loading={categoriesQuery.isFetching}
+          scroll={{ x: 900 }}
           columns={[
             { title: t('code'), dataIndex: 'code' },
             { title: t('name'), dataIndex: 'name' },

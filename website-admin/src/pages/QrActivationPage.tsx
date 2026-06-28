@@ -368,7 +368,7 @@ export function QrActivationPage() {
               </Typography.Title>
               <Typography.Text type="secondary">{t('qr_bulk_desc')}</Typography.Text>
             </div>
-            <Space wrap>
+            <Space wrap className="page-toolbar">
               <Input.Search placeholder={t('qr_activations_search')} allowClear value={keyword} onChange={(event) => setKeyword(event.target.value)} style={{ width: 260 }} />
               <Select value={zoneFilter} onChange={setZoneFilter} options={zoneOptions} style={{ width: 220 }} placeholder={t('qr_zone_filter')} />
               <Space>
@@ -382,7 +382,7 @@ export function QrActivationPage() {
             <Statistic title={t('qr_zone_filter')} value={zoneFilter === ALL_ZONES ? t('qr_zone_all') : zoneFilter} />
             <Statistic title={t('status')} value={activeOnly ? t('active') : t('qr_zone_all')} />
           </Space>
-          <Space wrap>
+          <Space wrap className="page-toolbar">
             <Button onClick={() => setSelectedRowKeys(filteredItems.map((item) => item.id))}>{t('qr_select_filtered')}</Button>
             <Button onClick={() => setSelectedRowKeys([])}>{t('qr_clear_selected')}</Button>
             <Button type="primary" icon={<Printer size={16} />} onClick={handlePrint}>{t('qr_print_selected')}</Button>
@@ -394,9 +394,11 @@ export function QrActivationPage() {
 
       <Card className="glass-card">
         <Table<QrActivationResponse>
+          className="table-responsive"
           rowKey="id"
           dataSource={filteredItems}
           loading={query.isFetching}
+          scroll={{ x: 1360 }}
           rowSelection={{
             selectedRowKeys,
             onChange: (keys) => setSelectedRowKeys(keys),

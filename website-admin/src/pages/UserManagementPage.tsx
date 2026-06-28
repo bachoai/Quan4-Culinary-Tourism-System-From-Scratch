@@ -42,11 +42,12 @@ export function UserManagementPage() {
   return (
     <PageContainer title={t('users_title')} subtitle={t('users_subtitle')}>
       <Card className="glass-card">
-        <Space style={{ marginBottom: 16 }}>
+        <Space wrap className="page-toolbar" style={{ marginBottom: 16 }}>
           <Input.Search placeholder={t('users_search')} allowClear onChange={(event) => setKeyword(event.target.value)} />
           <Select allowClear placeholder={t('role')} style={{ width: 160 }} options={USER_ROLES.map((value) => ({ value, label: value }))} onChange={setRole} />
         </Space>
         <Table
+          className="table-responsive"
           rowKey="id"
           dataSource={data}
           loading={usersQuery.isFetching}

@@ -29,7 +29,7 @@ export function AudioPage() {
     <PageContainer title={t('audio_title')} subtitle={t('audio_subtitle')}>
       <Card className="glass-card">
         <Space wrap direction="vertical" style={{ width: '100%' }}>
-          <Space wrap>
+          <Space wrap className="page-toolbar">
             <Select
               placeholder={t('choose_poi')}
               style={{ width: 320 }}

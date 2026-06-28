@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Button, Card, Col, Row, Space, Typography } from 'antd';
-import { Activity, ArrowRight, ChartColumnBig, ClipboardList, Landmark, PlayCircle, PlusCircle, ScrollText, UserRound, UsersRound } from 'lucide-react';
+import { Activity, ArrowRight, ChartColumnBig, ClipboardList, Landmark, PlayCircle, PlusCircle, Radio, ScrollText, UserRound, UsersRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { adminApi } from '../api/adminApi';
@@ -13,7 +13,12 @@ import { formatNumber } from '../utils/format';
 export function DashboardPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const statsQuery = useQuery({ queryKey: ['dashboard-stats'], queryFn: adminApi.getDashboardStats });
+  const statsQuery = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: adminApi.getDashboardStats,
+    refetchInterval: 10000,
+    refetchIntervalInBackground: true,
+  });
 
   if (statsQuery.isLoading) {
     return <LoadingScreen />;
@@ -49,6 +54,13 @@ export function DashboardPage() {
         <StatCard title={t('dashboard_pending_submissions')} value={formatNumber(stats.pendingSubmissions)} prefix={<ScrollText size={18} />} accent="#8B5CF6" subtitle="Đề xuất cập nhật đang chờ duyệt" />
         <StatCard title={t('dashboard_poi_views')} value={formatNumber(stats.totalPoiViews)} prefix={<Activity size={18} />} accent="#0EA5E9" subtitle="Lượt xem chi tiết điểm đến" />
         <StatCard title={t('dashboard_audio_plays')} value={formatNumber(stats.totalAudioPlays)} prefix={<PlayCircle size={18} />} accent="#14B8A6" subtitle="Lượt phát audio thuyết minh" />
+        <StatCard
+          title={t('dashboard_active_visitors_now')}
+          value={formatNumber(stats.activeVisitorsNow)}
+          prefix={<Radio size={18} />}
+          accent="#E11D48"
+          subtitle={`${formatNumber(stats.anonymousVisitorsNow)} ${t('dashboard_anonymous_visitors_now').toLowerCase()} · ${t('dashboard_active_window_label')}: ${stats.activeWindowSeconds}s`}
+        />
       </div>
       <Row gutter={18}>
         <Col xs={24} lg={16}>

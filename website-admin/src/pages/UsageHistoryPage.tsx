@@ -45,7 +45,7 @@ export function UsageHistoryPage() {
   return (
     <PageContainer title={t('usage_history_title')} subtitle={t('usage_history_subtitle')}>
       <Card className="glass-card">
-        <Space wrap style={{ marginBottom: 16 }}>
+        <Space wrap className="page-toolbar" style={{ marginBottom: 16 }}>
           <Select
             allowClear
             placeholder={t('status')}
@@ -70,9 +70,11 @@ export function UsageHistoryPage() {
         </Space>
         {(historyQuery.data?.items.length ?? 0) > 0 ? (
           <Table
+            className="table-responsive"
             rowKey="id"
             dataSource={historyQuery.data?.items ?? []}
             loading={historyQuery.isFetching}
+            scroll={{ x: 1200 }}
             pagination={{
               current: historyQuery.data?.page,
               pageSize: historyQuery.data?.pageSize,

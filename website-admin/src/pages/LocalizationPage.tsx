@@ -37,7 +37,7 @@ export function LocalizationPage() {
     <PageContainer title={t('localization_title')} subtitle={t('localization_subtitle')}>
       <Card className="glass-card">
         <Space direction="vertical" style={{ width: '100%' }}>
-          <Space wrap>
+          <Space wrap className="page-toolbar">
             <Select
               placeholder={t('choose_poi')}
               style={{ width: 320 }}
@@ -50,9 +50,11 @@ export function LocalizationPage() {
           </Space>
           {poiId ? (
             <Table
+              className="table-responsive"
               rowKey="id"
               dataSource={localizationsQuery.data ?? []}
               loading={localizationsQuery.isFetching}
+              scroll={{ x: 960 }}
               columns={[
                 { title: t('language'), dataIndex: 'lang' },
                 { title: t('name'), dataIndex: 'name' },

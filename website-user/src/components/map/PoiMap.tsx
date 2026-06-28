@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import type { RouteGeometry } from '../../api/routeApi';
 import type { Poi } from '../../types/responses';
@@ -13,7 +13,7 @@ const mapStyle: string | maplibregl.StyleSpecification = mapTilerKey
           type: 'raster',
           tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
           tileSize: 256,
-          attribution: '© OpenStreetMap contributors',
+          attribution: 'Â© OpenStreetMap contributors',
         },
       },
       layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
@@ -39,7 +39,7 @@ function popupContent(poi: Poi, onSelectPoi?: (poiId: string) => void) {
   if (onSelectPoi) {
     const selectButton = document.createElement('button');
     selectButton.type = 'button';
-    selectButton.textContent = 'Chi duong';
+    selectButton.textContent = 'Chỉ đường';
     selectButton.className = 'rounded-full bg-teal px-3 py-1 text-xs font-bold text-white';
     selectButton.onclick = () => onSelectPoi(poi.id);
     actions.append(selectButton);
@@ -47,7 +47,7 @@ function popupContent(poi: Poi, onSelectPoi?: (poiId: string) => void) {
 
   const detailLink = document.createElement('a');
   detailLink.href = `${window.location.origin}${window.location.pathname}#/poi/${encodeURIComponent(poi.id)}`;
-  detailLink.textContent = 'Xem chi tiet';
+  detailLink.textContent = 'Xem chi tiết';
   detailLink.className = 'rounded-full border border-slate-300 px-3 py-1 text-xs font-bold text-slate-700';
   actions.append(detailLink);
 
@@ -166,7 +166,7 @@ export function PoiMap({
 
     userMarkerRef.current = new maplibregl.Marker({ color: '#2EC4B6' })
       .setLngLat([userLocation.lng, userLocation.lat])
-      .setPopup(new maplibregl.Popup().setText('Vi tri cua ban'))
+      .setPopup(new maplibregl.Popup().setText('Vị trí của bạn'))
       .addTo(map);
   }, [userLocation]);
 
@@ -238,8 +238,8 @@ export function PoiMap({
 
   if (failed) {
     return (
-      <div className="grid min-h-[520px] place-items-center rounded-[2rem] bg-slate-100 p-8 text-center text-slate-500 dark:bg-slate-900">
-        Khong the tai nen ban do. Ban van co the xem danh sach POI va chi duong ben canh.
+      <div className="grid min-h-[620px] place-items-center rounded-[2rem] bg-slate-100 p-8 text-center text-slate-500 md:min-h-[700px] xl:min-h-[760px] dark:bg-slate-900">
+        Không thể tải nền bản đồ. Bạn vẫn có thể xem danh sách POI và chỉ đường bên cạnh.
       </div>
     );
   }
@@ -247,8 +247,9 @@ export function PoiMap({
   return (
     <div
       ref={node}
-      className="min-h-[520px] overflow-hidden rounded-[2rem] bg-slate-200 dark:bg-slate-800"
-      aria-label="Ban do POI Quan 4"
+      className="min-h-[620px] overflow-hidden rounded-[2rem] bg-slate-200 md:min-h-[700px] xl:min-h-[760px] dark:bg-slate-800"
+      aria-label="Bản đồ POI Quận 4"
     />
   );
 }
+

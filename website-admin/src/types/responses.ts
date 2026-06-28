@@ -104,6 +104,9 @@ export interface AdminDashboardResponse {
   pendingSubmissions: number;
   totalPoiViews: number;
   totalAudioPlays: number;
+  activeVisitorsNow: number;
+  anonymousVisitorsNow: number;
+  activeWindowSeconds: number;
 }
 
 export interface PoiLocalizationResponse {
@@ -184,6 +187,26 @@ export interface AnalyticsSummaryResponse {
   topPoiAudioPlays: TopPoiAnalyticsResponse[];
   heatmapPoints: AnalyticsHeatmapPointResponse[];
   recentRouteTraces: AnalyticsRouteTraceResponse[];
+  realtimeSnapshot: AnalyticsRealtimeSnapshotResponse;
+}
+
+export interface AnalyticsActiveVisitorResponse {
+  visitorKey: string;
+  anonymousId?: string | null;
+  sessionId?: string | null;
+  lang?: string | null;
+  path?: string | null;
+  pageTitle?: string | null;
+  isAuthenticated: boolean;
+  lastSeenAt: string;
+}
+
+export interface AnalyticsRealtimeSnapshotResponse {
+  activeVisitorCount: number;
+  anonymousVisitorCount: number;
+  authenticatedVisitorCount: number;
+  activeWindowSeconds: number;
+  activeVisitors: AnalyticsActiveVisitorResponse[];
 }
 
 export interface TourStopResponse {

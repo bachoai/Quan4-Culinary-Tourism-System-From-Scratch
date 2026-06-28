@@ -1,4 +1,4 @@
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using Quan4CulinaryTourism.Api.DTOs;
@@ -265,7 +265,7 @@ public class MapsService
 <body>
   <div class="layout">
     <header>
-      <h1>Ban do offline Quan 4</h1>
+      <h1>Bản đồ offline Quận 4</h1>
       <p>Pack: __PACK_NAME__</p>
     </header>
     <section class="map-shell">
@@ -277,8 +277,8 @@ public class MapsService
       </svg>
     </section>
     <section class="detail" id="detail">
-      <h2>Chua chon diem POI</h2>
-      <p class="muted">Chon marker trong ban do de xem thong tin tom tat.</p>
+      <h2>Chưa chọn điểm POI</h2>
+      <p class="muted">Chọn marker trong bản đồ để xem thông tin tóm tắt.</p>
     </section>
   </div>
   <script>
@@ -317,8 +317,8 @@ public class MapsService
       document.querySelectorAll(".poi").forEach(node => node.classList.toggle("active", node.dataset.id === poi.id));
       detail.innerHTML =
         "<h2>" + poi.name + "</h2>" +
-        "<p>" + (poi.description || "Khong co mo ta.") + "</p>" +
-        "<p><strong>Dia chi:</strong> " + poi.displayAddress + "</p>";
+        "<p>" + (poi.description || "Không có mô tả.") + "</p>" +
+        "<p><strong>Địa chỉ:</strong> " + poi.displayAddress + "</p>";
     }
 
     const normalizedPois = Array.isArray(pois) ? pois : [];
@@ -382,3 +382,4 @@ public class MapsService
 </html>
 """;
 }
+

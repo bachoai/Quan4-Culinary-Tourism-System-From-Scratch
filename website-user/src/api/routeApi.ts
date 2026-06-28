@@ -1,4 +1,4 @@
-export type RouteGeometry = {
+﻿export type RouteGeometry = {
   type: 'LineString';
   coordinates: [number, number][];
 };
@@ -28,12 +28,12 @@ export const routeApi = {
     const response = await fetch(url);
 
     if (!response.ok) {
-      throw new Error('Khong lay duoc du lieu chi duong tren ban do.');
+      throw new Error('Không lấy được dữ liệu chỉ đường trên bản đồ.');
     }
 
     const payload = (await response.json()) as OsrmRouteResponse;
     if (payload.code !== 'Ok' || !payload.routes?.[0]?.geometry?.coordinates?.length) {
-      throw new Error('Khong tim thay duong di phu hop cho hanh trinh nay.');
+      throw new Error('Không tìm thấy đường đi phù hợp cho hành trình này.');
     }
 
     return {
@@ -43,3 +43,4 @@ export const routeApi = {
     };
   },
 };
+

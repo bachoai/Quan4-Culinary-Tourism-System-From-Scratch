@@ -62,7 +62,7 @@ export function PoiListPage() {
       }
     >
       <Card className="glass-card">
-        <Space wrap style={{ marginBottom: 16 }}>
+        <Space wrap className="page-toolbar" style={{ marginBottom: 16 }}>
           <Input.Search placeholder={t('pois_search')} allowClear onChange={(event) => setKeyword(event.target.value)} />
           <Select
             allowClear

@@ -40,6 +40,7 @@ public class AnalyticsService
 
     public async Task<AnalyticsSummaryResponse> GetSummaryAsync(CancellationToken cancellationToken = default)
     {
+        var realtimeSnapshot = await _analyticsRepository.GetRealtimeSnapshotAsync(cancellationToken: cancellationToken);
         return new AnalyticsSummaryResponse
         {
             PoiViewedCount = await _analyticsRepository.CountByEventNameAsync("poi_viewed", cancellationToken),
@@ -49,7 +50,8 @@ public class AnalyticsService
             TopPoiViews = await _analyticsRepository.GetTopPoiViewsAsync(cancellationToken),
             TopPoiAudioPlays = await _analyticsRepository.GetTopAudioPlaysAsync(cancellationToken),
             HeatmapPoints = await _analyticsRepository.GetHeatmapPointsAsync(cancellationToken: cancellationToken),
-            RecentRouteTraces = await _analyticsRepository.GetRecentRouteTracesAsync(cancellationToken: cancellationToken)
+            RecentRouteTraces = await _analyticsRepository.GetRecentRouteTracesAsync(cancellationToken: cancellationToken),
+            RealtimeSnapshot = realtimeSnapshot
         };
     }
 

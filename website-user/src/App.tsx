@@ -20,7 +20,7 @@ import {
   Volume2,
   XCircle,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Component, useEffect, useRef, useState } from 'react';
 import {
   Link,
   Navigate,
@@ -59,7 +59,7 @@ import type {
   LoginRequest,
   RegisterRequest,
 } from './types/requests';
-import { distance, track } from './utils/analytics';
+import { distance, sendPresencePing, track } from './utils/analytics';
 import { hasRole } from './utils/auth';
 import { normalizeMediaUrl, poiImage } from './utils/media';
 
@@ -150,6 +150,74 @@ function SessionBootstrap() {
       logout();
     }
   }, [logout, meQuery.error]);
+
+  return null;
+}
+
+function PresenceHeartbeat() {
+  const location = useLocation();
+  const lang = useAppStore((state) => state.lang);
+  const isAuthenticated = useAppStore((state) => state.isAuthenticated);
+  const pageViewIdRef = useRef(crypto.randomUUID());
+  const currentPath = `${location.pathname}${location.search}`;
+
+  useEffect(() => {
+    pageViewIdRef.current = crypto.randomUUID();
+  }, [currentPath]);
+
+  useEffect(() => {
+    let intervalId: number | undefined;
+
+    const send = () => {
+      if (document.visibilityState !== 'visible') {
+        return;
+      }
+
+      sendPresencePing(
+        lang,
+        {
+          path: currentPath,
+          title: document.title,
+          isAuthenticated,
+        },
+        pageViewIdRef.current,
+      );
+    };
+
+    const stop = () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+        intervalId = undefined;
+      }
+    };
+
+    const start = () => {
+      stop();
+      send();
+      intervalId = window.setInterval(send, 20000);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        start();
+        return;
+      }
+
+      stop();
+    };
+
+    const handleFocus = () => send();
+
+    handleVisibilityChange();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [currentPath, isAuthenticated, lang]);
 
   return null;
 }
@@ -254,7 +322,7 @@ function Home() {
           <img
             src={heroImage}
             className="absolute inset-0 -z-10 h-full w-full object-cover opacity-35"
-            alt="Mon an Quan 4"
+            alt="Món ăn Quận 4"
           />
           <div className="absolute inset-0 -z-10 bg-gradient-to-r from-slate-950 via-slate-950/75 to-transparent" />
 
@@ -491,6 +559,33 @@ function Explore() {
   );
 }
 
+class RouteErrorBoundary extends Component<
+  { fallbackText: string; children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error(error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <section className="shell py-12">
+          <ErrorBox text={this.props.fallbackText} />
+        </section>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 function Detail() {
   const { id = '' } = useParams();
   const location = useLocation();
@@ -642,18 +737,47 @@ function Nearby() {
   const { lang, setLocation } = useAppStore();
   const [radius, setRadius] = useState(3000);
   const [coords, setCoords] = useState<{ lat: number; lng: number }>();
+  const [locationError, setLocationError] = useState('');
+  const hasValidCoords = Boolean(coords && Number.isFinite(coords.lat) && Number.isFinite(coords.lng));
 
   const query = useQuery({
     queryKey: ['nearby', coords, radius, lang],
-    queryFn: () => poiApi.nearby({ lat: coords!.lat, lng: coords!.lng, radius, limit: 20, lang }),
-    enabled: Boolean(coords),
+    queryFn: async () => {
+      if (!coords || !Number.isFinite(coords.lat) || !Number.isFinite(coords.lng)) {
+        return [];
+      }
+
+      const data = await poiApi.nearby({ lat: coords.lat, lng: coords.lng, radius, limit: 20, lang });
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: hasValidCoords,
+    retry: 1,
   });
+
+  const nearbyPois = Array.isArray(query.data) ? query.data : [];
+
+  const safeTrackNearby = () => {
+    try {
+      track('nearby_requested', lang, undefined, { radius });
+    } catch (error) {
+      console.warn('Nearby analytics unavailable', error);
+    }
+  };
+
+  const formatNearbyDistance = (meters?: number) => {
+    if (typeof meters !== 'number' || !Number.isFinite(meters)) {
+      return 'Đang cập nhật';
+    }
+
+    return distance(meters);
+  };
 
   const locate = (fallback = false) => {
     const setCurrentLocation = (lat: number, lng: number) => {
       setCoords({ lat, lng });
       setLocation({ lat, lng });
-      track('nearby_requested', lang, undefined, { radius });
+      setLocationError('');
+      safeTrackNearby();
     };
 
     if (fallback) {
@@ -661,9 +785,14 @@ function Nearby() {
       return;
     }
 
-    navigator.geolocation?.getCurrentPosition(
+    if (!navigator.geolocation) {
+      setLocationError('Trình duyệt này không hỗ trợ định vị. Hãy dùng vị trí mặc định Quận 4.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
       (position) => setCurrentLocation(position.coords.latitude, position.coords.longitude),
-      () => alert('Ban da tu choi GPS. Hay dung vi tri mac dinh Quan 4.'),
+      () => setLocationError('Không lấy được GPS. Bạn có thể thử lại hoặc dùng vị trí mặc định Quận 4.'),
       { enableHighAccuracy: true, timeout: 10000 },
     );
   };
@@ -671,15 +800,15 @@ function Nearby() {
   return (
     <section className="shell py-12">
       <p className="section-kicker">GOI Y QUANH BAN</p>
-      <h1 className="mt-2 text-4xl font-bold">Tim quan gan toi</h1>
+      <h1 className="mt-2 text-4xl font-bold">Tìm quán gần tôi</h1>
       <p className="mt-3 max-w-xl text-slate-500">
-        Cho phep trinh duyet su dung vi tri de tim nhung huong vi dang thu gan ban nhat.
+        Cho phép trình duyệt sử dụng vị trí để tìm những hương vị đáng thử gần bạn nhất.
       </p>
 
       <div className="mt-7 rounded-3xl bg-ink p-7 text-white">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-bold">Ban kinh tim kiem</p>
+            <p className="font-bold">Bán kính tìm kiếm</p>
             <div className="mt-3 flex gap-2">
               {[1000, 3000, 5000, 10000].map((item) => (
                 <button
@@ -696,32 +825,39 @@ function Nearby() {
           <div className="flex flex-wrap gap-2">
             <button onClick={() => locate()} className="btn-primary">
               <Navigation size={17} />
-              Lay vi tri hien tai
+              Lấy vị trí hiện tại
             </button>
             <button
               onClick={() => locate(true)}
               className="btn-secondary !border-white/20 !bg-transparent !text-white"
             >
-              Dung vi tri Quan 4
+              Dùng vị trí Quận 4
             </button>
           </div>
         </div>
+        {locationError ? <p className="mt-4 text-sm text-amber-200">{locationError}</p> : null}
       </div>
 
       {query.isLoading ? (
         <Spinner />
       ) : query.isError ? (
-        <ErrorBox text="Khong tim duoc dia diem gan day. Thu lai sau." />
-      ) : query.data ? (
+        <ErrorBox text="Không tìm được địa điểm gần đây. Thử lại sau." />
+      ) : nearbyPois.length ? (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {query.data.map((poi) => (
+          {nearbyPois.map((poi) => (
             <div key={poi.id} className="relative">
               <PoiCard poi={poi} />
               <span className="absolute right-5 top-4 rounded-full bg-ink px-2 py-1 text-xs font-bold text-white">
-                {distance(poi.distanceMeters)}
+                {formatNearbyDistance(poi.distanceMeters)}
               </span>
             </div>
           ))}
+        </div>
+      ) : hasValidCoords ? (
+        <div className="mt-8 rounded-3xl bg-slate-100 p-12 text-center dark:bg-slate-900">
+          <Navigation className="mx-auto text-teal" />
+          <h2 className="mt-3 text-xl font-bold">Chưa có địa điểm phù hợp</h2>
+          <p className="mt-1 text-slate-500">Hãy tăng bán kính tìm kiếm hoặc thử lại với vị trí khác.</p>
         </div>
       ) : null}
     </section>
@@ -767,7 +903,7 @@ function MapPage() {
     };
 
     const showError = () => {
-      setGeoError('Khong lay duoc vi tri hien tai. Hay bat GPS va thu lai.');
+      setGeoError('Không lấy được vị trí hiện tại. Hãy bật GPS và thử lại.');
       setIsLocating(false);
     };
 
@@ -826,7 +962,7 @@ function MapPage() {
         setIsLocating(false);
       },
       () => {
-        setGeoError('Khong lay duoc vi tri hien tai. Hay bat GPS va thu lai.');
+        setGeoError('Không lấy được vị trí hiện tại. Hãy bật GPS và thử lại.');
         setIsLocating(false);
       },
       {
@@ -846,25 +982,25 @@ function MapPage() {
   return (
     <section className="shell py-12">
       <p className="section-kicker">DINH VI HUONG VI</p>
-      <h1 className="mt-2 text-4xl font-bold">Ban do am thuc</h1>
-      <p className="mt-2 text-slate-500">Lay vi tri that cua ban, chon mot POI va xem duong di ngay tren ban do.</p>
+      <h1 className="mt-2 text-4xl font-bold">Bản đồ ẩm thực</h1>
+      <p className="mt-2 text-slate-500">Lấy vị trí thật của bạn, chọn một POI và xem đường đi ngay trên bản đồ.</p>
 
       <div className="mt-6 grid gap-4 rounded-[2rem] bg-white p-5 shadow-soft dark:bg-slate-900 md:grid-cols-[1.2fr_.8fr_auto] md:items-center">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-coral">GPS thoi gian thuc</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-coral">GPS thời gian thực</p>
           <p className="mt-2 text-sm text-slate-500">
             {location
-              ? `Vi tri hien tai: ${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`
+              ? `Vị trí hiện tại: ${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`
               : isLocating
-                ? 'Dang lay vi tri hien tai cua ban...'
-                : 'Chua lay duoc vi tri. Bam nut ben phai de bat dinh vi.'}
+                ? 'Đang lấy vị trí hiện tại của bạn...'
+                : 'Chưa lấy được vị trí. Bấm nút bên phải để bật định vị.'}
           </p>
           {geoError ? <p className="mt-2 text-sm text-rose-600">{geoError}</p> : null}
         </div>
         <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800">
           {selectedPoi ? (
             <>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal">POI dang chon</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal">POI đang chọn</p>
               <p className="mt-2 text-lg font-bold">{selectedPoi.name}</p>
               <p className="mt-1 text-sm text-slate-500">{selectedPoi.address}</p>
               {routeQuery.data ? (
@@ -873,30 +1009,30 @@ function MapPage() {
                   <span className="pill">{durationText}</span>
                 </div>
               ) : routeQuery.isLoading ? (
-                <p className="mt-2 text-sm text-slate-500">Dang tim duong di tren mang luoi duong pho...</p>
+                <p className="mt-2 text-sm text-slate-500">Đang tìm đường đi trên mạng lưới đường phố...</p>
               ) : routeQuery.isError ? (
                 <p className="mt-2 text-sm text-rose-600">{(routeQuery.error as Error).message}</p>
               ) : location ? (
-                <p className="mt-2 text-sm text-slate-500">Dang san sang chi duong ngay khi co route.</p>
+                <p className="mt-2 text-sm text-slate-500">Đang sẵn sàng chỉ đường ngay khi có route.</p>
               ) : (
-                <p className="mt-2 text-sm text-slate-500">Can vi tri that cua ban de ve duong di.</p>
+                <p className="mt-2 text-sm text-slate-500">Cần vị trí thật của bạn để vẽ đường đi.</p>
               )}
             </>
           ) : (
             <>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal">Chua chon diem den</p>
-              <p className="mt-2 text-sm text-slate-500">Hay bam vao marker hoac mot dong trong danh sach de xem route va so km.</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal">Chưa chọn điểm đến</p>
+              <p className="mt-2 text-sm text-slate-500">Hãy bấm vào marker hoặc một dòng trong danh sách để xem route và số km.</p>
             </>
           )}
         </div>
         <div className="flex flex-wrap gap-2 md:justify-end">
           <button type="button" className="btn-primary" onClick={refreshLocation} disabled={isLocating}>
             <Navigation size={17} />
-            {isLocating ? 'Dang lay GPS' : 'Lay vi tri cua toi'}
+            {isLocating ? 'Đang lấy GPS' : 'Lấy vị trí của tôi'}
           </button>
           {selectedPoi ? (
             <button type="button" className="btn-secondary" onClick={clearFocusPoi}>
-              Bo chon diem
+              Bỏ chọn điểm
             </button>
           ) : null}
         </div>
@@ -910,7 +1046,7 @@ function MapPage() {
           routeGeometry={routeQuery.data?.geometry}
           onSelectPoi={focusPoi}
         />
-        <div className="max-h-[430px] space-y-3 overflow-y-auto pr-1">
+        <div className="max-h-[620px] space-y-3 overflow-y-auto pr-1 md:max-h-[700px] xl:max-h-[760px]">
           {isLoading ? (
             <Spinner />
           ) : isError ? (
@@ -930,10 +1066,10 @@ function MapPage() {
                 </button>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button type="button" className="pill border-teal text-teal" onClick={() => focusPoi(poi.id)}>
-                    {selectedPoiId === poi.id ? 'Dang chi duong' : 'Chi duong tren map'}
+                    {selectedPoiId === poi.id ? 'Đang chỉ đường' : 'Chỉ đường trên map'}
                   </button>
                   <Link to={`/poi/${poi.id}`} className="pill">
-                    Xem chi tiet
+                    Xem chi tiết
                   </Link>
                 </div>
               </div>
@@ -944,7 +1080,7 @@ function MapPage() {
 
       <Link className="btn-secondary mt-5" to="/nearby">
         <Navigation size={17} />
-        Tim quanh toi
+        Tìm quanh tôi
       </Link>
     </section>
   );
@@ -984,8 +1120,8 @@ function ToursPage() {
       ) : (
         <div className="mt-8 rounded-3xl bg-slate-100 p-12 text-center dark:bg-slate-900">
           <RouteIcon className="mx-auto text-teal" />
-          <h2 className="mt-3 text-xl font-bold">Chua co tour cong khai</h2>
-          <p className="mt-1 text-slate-500">Admin co the tao tour moi trong trang quan tri.</p>
+          <h2 className="mt-3 text-xl font-bold">Chưa có tour công khai</h2>
+          <p className="mt-1 text-slate-500">Admin có thể tạo tour mới trong trang quản trị.</p>
         </div>
       )}
     </section>
@@ -1295,7 +1431,7 @@ function LoginPage() {
     <section className="shell py-12">
       <div className="mx-auto max-w-xl rounded-[2rem] bg-white p-8 shadow-soft dark:bg-slate-900">
         <p className="section-kicker">AUTH</p>
-        <h1 className="mt-2 text-4xl font-bold">Dang nhap</h1>
+        <h1 className="mt-2 text-4xl font-bold">Đăng nhập</h1>
         <p className="mt-2 text-slate-500">Su dung API auth/login va auth/me tu backend.</p>
 
         <form
@@ -1330,14 +1466,14 @@ function LoginPage() {
 
           <button className="btn-primary justify-center" disabled={mutation.isPending}>
             {mutation.isPending ? <LoaderCircle className="animate-spin" size={18} /> : <UserRound size={18} />}
-            Dang nhap
+            Đăng nhập
           </button>
         </form>
 
         <p className="mt-5 text-sm text-slate-500">
-          Chua co tai khoan?{' '}
+          Chưa có tài khoản?{' '}
           <Link to="/register" className="font-bold text-coral">
-            Dang ky ngay
+            Đăng ký ngay
           </Link>
         </p>
       </div>
@@ -1366,8 +1502,8 @@ function RegisterPage() {
     <section className="shell py-12">
       <div className="mx-auto max-w-2xl rounded-[2rem] bg-white p-8 shadow-soft dark:bg-slate-900">
         <p className="section-kicker">AUTH</p>
-        <h1 className="mt-2 text-4xl font-bold">Tao tai khoan user</h1>
-        <p className="mt-2 text-slate-500">Mo FE cho API auth/register va luon dang nhap sau khi tao tai khoan thanh cong.</p>
+        <h1 className="mt-2 text-4xl font-bold">Tạo tài khoản user</h1>
+        <p className="mt-2 text-slate-500">Mở FE cho API auth/register và luôn đăng nhập sau khi tạo tài khoản thành công.</p>
 
         <form
           className="mt-8 grid gap-4 md:grid-cols-2"
@@ -1415,7 +1551,7 @@ function RegisterPage() {
 
           <button className="btn-primary justify-center md:col-span-2" disabled={mutation.isPending}>
             {mutation.isPending ? <LoaderCircle className="animate-spin" size={18} /> : <ShieldCheck size={18} />}
-            Tao tai khoan va dang nhap
+            Tạo tài khoản và đăng nhập
           </button>
         </form>
       </div>
@@ -1441,7 +1577,7 @@ function AccountPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['auth-me'] });
       await queryClient.invalidateQueries({ queryKey: ['owner-dashboard'] });
-      alert('Da gui dang ky owner thanh cong.');
+      alert('Đã gửi đăng ký owner thành công.');
     },
   });
   const currentUserQuery = useQuery({
@@ -1508,7 +1644,7 @@ function AccountPage() {
               }}
             >
               <LogOut size={18} />
-              Dang xuat
+              Đăng xuất
             </button>
           </div>
         </div>
@@ -1517,13 +1653,13 @@ function AccountPage() {
           {canOpenOwnerWorkspace ? (
             <>
               <p className="section-kicker">OWNER DA DUOC DUYET</p>
-              <h2 className="mt-2 text-3xl font-bold">Tai khoan nay da la owner</h2>
+              <h2 className="mt-2 text-3xl font-bold">Tài khoản này đã là owner</h2>
               <p className="mt-2 text-slate-500">
-                Admin da xac nhan quyen owner cho tai khoan nay. Ban khong can gui lai form dang ky.
+                Admin đã xác nhận quyền owner cho tài khoản này. Bạn không cần gửi lại form đăng ký.
               </p>
               <div className="mt-6 rounded-2xl bg-emerald-50 p-5 text-emerald-800">
-                <p className="font-bold">Trang quan ly owner da san sang.</p>
-                <p className="mt-1 text-sm">Ban co the vao workspace owner de xem dia diem, luot xem, luot nghe audio va luot quet QR.</p>
+                <p className="font-bold">Trang quản lý owner đã sẵn sàng.</p>
+                <p className="mt-1 text-sm">Bạn có thể vào workspace owner để xem địa điểm, lượt xem, lượt nghe audio và lượt quét QR.</p>
               </div>
               <div className="mt-6">
                 <Link className="btn-primary" to="/owner">
@@ -1534,13 +1670,13 @@ function AccountPage() {
           ) : ownerApprovedWithoutRole ? (
             <>
               <p className="section-kicker">OWNER CHUA SAN SANG</p>
-              <h2 className="mt-2 text-3xl font-bold">Tai khoan nay chua co quyen owner de vao workspace</h2>
+              <h2 className="mt-2 text-3xl font-bold">Tài khoản này chưa có quyền owner để vào workspace</h2>
               <p className="mt-2 text-slate-500">
-                He thong dang ghi nhan trang thai owner da duoc duyet, nhung tai khoan hien tai chua co role `OWNER` de mo trang quan ly owner.
+                Hệ thống đang ghi nhận trạng thái owner đã được duyệt, nhưng tài khoản hiện tại chưa có role `OWNER` để mở trang quản lý owner.
               </p>
               <div className="mt-6 rounded-2xl bg-amber-50 p-5 text-amber-900">
-                <p className="font-bold">Neu day la tai khoan owner vua duoc duyet:</p>
-                <p className="mt-1 text-sm">Hay dang xuat dang nhap lai. Neu van khong vao duoc, admin can kiem tra role `OWNER` tren tai khoan nay.</p>
+                <p className="font-bold">Nếu đây là tài khoản owner vừa được duyệt:</p>
+                <p className="mt-1 text-sm">Hãy đăng xuất đăng nhập lại. Nếu vẫn không vào được, admin cần kiểm tra role `OWNER` trên tài khoản này.</p>
               </div>
             </>
           ) : (
@@ -1548,7 +1684,7 @@ function AccountPage() {
               <p className="section-kicker">REGISTER OWNER</p>
               <h2 className="mt-2 text-3xl font-bold">Gui yeu cau owner</h2>
               <p className="mt-2 text-slate-500">
-                FE nay da noi thang vao `POST /api/v1/auth/register-owner`. Khi duoc approve, tai khoan se co role `OWNER`.
+                FE này đã nối thẳng vào `POST /api/v1/auth/register-owner`. Khi được approve, tài khoản sẽ có role `OWNER`.
               </p>
 
               <form
@@ -1565,7 +1701,7 @@ function AccountPage() {
                     required
                   />
                 </Field>
-                <Field label="Dia chi kinh doanh">
+                <Field label="Địa chỉ kinh doanh">
                   <TextInput
                     value={ownerForm.businessAddress}
                     onChange={(event) => setOwnerForm((current) => ({ ...current, businessAddress: event.target.value }))}
@@ -1710,9 +1846,9 @@ function OwnerPage() {
   return (
     <section className="shell py-12">
       <p className="section-kicker">OWNER WORKSPACE</p>
-      <h1 className="mt-2 text-4xl font-bold">Quan ly dia diem va submissions</h1>
+      <h1 className="mt-2 text-4xl font-bold">Quản lý địa điểm và submissions</h1>
       <p className="mt-2 max-w-3xl text-slate-500">
-        Trang owner nay da co dashboard tong quan, danh sach dia diem cua chinh ban, luot vao trang, so nguoi da nghe audio, luot quet QR va khu gui yeu cau cap nhat noi dung.
+        Trang owner này đã có dashboard tổng quan, danh sách địa điểm của chính bạn, lượt vào trang, số người đã nghe audio, lượt quét QR và khu gửi yêu cầu cập nhật nội dung.
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -1724,11 +1860,11 @@ function OwnerPage() {
           [
             ['Tong POI', dashboardQuery.data?.totalPois || 0],
             ['Tong submissions', dashboardQuery.data?.totalSubmissions || 0],
-            ['Luot vao trang', dashboardQuery.data?.totalViews || 0],
-            ['Nguoi vao trang', dashboardQuery.data?.uniqueVisitors || 0],
-            ['Luot nghe audio', dashboardQuery.data?.totalAudioPlays || 0],
-            ['Nguoi da nghe', dashboardQuery.data?.uniqueAudioListeners || 0],
-            ['Luot quet QR', dashboardQuery.data?.totalQrScans || 0],
+            ['Lượt vào trang', dashboardQuery.data?.totalViews || 0],
+            ['Người vào trang', dashboardQuery.data?.uniqueVisitors || 0],
+            ['Lượt nghe audio', dashboardQuery.data?.totalAudioPlays || 0],
+            ['Người đã nghe', dashboardQuery.data?.uniqueAudioListeners || 0],
+            ['Lượt quét QR', dashboardQuery.data?.totalQrScans || 0],
           ].map(([label, value]) => (
             <div
               key={label as string}
@@ -1744,9 +1880,9 @@ function OwnerPage() {
       <div className="mt-8 rounded-[2rem] bg-white p-8 shadow-soft dark:bg-slate-900">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold">Dia diem cua toi</h2>
+            <h2 className="text-2xl font-bold">Địa điểm của tôi</h2>
             <p className="mt-2 text-sm text-slate-500">
-              Du lieu lay tu `GET /api/v1/owner/pois`, gom thong tin POI, luot vao trang, nguoi nghe audio va so lan quet QR theo tung dia diem.
+              Dữ liệu lấy từ `GET /api/v1/owner/pois`, gồm thông tin POI, lượt vào trang, người nghe audio và số lần quét QR theo từng địa điểm.
             </p>
           </div>
           <button
@@ -1757,7 +1893,7 @@ function OwnerPage() {
               submissionFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }}
           >
-            Tao submission moi
+            Tạo submission mới
           </button>
         </div>
 
@@ -1775,9 +1911,9 @@ function OwnerPage() {
           </div>
         ) : (
           <div className="mt-6 rounded-3xl bg-slate-100 p-8 text-center dark:bg-slate-800">
-            <p className="font-bold">Chua co dia diem nao duoc gan cho owner nay</p>
+            <p className="font-bold">Chưa có địa điểm nào được gán cho owner này</p>
             <p className="mt-1 text-sm text-slate-500">
-              Ban van co the tao submission moi o phan ben duoi de de xuat dia diem moi hoac yeu cau cap nhat.
+              Bạn vẫn có thể tạo submission mới ở phần bên dưới để đề xuất địa điểm mới hoặc yêu cầu cập nhật.
             </p>
           </div>
         )}
@@ -1785,14 +1921,14 @@ function OwnerPage() {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.05fr_.95fr]">
         <div ref={submissionFormRef} className="rounded-[2rem] bg-white p-8 shadow-soft dark:bg-slate-900">
-          <h2 className="text-2xl font-bold">Tao submission moi</h2>
+          <h2 className="text-2xl font-bold">Tạo submission mới</h2>
           <p className="mt-2 text-sm text-slate-500">
-            Ban co the tao submission moi, sua submission pending, hoac tu mot dia diem dang quan ly tao nhanh submission `update` da prefill san du lieu hien tai.
+            Bạn có thể tạo submission mới, sửa submission pending, hoặc từ một địa điểm đang quản lý tạo nhanh submission `update` đã prefill sẵn dữ liệu hiện tại.
           </p>
 
           {editingSubmissionId ? (
             <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              <span>Dang sua submission {editingSubmissionId}</span>
+              <span>Đang sửa submission {editingSubmissionId}</span>
               <button
                 type="button"
                 className="font-bold text-coral"
@@ -1801,7 +1937,7 @@ function OwnerPage() {
                   setSubmissionForm(createEmptySubmissionForm());
                 }}
               >
-                Huy che do sua
+                Hủy chế độ sửa
               </button>
             </div>
           ) : null}
@@ -1816,7 +1952,7 @@ function OwnerPage() {
               });
             }}
           >
-            <Field label="Loai submission">
+            <Field label="Loại submission">
               <select
                 value={submissionForm.submissionType}
                 onChange={(event) =>
@@ -1828,13 +1964,13 @@ function OwnerPage() {
                 <option value="update">update</option>
               </select>
             </Field>
-            <Field label="POI id (neu update)">
+            <Field label="POI id (nếu update)">
               <TextInput
                 value={submissionForm.poiId}
                 onChange={(event) => setSubmissionForm((current) => ({ ...current, poiId: event.target.value }))}
               />
             </Field>
-            <Field label="Ten dia diem">
+            <Field label="Tên địa điểm">
               <TextInput
                 value={submissionForm.poiName}
                 onChange={(event) => setSubmissionForm((current) => ({ ...current, poiName: event.target.value }))}
@@ -1850,7 +1986,7 @@ function OwnerPage() {
                 required
                 className="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900"
               >
-                <option value="">Chon category</option>
+                <option value="">Chọn category</option>
                 {(categoriesQuery.data || []).map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
@@ -1892,7 +2028,7 @@ function OwnerPage() {
                 required
               />
             </Field>
-            <Field label="Dia chi">
+            <Field label="Địa chỉ">
               <TextInput
                 value={submissionForm.address}
                 onChange={(event) => setSubmissionForm((current) => ({ ...current, address: event.target.value }))}
@@ -1989,13 +2125,13 @@ function OwnerPage() {
                 className="md:col-span-2"
               />
             </Field>
-            <Field label="Noi dung thuyet minh (de trong se doc mo ta)">
+            <Field label="Nội dung thuyết minh (để trống sẽ đọc mô tả)">
               <TextArea
                 value={submissionForm.ttsScript}
                 onChange={(event) =>
                   setSubmissionForm((current) => ({ ...current, ttsScript: event.target.value }))
                 }
-                placeholder="Nhap kich ban rieng neu muon doc khac phan mo ta"
+                placeholder="Nhập kịch bản riêng nếu muốn đọc khác phần mô tả"
                 className="md:col-span-2"
               />
             </Field>
@@ -2010,7 +2146,7 @@ function OwnerPage() {
                   }))
                 }
               />
-              <span>Bat auto narration</span>
+              <span>Bật auto narration</span>
             </label>
 
             {saveSubmissionMutation.error ? (
@@ -2025,14 +2161,14 @@ function OwnerPage() {
               ) : (
                 <CheckCircle2 size={18} />
               )}
-              {editingSubmissionId ? 'Cap nhat submission owner' : 'Tao submission owner'}
+              {editingSubmissionId ? 'Cập nhật submission owner' : 'Tạo submission owner'}
             </button>
           </form>
         </div>
 
         <div className="rounded-[2rem] bg-white p-8 shadow-soft dark:bg-slate-900">
-          <h2 className="text-2xl font-bold">Danh sach submissions</h2>
-          <p className="mt-2 text-sm text-slate-500">Du lieu lay tu `GET /api/v1/owner/submissions`.</p>
+          <h2 className="text-2xl font-bold">Danh sách submissions</h2>
+          <p className="mt-2 text-sm text-slate-500">Dữ liệu lấy từ `GET /api/v1/owner/submissions`.</p>
 
           {submissionsQuery.isLoading ? (
             <Spinner />
@@ -2064,8 +2200,8 @@ function OwnerPage() {
             </div>
           ) : (
             <div className="mt-6 rounded-3xl bg-slate-100 p-8 text-center dark:bg-slate-800">
-              <p className="font-bold">Chua co submission nao</p>
-              <p className="mt-1 text-sm text-slate-500">Gui submission dau tien cua ban bang form ben trai.</p>
+              <p className="font-bold">Chưa có submission nào</p>
+              <p className="mt-1 text-sm text-slate-500">Gửi submission đầu tiên của bạn bằng form bên trái.</p>
             </div>
           )}
         </div>
@@ -2090,10 +2226,10 @@ function OwnerPoiCard({
       <div className="p-6">
         <div className="flex flex-wrap items-center gap-2">
           <span className={`pill ${poi.isActive ? 'border-emerald-400 text-emerald-600' : 'border-slate-300 text-slate-500'}`}>
-            {poi.isActive ? 'Dang hien thi' : 'Tam an'}
+            {poi.isActive ? 'Đang hiển thị' : 'Tạm ẩn'}
           </span>
           <span className="pill">Audio: {poi.audioStatus}</span>
-          {poi.activationRequested ? <span className="pill border-amber-300 text-amber-700">Cho duyet kich hoat</span> : null}
+          {poi.activationRequested ? <span className="pill border-amber-300 text-amber-700">Chờ duyệt kích hoạt</span> : null}
         </div>
 
         <h3 className="mt-4 text-2xl font-bold">{poi.name}</h3>
@@ -2101,23 +2237,23 @@ function OwnerPoiCard({
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="rounded-2xl bg-slate-100 p-4 dark:bg-slate-800">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-coral">Luot vao trang</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-coral">Lượt vào trang</p>
             <p className="mt-1 text-2xl font-bold">{poi.viewCount}</p>
           </div>
           <div className="rounded-2xl bg-slate-100 p-4 dark:bg-slate-800">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-600">Nguoi vao trang</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-600">Người vào trang</p>
             <p className="mt-1 text-2xl font-bold">{poi.uniqueVisitorCount}</p>
           </div>
           <div className="rounded-2xl bg-slate-100 p-4 dark:bg-slate-800">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal">Luot nghe</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal">Lượt nghe</p>
             <p className="mt-1 text-2xl font-bold">{poi.audioPlayCount}</p>
           </div>
           <div className="rounded-2xl bg-slate-100 p-4 dark:bg-slate-800">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-600">Nguoi da nghe</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-600">Người đã nghe</p>
             <p className="mt-1 text-2xl font-bold">{poi.uniqueAudioListenerCount}</p>
           </div>
           <div className="rounded-2xl bg-slate-100 p-4 dark:bg-slate-800 md:col-span-2">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-600">Luot quet QR</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-600">Lượt quét QR</p>
             <p className="mt-1 text-2xl font-bold">{poi.qrScanCount}</p>
           </div>
         </div>
@@ -2128,19 +2264,19 @@ function OwnerPoiCard({
             <span>{poi.address}, {poi.ward}, {poi.district}</span>
           </p>
           <p>Gia: {poi.priceRange} Â· Priority: {poi.priority}</p>
-          <p>Cap nhat: {new Date(poi.updatedAt).toLocaleString()}</p>
+          <p>Cập nhật: {new Date(poi.updatedAt).toLocaleString()}</p>
         </div>
 
         <div className="mt-5 flex flex-wrap gap-3">
           <Link className="btn-secondary !px-4 !py-2" to={`/poi/${poi.id}`}>
-            Xem chi tiet
+            Xem chi tiết
           </Link>
           <a className="btn-secondary !px-4 !py-2" href={mapUrl} target="_blank" rel="noreferrer">
             <Navigation size={16} />
             Chi duong
           </a>
           <button className="btn-primary !px-4 !py-2" onClick={onCreateUpdate}>
-            Gui yeu cau cap nhat <ArrowRight size={16} />
+            Gửi yêu cầu cập nhật <ArrowRight size={16} />
           </button>
         </div>
       </div>
@@ -2168,14 +2304,14 @@ function SubmissionCard({
       <div className="mt-4 grid gap-2 text-sm text-slate-500">
         <p>Priority: {submission.priority}</p>
         <p>Geofence: {submission.geofenceRadiusMeters} m</p>
-        <p>Auto narration: {submission.autoNarrationEnabled ? 'bat' : 'tat'}</p>
-        <p>Tao luc: {new Date(submission.createdAt).toLocaleString()}</p>
+        <p>Auto narration: {submission.autoNarrationEnabled ? 'bật' : 'tắt'}</p>
+        <p>Tạo lúc: {new Date(submission.createdAt).toLocaleString()}</p>
         {submission.adminNote ? <p>Admin note: {submission.adminNote}</p> : null}
       </div>
 
       {submission.status === 'pending' ? (
         <button onClick={onEdit} className="mt-4 text-sm font-bold text-coral">
-          Sua submission pending
+          Sửa submission pending
         </button>
       ) : null}
     </article>
@@ -2185,28 +2321,28 @@ function SubmissionCard({
 function About() {
   return (
     <section className="shell py-12">
-      <p className="section-kicker">CAU CHUYEN DU AN</p>
+      <p className="section-kicker">CÂU CHUYỆN DỰ ÁN</p>
       <h1 className="mt-2 max-w-3xl text-4xl font-bold leading-tight">
-        Mot nguoi ban dong hanh cho hanh trinh an ngon o Quan 4.
+        Một người bạn đồng hành cho hành trình ăn ngon ở Quận 4.
       </h1>
 
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
         <div className="rounded-[2rem] bg-orange-100 p-8 dark:bg-orange-500/10">
-          <h2 className="text-2xl font-bold">Muc tieu</h2>
+          <h2 className="text-2xl font-bold">Mục tiêu</h2>
           <p className="mt-4 leading-7 text-slate-600 dark:text-slate-300">
-            He thong giup du khach tim, nghe va cam nhan nhung diem am thuc dia phuong mot cach truc quan qua web, mobile va ban do thong minh.
+            Hệ thống giúp du khách tìm, nghe và cảm nhận những điểm ẩm thực địa phương một cách trực quan qua web, mobile và bản đồ thông minh.
           </p>
         </div>
 
         <div className="rounded-[2rem] bg-teal/10 p-8">
-          <h2 className="text-2xl font-bold">Co gi trong trai nghiem?</h2>
+          <h2 className="text-2xl font-bold">Có gì trong trải nghiệm?</h2>
           <ul className="mt-4 grid gap-3 text-slate-600 dark:text-slate-300">
             {[
-              'POI am thuc duoc tuyen chon',
-              'GPS va goi y gan ban',
-              'Audio thuyet minh da ngon ngu',
+              'POI ẩm thực được tuyển chọn',
+              'GPS và gợi ý gần bạn',
+              'Audio thuyết minh đa ngôn ngữ',
               'QR user flow va deep-link resolve',
-              'Tours cong khai va owner workspace',
+              'Tours công khai và owner workspace',
             ].map((item) => (
               <li key={item} className="flex gap-2">
                 <span className="text-teal">âœ¦</span>
@@ -2225,7 +2361,7 @@ function NotFound() {
     <section className="shell grid min-h-[55vh] place-items-center text-center">
       <div>
         <p className="text-7xl font-bold text-coral">404</p>
-        <h1 className="mt-3 text-2xl font-bold">Khong tim thay trang nay</h1>
+        <h1 className="mt-3 text-2xl font-bold">Không tìm thấy trang này</h1>
         <Link className="btn-primary mt-6" to="/">
           Ve trang chu
         </Link>
@@ -2238,13 +2374,21 @@ export default function App() {
   return (
     <>
       <SessionBootstrap />
+      <PresenceHeartbeat />
       <AnimatePresence mode="wait">
         <Routes>
           <Route element={<PublicLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/poi/:id" element={<Detail />} />
-            <Route path="/nearby" element={<Nearby />} />
+            <Route
+              path="/nearby"
+              element={
+                <RouteErrorBoundary fallbackText="Trang Gần tôi vừa gặp lỗi hiển thị. Hãy tải lại trang hoặc thử lấy vị trí lại.">
+                  <Nearby />
+                </RouteErrorBoundary>
+              }
+            />
             <Route path="/map" element={<MapPage />} />
             <Route path="/tours" element={<ToursPage />} />
             <Route path="/qr" element={<QrPage />} />
@@ -2276,3 +2420,9 @@ export default function App() {
     </>
   );
 }
+
+
+
+
+
+

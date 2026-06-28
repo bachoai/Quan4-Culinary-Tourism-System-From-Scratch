@@ -45,6 +45,7 @@ public class AdminService
         var totalOwners = await _userRepository.CountAsync(Builders<User>.Filter.AnyEq(x => x.Roles, SharedConstants.UserRoles.Owner), cancellationToken);
         var totalPois = await _poiRepository.CountAsync(cancellationToken: cancellationToken);
         var totalActivePois = await _poiRepository.CountAsync(Builders<Poi>.Filter.Eq(x => x.IsActive, true), cancellationToken);
+        var realtimeSnapshot = await _analyticsRepository.GetRealtimeSnapshotAsync(cancellationToken: cancellationToken);
         return new AdminDashboardResponse
         {
             TotalUsers = totalUsers,
@@ -54,7 +55,10 @@ public class AdminService
             PendingOwnerRegistrations = await _ownerRegistrationRepository.CountPendingAsync(cancellationToken),
             PendingSubmissions = await _ownerSubmissionRepository.CountPendingAsync(cancellationToken),
             TotalPoiViews = await _analyticsRepository.CountByEventNameAsync("poi_viewed", cancellationToken),
-            TotalAudioPlays = await _analyticsRepository.CountByEventNamesAsync(["audio_played", "tts_played"], cancellationToken)
+            TotalAudioPlays = await _analyticsRepository.CountByEventNamesAsync(["audio_played", "tts_played"], cancellationToken),
+            ActiveVisitorsNow = realtimeSnapshot.ActiveVisitorCount,
+            AnonymousVisitorsNow = realtimeSnapshot.AnonymousVisitorCount,
+            ActiveWindowSeconds = realtimeSnapshot.ActiveWindowSeconds
         };
     }
 

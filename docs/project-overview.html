@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tổng Quan Dự Án Quan4 Culinary Tourism</title>
+    <style>
+      :root {
+        --bg: #f6f8fb;
+        --surface: #ffffff;
+        --surface-soft: #eef3f8;
+        --text: #14213d;
+        --muted: #52627a;
+        --border: #d8e1eb;
+        --primary: #ff6b35;
+        --secondary: #2ec4b6;
+        --accent: #1d4ed8;
+        --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        --radius: 22px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(255, 107, 53, 0.14), transparent 28%),
+          radial-gradient(circle at top right, rgba(46, 196, 182, 0.12), transparent 24%),
+          var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      .page {
+        width: min(1200px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0 56px;
+      }
+
+      .hero {
+        padding: 36px;
+        border-radius: 28px;
+        background: linear-gradient(135deg, #132238 0%, #1f3a5f 50%, #0f766e 100%);
+        color: #fff;
+        box-shadow: var(--shadow);
+      }
+
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(32px, 5vw, 52px);
+        line-height: 1.1;
+      }
+
+      .hero p {
+        max-width: 860px;
+        margin: 14px 0 0;
+        color: rgba(255, 255, 255, 0.88);
+      }
+
+      .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 22px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        gap: 24px;
+        margin-top: 24px;
+      }
+
+      .toc,
+      .section,
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+
+      .toc {
+        position: sticky;
+        top: 16px;
+        align-self: start;
+        padding: 20px;
+      }
+
+      .toc h2 {
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+
+      .toc ol {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .toc li + li {
+        margin-top: 8px;
+      }
+
+      .content {
+        display: grid;
+        gap: 24px;
+      }
+
+      .section {
+        padding: 28px;
+      }
+
+      .section h2 {
+        margin: 0 0 16px;
+        font-size: 28px;
+      }
+
+      .section h3 {
+        margin: 24px 0 10px;
+        font-size: 20px;
+      }
+
+      .section p,
+      .section li {
+        color: var(--muted);
+      }
+
+      .grid-2,
+      .grid-3,
+      .grid-4 {
+        display: grid;
+        gap: 16px;
+      }
+
+      .grid-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .grid-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .card h4 {
+        margin: 0 0 8px;
+        font-size: 17px;
+      }
+
+      .kicker {
+        margin: 0 0 8px;
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--primary);
+        font-weight: 700;
+      }
+
+      .flow {
+        display: grid;
+        gap: 14px;
+      }
+
+      .flow-step {
+        padding: 16px 18px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: linear-gradient(180deg, #fff, var(--surface-soft));
+      }
+
+      .flow-step strong {
+        color: var(--text);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border-radius: 18px;
+      }
+
+      th,
+      td {
+        padding: 12px 14px;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--border);
+      }
+
+      th {
+        background: #f8fafc;
+        color: var(--text);
+        font-size: 14px;
+      }
+
+      td {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      code {
+        padding: 2px 6px;
+        border-radius: 8px;
+        background: #edf2f7;
+        color: #102a43;
+        font-size: 0.95em;
+      }
+
+      .note {
+        padding: 16px 18px;
+        border-left: 4px solid var(--secondary);
+        border-radius: 16px;
+        background: rgba(46, 196, 182, 0.08);
+      }
+
+      .warning {
+        border-left-color: var(--primary);
+        background: rgba(255, 107, 53, 0.08);
+      }
+
+      .footer {
+        margin-top: 12px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      @media (max-width: 1080px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .toc {
+          position: static;
+        }
+      }
+
+      @media (max-width: 860px) {
+        .grid-2,
+        .grid-3,
+        .grid-4 {
+          grid-template-columns: 1fr;
+        }
+
+        .hero,
+        .section {
+          padding: 22px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <p class="kicker" style="color: rgba(255, 255, 255, 0.76)">Tài liệu tổng quan dự án</p>
+        <h1>Quan4 Culinary Tourism System</h1>
+        <p>
+          Đây là tài liệu giải thích toàn cảnh dự án theo trạng thái hiện tại trong repo:
+          kiến trúc, các ứng dụng, luồng người dùng, luồng quản trị, luồng owner, QR, audio,
+          bản đồ, analytics, dữ liệu và cách các phần liên kết với nhau.
+        </p>
+        <div class="hero-meta">
+          <span class="pill">Monorepo 4 ứng dụng</span>
+          <span class="pill">Backend ASP.NET Core + MongoDB</span>
+          <span class="pill">Admin React/Vite</span>
+          <span class="pill">Public web React/Vite</span>
+          <span class="pill">Mobile .NET MAUI</span>
+        </div>
+      </header>
+
+      <div class="layout">
+        <aside class="toc">
+          <h2>Mục lục</h2>
+          <ol>
+            <li><a href="#tong-quan">Tổng quan hệ thống</a></li>
+            <li><a href="#kien-truc">Kiến trúc và thành phần</a></li>
+            <li><a href="#thuc-the">Thực thể dữ liệu chính</a></li>
+            <li><a href="#public-web">Website cho du khách</a></li>
+            <li><a href="#admin-web">Website admin</a></li>
+            <li><a href="#owner-flow">Luồng owner</a></li>
+            <li><a href="#backend-api">Backend API</a></li>
+            <li><a href="#mobile-app">Ứng dụng mobile</a></li>
+            <li><a href="#cross-cutting">Các luồng cắt ngang</a></li>
+            <li><a href="#routes-endpoints">Routes và API chính</a></li>
+            <li><a href="#run-deploy">Môi trường, chạy local, deploy</a></li>
+            <li><a href="#goi-y-doc">Nên đọc repo theo thứ tự nào</a></li>
+          </ol>
+        </aside>
+
+        <main class="content">
+          <section class="section" id="tong-quan">
+            <h2>Tổng Quan Hệ Thống</h2>
+            <p>
+              Mục tiêu của dự án là xây một hệ sinh thái du lịch ẩm thực Quận 4 gồm:
+              website công khai cho du khách, trang admin để vận hành, luồng owner để
+              đối tác đề xuất/cập nhật nội dung, mobile app để trải nghiệm di động, và backend
+              trung tâm làm API + lưu dữ liệu + analytics + media + audio.
+            </p>
+
+            <div class="grid-4">
+              <div class="card">
+                <p class="kicker">Ứng dụng 1</p>
+                <h4>Website User</h4>
+                <p>Khách xem POI, khám phá, quét QR, tìm gần tôi, xem bản đồ, xem tour, nghe audio, đăng ký tài khoản.</p>
+              </div>
+              <div class="card">
+                <p class="kicker">Ứng dụng 2</p>
+                <h4>Website Admin</h4>
+                <p>Admin quản lý category, POI, users, owner registrations, submissions, audio, localization, analytics, QR, tour, map pack.</p>
+              </div>
+              <div class="card">
+                <p class="kicker">Ứng dụng 3</p>
+                <h4>Backend API</h4>
+                <p>Xử lý auth, CRUD, upload media, audio generation, QR activation, analytics, owner workflow, map pack và health check.</p>
+              </div>
+              <div class="card">
+                <p class="kicker">Ứng dụng 4</p>
+                <h4>Mobile App</h4>
+                <p>Khám phá trên di động với cache offline, audio offline, geofence, map fallback, QR / POI code flow.</p>
+              </div>
+            </div>
+
+            <div class="note" style="margin-top: 18px">
+              <strong>Tư duy đúng về dự án:</strong> đây không chỉ là một website hiển thị dữ liệu.
+              Thực chất nó là một hệ thống nội dung du lịch ẩm thực có vận hành nội bộ, có đối tác owner,
+              có phân phối nội dung qua QR, audio, map và có analytics theo hành vi người dùng.
+            </div>
+          </section>
+
+          <section class="section" id="kien-truc">
+            <h2>Kiến Trúc Và Thành Phần</h2>
+
+            <div class="grid-2">
+              <div class="card">
+                <h4>1. Client layer</h4>
+                <ul>
+                  <li><code>website-user</code>: React 19, Vite, Tailwind, TanStack Query, Zustand, Framer Motion, MapLibre, PWA.</li>
+                  <li><code>website-admin</code>: React 19, Vite, Ant Design, Zustand, TanStack Query, Recharts.</li>
+                  <li><code>mobile/Quan4CulinaryTourism.Mobile</code>: .NET MAUI, SQLite local cache, audio plugin, MAUI Maps.</li>
+                </ul>
+              </div>
+
+              <div class="card">
+                <h4>2. Server layer</h4>
+                <ul>
+                  <li><code>backend/Quan4CulinaryTourism.Api</code>: ASP.NET Core Web API.</li>
+                  <li>MongoDB lưu document cho users, POI, analytics, owner registrations, owner submissions, QR activations, tours, audio, localizations.</li>
+                  <li><code>wwwroot/uploads</code> dùng cho media/audio file local.</li>
+                </ul>
+              </div>
+            </div>
+
+            <h3>Luồng tổng quát</h3>
+            <div class="flow">
+              <div class="flow-step">
+                <strong>Bước 1:</strong> Admin seed / tạo dữ liệu nền như category, POI, QR, tours, audio, localization.
+              </div>
+              <div class="flow-step">
+                <strong>Bước 2:</strong> Public web và mobile gọi API để tải category, POI, audio, QR activation, tours.
+              </div>
+              <div class="flow-step">
+                <strong>Bước 3:</strong> Người dùng tương tác, backend nhận analytics events như mở POI, nghe audio, tìm kiếm, nearby, presence ping.
+              </div>
+              <div class="flow-step">
+                <strong>Bước 4:</strong> Admin xem dashboard, analytics, usage history và điều hành nội dung dựa trên dữ liệu thật.
+              </div>
+              <div class="flow-step">
+                <strong>Bước 5:</strong> Owner có thể đăng ký, được duyệt, rồi gửi submission tạo mới hoặc cập nhật POI để admin duyệt.
+              </div>
+            </div>
+          </section>
+
+          <section class="section" id="thuc-the">
+            <h2>Thực Thể Dữ Liệu Chính</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Thực thể</th>
+                  <th>Ý nghĩa</th>
+                  <th>Ai dùng</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>User</code></td>
+                  <td>Tài khoản người dùng, admin, owner; chứa roles, trạng thái, thông tin cơ bản.</td>
+                  <td>Admin, public web, owner, mobile</td>
+                </tr>
+                <tr>
+                  <td><code>Category</code></td>
+                  <td>Nhóm phân loại POI như món ăn, địa điểm, chủ đề.</td>
+                  <td>Admin, public web, mobile</td>
+                </tr>
+                <tr>
+                  <td><code>Poi</code></td>
+                  <td>Địa điểm trung tâm của hệ thống: tên, mô tả, ảnh, tọa độ, giá, giờ mở cửa, tags, audio status.</td>
+                  <td>Tất cả client</td>
+                </tr>
+                <tr>
+                  <td><code>PoiLocalization</code></td>
+                  <td>Bản dịch theo ngôn ngữ cho từng POI.</td>
+                  <td>Admin, public web, mobile</td>
+                </tr>
+                <tr>
+                  <td><code>PoiAudio</code></td>
+                  <td>Audio thuyết minh cho một POI theo ngôn ngữ.</td>
+                  <td>Admin, public web, mobile</td>
+                </tr>
+                <tr>
+                  <td><code>OwnerRegistration</code></td>
+                  <td>Đơn xin trở thành owner của một tài khoản.</td>
+                  <td>Public web account page, admin</td>
+                </tr>
+                <tr>
+                  <td><code>OwnerSubmission</code></td>
+                  <td>Đề xuất tạo mới hoặc cập nhật POI từ owner.</td>
+                  <td>Owner workspace, admin</td>
+                </tr>
+                <tr>
+                  <td><code>QrActivation</code></td>
+                  <td>Mã QR gắn với POI / điểm dừng / chế độ mở nội dung.</td>
+                  <td>Admin, public web, mobile</td>
+                </tr>
+                <tr>
+                  <td><code>Tour</code></td>
+                  <td>Lộ trình công khai gồm nhiều stop POI theo thứ tự.</td>
+                  <td>Admin, public web</td>
+                </tr>
+                <tr>
+                  <td><code>AnalyticsEvent</code></td>
+                  <td>Sự kiện hành vi: view, audio, QR, search, nearby, location sample, presence ping...</td>
+                  <td>Backend, admin analytics, owner stats</td>
+                </tr>
+                <tr>
+                  <td><code>MapPack</code></td>
+                  <td>Gói bản đồ/offline map manifest.</td>
+                  <td>Admin, backend, mobile/web map flows</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="section" id="public-web">
+            <h2>Website Cho Du Khách</h2>
+            <p>
+              Đây là bề mặt công khai cho người dùng cuối. Nó phục vụ khám phá nội dung,
+              xem đường đi, nghe thuyết minh, quét QR và tạo/đăng nhập tài khoản.
+            </p>
+
+            <h3>Public routes chính</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Route</th>
+                  <th>Chức năng</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>/</code></td><td>Home page: hero, category, featured POI, CTA map/QR/account.</td></tr>
+                <tr><td><code>/explore</code></td><td>Danh sách POI, tìm kiếm, lọc category, lọc price.</td></tr>
+                <tr><td><code>/poi/:id</code></td><td>Chi tiết POI, ảnh, mô tả, opening hours, tags, audio player, chỉ đường.</td></tr>
+                <tr><td><code>/nearby</code></td><td>Tìm POI gần vị trí người dùng theo bán kính.</td></tr>
+                <tr><td><code>/map</code></td><td>Bản đồ POI, lấy GPS thật, chọn điểm đến, vẽ route, hiển thị km / thời gian.</td></tr>
+                <tr><td><code>/tours</code></td><td>Xem các tour công khai.</td></tr>
+                <tr><td><code>/qr</code></td><td>Luồng quét / nhập QR code để mở nội dung POI.</td></tr>
+                <tr><td><code>/login</code>, <code>/register</code></td><td>Đăng nhập / đăng ký user.</td></tr>
+                <tr><td><code>/account</code></td><td>Quản lý tài khoản, đăng ký owner.</td></tr>
+                <tr><td><code>/owner</code></td><td>Workspace owner sau khi đã có quyền Owner.</td></tr>
+                <tr><td><code>/about</code></td><td>Trang giới thiệu dự án.</td></tr>
+              </tbody>
+            </table>
+
+            <h3>Người dùng làm được gì</h3>
+            <div class="grid-3">
+              <div class="card">
+                <h4>Khám phá nội dung</h4>
+                <p>Xem danh sách POI, lọc theo category và khoảng giá, mở chi tiết từng địa điểm.</p>
+              </div>
+              <div class="card">
+                <h4>Nghe thuyết minh</h4>
+                <p>Audio player phát file audio hoặc dùng TTS fallback khi không có file.</p>
+              </div>
+              <div class="card">
+                <h4>Tìm gần tôi</h4>
+                <p>Dùng GPS thật hoặc fallback vị trí Quận 4 để tìm POI gần nhất trong bán kính chọn trước.</p>
+              </div>
+              <div class="card">
+                <h4>Xem đường đi trên map</h4>
+                <p>Map page lấy vị trí thật, chọn POI, vẽ route, hiển thị quãng đường và thời gian.</p>
+              </div>
+              <div class="card">
+                <h4>Quét QR / nhập mã</h4>
+                <p>Mở nhanh nội dung POI qua QR activation hoặc mã POI fallback.</p>
+              </div>
+              <div class="card">
+                <h4>Đăng ký owner</h4>
+                <p>Từ trang account, user có thể gửi form xin trở thành owner.</p>
+              </div>
+            </div>
+
+            <h3>Luồng quan trọng trên public web</h3>
+            <div class="flow">
+              <div class="flow-step">
+                <strong>Luồng xem POI:</strong> vào <code>/explore</code> → chọn POI → mở <code>/poi/:id</code> →
+                nghe audio / xem giờ mở cửa / bấm chỉ đường.
+              </div>
+              <div class="flow-step">
+                <strong>Luồng nearby:</strong> vào <code>/nearby</code> → cấp GPS hoặc dùng vị trí Quận 4 →
+                backend gọi endpoint nearby → render card POI + distance.
+              </div>
+              <div class="flow-step">
+                <strong>Luồng bản đồ:</strong> vào <code>/map</code> hoặc từ chi tiết POI →
+                lấy current location → chọn POI → gọi route service → render route line trên MapLibre.
+              </div>
+              <div class="flow-step">
+                <strong>Luồng QR:</strong> người dùng quét / nhập mã → FE resolve sang activation hoặc POI →
+                chuyển thẳng đến nội dung đúng → ghi analytics <code>qr_scanned</code>.
+              </div>
+            </div>
+          </section>
+
+          <section class="section" id="admin-web">
+            <h2>Website Admin</h2>
+            <p>
+              Đây là nơi vận hành nội dung và dữ liệu của toàn hệ thống. Admin không chỉ CRUD POI
+              mà còn kiểm soát owner flow, analytics, audio, localization, QR, tours và map pack.
+            </p>
+
+            <h3>Main routes admin</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Route</th>
+                  <th>Ý nghĩa</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>/login</code></td><td>Đăng nhập admin.</td></tr>
+                <tr><td><code>/admin/dashboard</code></td><td>Dashboard tổng quan hệ thống.</td></tr>
+                <tr><td><code>/admin/categories</code></td><td>Quản lý danh mục.</td></tr>
+                <tr><td><code>/admin/pois</code></td><td>Danh sách POI với filter và điều khiển trạng thái.</td></tr>
+                <tr><td><code>/admin/pois/create</code></td><td>Tạo POI mới.</td></tr>
+                <tr><td><code>/admin/pois/:id</code></td><td>Xem chi tiết POI, ảnh, audio, localizations, opening hours.</td></tr>
+                <tr><td><code>/admin/pois/:id/edit</code></td><td>Sửa POI.</td></tr>
+                <tr><td><code>/admin/owner-registrations</code></td><td>Duyệt đơn đăng ký owner.</td></tr>
+                <tr><td><code>/admin/submissions</code></td><td>Duyệt submissions do owner gửi.</td></tr>
+                <tr><td><code>/admin/users</code></td><td>Quản lý user, roles, active/inactive.</td></tr>
+                <tr><td><code>/admin/audio</code></td><td>Upload / set audio cho POI theo ngôn ngữ.</td></tr>
+                <tr><td><code>/admin/localizations</code></td><td>Quản lý bản dịch POI.</td></tr>
+                <tr><td><code>/admin/analytics</code></td><td>Xem analytics tổng hợp, route traces, active visitors realtime.</td></tr>
+                <tr><td><code>/admin/qr-activations</code></td><td>Quản lý mã QR mở nội dung.</td></tr>
+                <tr><td><code>/admin/usage-history</code></td><td>Xem lịch sử events chi tiết.</td></tr>
+                <tr><td><code>/admin/tours</code></td><td>Quản lý tour công khai.</td></tr>
+                <tr><td><code>/admin/maps</code></td><td>Quản lý pack manifest / bản đồ liên quan.</td></tr>
+              </tbody>
+            </table>
+
+            <h3>Admin thao tác theo nhóm việc</h3>
+            <div class="grid-2">
+              <div class="card">
+                <h4>Vận hành nội dung</h4>
+                <ul>
+                  <li>Tạo category.</li>
+                  <li>Tạo / sửa / bật tắt POI.</li>
+                  <li>Upload hình ảnh.</li>
+                  <li>Thiết lập opening hours, contact info, tags.</li>
+                  <li>Quản lý audio và localization theo từng POI.</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h4>Vận hành hệ thống</h4>
+                <ul>
+                  <li>Duyệt / từ chối owner registration.</li>
+                  <li>Duyệt / từ chối owner submission.</li>
+                  <li>Quản lý user roles và status.</li>
+                  <li>Theo dõi analytics, usage history, khách online realtime.</li>
+                  <li>Quản lý QR activation và tours công khai.</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <section class="section" id="owner-flow">
+            <h2>Luồng Owner</h2>
+            <p>
+              Owner là role trung gian giữa khách công khai và admin vận hành. Ý tưởng là
+              đối tác có thể đóng góp nội dung nhưng vẫn phải đi qua bước duyệt của admin.
+            </p>
+
+            <h3>Luồng 1: user xin làm owner</h3>
+            <div class="flow">
+              <div class="flow-step"><strong>1.</strong> User đăng ký / đăng nhập vào public web.</div>
+              <div class="flow-step"><strong>2.</strong> Vào <code>/account</code> và gửi form owner registration.</div>
+              <div class="flow-step"><strong>3.</strong> Backend tạo <code>OwnerRegistration</code> ở trạng thái pending.</div>
+              <div class="flow-step"><strong>4.</strong> Admin vào <code>/admin/owner-registrations</code> để approve hoặc reject.</div>
+              <div class="flow-step"><strong>5.</strong> Nếu approve, user được gắn role <code>Owner</code> và mở được <code>/owner</code>.</div>
+            </div>
+
+            <h3>Luồng 2: owner gửi submission</h3>
+            <div class="flow">
+              <div class="flow-step"><strong>1.</strong> Owner vào workspace <code>/owner</code>.</div>
+              <div class="flow-step"><strong>2.</strong> Có thể gửi submission kiểu <code>create</code> hoặc <code>update</code>.</div>
+              <div class="flow-step"><strong>3.</strong> Submission lưu đầy đủ thông tin POI đề xuất.</div>
+              <div class="flow-step"><strong>4.</strong> Admin vào <code>/admin/submissions</code> để duyệt.</div>
+              <div class="flow-step"><strong>5.</strong> Nếu duyệt create, backend tạo POI mới. Nếu duyệt update, backend áp thay đổi lên POI cũ.</div>
+            </div>
+
+            <div class="note warning" style="margin-top: 18px">
+              Luồng owner được thiết kế để tránh việc đối tác sửa dữ liệu production trực tiếp.
+              Họ chỉ gửi đề xuất; quyền quyết định cuối cùng vẫn là admin.
+            </div>
+          </section>
+
+          <section class="section" id="backend-api">
+            <h2>Backend API</h2>
+            <p>
+              Backend là lõi nghiệp vụ. Từ góc nhìn kiến trúc, backend chia thành:
+              Controllers → Services → Repositories → MongoDB / file storage.
+            </p>
+
+            <h3>Nhóm controller hiện có</h3>
+            <div class="grid-3">
+              <div class="card">
+                <h4>Auth / User</h4>
+                <p><code>AuthController</code>, <code>AdminController</code>, <code>OwnerController</code></p>
+              </div>
+              <div class="card">
+                <h4>Nội dung</h4>
+                <p><code>CategoryController</code>, <code>PoiController</code>, <code>LocalizationController</code>, <code>AudioController</code>, <code>MediaController</code></p>
+              </div>
+              <div class="card">
+                <h4>Phân phối / theo dõi</h4>
+                <p><code>QrActivationController</code>, <code>TourController</code>, <code>MapsController</code>, <code>AnalyticsController</code>, <code>HealthController</code></p>
+              </div>
+            </div>
+
+            <h3>Nghiệp vụ backend nổi bật</h3>
+            <div class="grid-2">
+              <div class="card">
+                <h4>POI + nearby + search</h4>
+                <ul>
+                  <li>Load all public POI.</li>
+                  <li>Search theo keyword / category / price.</li>
+                  <li>Nearby theo tọa độ và bán kính.</li>
+                  <li>Map POI sang response có ảnh, tags, rating, location.</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h4>Audio generation</h4>
+                <ul>
+                  <li>FE gọi audio endpoint.</li>
+                  <li>Nếu chưa có audio, backend có thể tự generate MP3 bằng Python + gTTS.</li>
+                  <li>File được lưu ở uploads và metadata ghi vào Mongo để tái sử dụng.</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h4>Analytics</h4>
+                <ul>
+                  <li>Thu event từ web/mobile.</li>
+                  <li>Tính summary, top views, top audio, heatmap, route traces.</li>
+                  <li>Tính active visitors realtime từ heartbeat <code>presence_ping</code>.</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h4>Owner moderation</h4>
+                <ul>
+                  <li>Approve/reject owner registrations.</li>
+                  <li>Approve/reject submissions.</li>
+                  <li>Áp submission vào dữ liệu POI thật.</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <section class="section" id="mobile-app">
+            <h2>Ứng Dụng Mobile</h2>
+            <p>
+              Mobile app là bề mặt trải nghiệm giàu tính di động hơn website, tập trung vào
+              offline usage, audio, QR và geofence. Nó không chỉ là bản sao của web.
+            </p>
+
+            <div class="grid-3">
+              <div class="card">
+                <h4>Offline cache</h4>
+                <p>Lưu categories, POI list, POI detail và audio metadata/local path vào SQLite.</p>
+              </div>
+              <div class="card">
+                <h4>Offline audio</h4>
+                <p>Tải audio về <code>FileSystem.AppDataDirectory/audio</code> để mở lại khi mất mạng.</p>
+              </div>
+              <div class="card">
+                <h4>Geofence demo</h4>
+                <p>Tự động narration cơ bản khi vào vùng POI, có cooldown để tránh spam.</p>
+              </div>
+              <div class="card">
+                <h4>QR / mã POI</h4>
+                <p>Có màn demo scan hoặc nhập mã POI / QR flow.</p>
+              </div>
+              <div class="card">
+                <h4>Map fallback</h4>
+                <p>Nếu chưa cấu hình Google Maps key, app fallback sang danh sách POI và nút mở Google Maps ngoài app.</p>
+              </div>
+              <div class="card">
+                <h4>Base URL linh hoạt</h4>
+                <p>Cho phép chọn preset hoặc nhập tay backend base URL trong settings.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="section" id="cross-cutting">
+            <h2>Các Luồng Cắt Ngang Quan Trọng</h2>
+
+            <h3>1. Luồng audio</h3>
+            <div class="flow">
+              <div class="flow-step"><strong>Website/mobile</strong> gọi API lấy audio theo <code>poiId</code> + <code>lang</code>.</div>
+              <div class="flow-step"><strong>Backend</strong> kiểm tra đã có <code>PoiAudio</code> hay chưa.</div>
+              <div class="flow-step"><strong>Nếu có</strong>: trả URL file audio.</div>
+              <div class="flow-step"><strong>Nếu chưa có</strong>: có thể auto generate từ <code>ttsScript</code> hoặc <code>description</code>, lưu file và lưu metadata.</div>
+            </div>
+
+            <h3>2. Luồng bản đồ và chỉ đường</h3>
+            <div class="flow">
+              <div class="flow-step"><strong>Public web</strong> lấy GPS thật từ browser.</div>
+              <div class="flow-step"><strong>PoiMap</strong> render marker user + marker POI bằng MapLibre.</div>
+              <div class="flow-step"><strong>Route service</strong> gọi OSRM để lấy geometry, distance, duration.</div>
+              <div class="flow-step"><strong>UI</strong> hiển thị route line, số km, thời gian và danh sách điểm bên cạnh.</div>
+            </div>
+
+            <h3>3. Luồng QR activation</h3>
+            <div class="flow">
+              <div class="flow-step"><strong>Admin</strong> tạo QR activation gắn với POI / stop zone / scan mode.</div>
+              <div class="flow-step"><strong>Khách</strong> quét QR trên public web hoặc mobile.</div>
+              <div class="flow-step"><strong>Frontend</strong> resolve mã QR → activation → POI target.</div>
+              <div class="flow-step"><strong>Hệ thống</strong> mở nội dung đúng, có thể ưu tiên audio / TTS tùy scan mode.</div>
+            </div>
+
+            <h3>4. Luồng analytics và online realtime</h3>
+            <div class="flow">
+              <div class="flow-step"><strong>Event tracking</strong>: public web/mobile gửi các sự kiện như <code>poi_viewed</code>, <code>audio_played</code>, <code>search_executed</code>, <code>qr_scanned</code>.</div>
+              <div class="flow-step"><strong>Heartbeat</strong>: public web còn gửi <code>presence_ping</code> khi tab đang visible.</div>
+              <div class="flow-step"><strong>Backend</strong> tổng hợp heartbeat trong cửa sổ ngắn để tính khách đang online hiện tại, kể cả ẩn danh.</div>
+              <div class="flow-step"><strong>Admin</strong> xem realtime ở dashboard và analytics page theo polling định kỳ.</div>
+            </div>
+          </section>
+
+          <section class="section" id="routes-endpoints">
+            <h2>Routes Và API Chính</h2>
+
+            <h3>Public API nổi bật</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Endpoint</th>
+                  <th>Mục đích</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>POST /api/v1/auth/register</code></td><td>Tạo tài khoản user.</td></tr>
+                <tr><td><code>POST /api/v1/auth/login</code></td><td>Đăng nhập user / admin.</td></tr>
+                <tr><td><code>GET /api/v1/auth/me</code></td><td>Lấy user hiện tại từ token.</td></tr>
+                <tr><td><code>GET /api/v1/categories</code></td><td>Lấy danh mục.</td></tr>
+                <tr><td><code>GET /api/v1/poi/load-all</code></td><td>Lấy danh sách POI công khai.</td></tr>
+                <tr><td><code>GET /api/v1/poi/{id}</code></td><td>Lấy chi tiết POI.</td></tr>
+                <tr><td><code>GET /api/v1/poi/nearby</code></td><td>Tìm nearby theo GPS.</td></tr>
+                <tr><td><code>GET /api/v1/poi/search</code></td><td>Tìm kiếm POI theo filter.</td></tr>
+                <tr><td><code>POST /api/v1/analytics/collect</code></td><td>Thu thập analytics event từ client.</td></tr>
+                <tr><td><code>GET /api/v1/poi/{id}/audio</code></td><td>Lấy / generate audio narration.</td></tr>
+              </tbody>
+            </table>
+
+            <h3>Admin API nổi bật</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Endpoint</th>
+                  <th>Mục đích</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>GET /api/v1/admin/dashboard/stats</code></td><td>Tổng quan dashboard admin.</td></tr>
+                <tr><td><code>POST /api/v1/admin/pois</code></td><td>Tạo POI.</td></tr>
+                <tr><td><code>PUT /api/v1/admin/pois/{id}</code></td><td>Sửa POI.</td></tr>
+                <tr><td><code>PATCH /api/v1/admin/pois/{id}/active</code></td><td>Bật/tắt POI.</td></tr>
+                <tr><td><code>GET /api/v1/admin/analytics/summary</code></td><td>Summary analytics + realtime visitors.</td></tr>
+                <tr><td><code>GET /api/v1/admin/analytics/history</code></td><td>Lịch sử usage events chi tiết.</td></tr>
+                <tr><td><code>GET /api/v1/admin/owner-registrations</code></td><td>Danh sách đơn owner.</td></tr>
+                <tr><td><code>PUT /api/v1/admin/owner-registrations/{id}/approve</code></td><td>Duyệt owner.</td></tr>
+                <tr><td><code>GET /api/v1/admin/submissions</code></td><td>Danh sách submissions.</td></tr>
+                <tr><td><code>PUT /api/v1/admin/submissions/{id}/approve</code></td><td>Duyệt submission.</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="section" id="run-deploy">
+            <h2>Môi Trường, Chạy Local, Deploy</h2>
+
+            <h3>Port mặc định</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Thành phần</th>
+                  <th>Giá trị mặc định</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>MongoDB</td><td><code>mongodb://localhost:27017</code></td></tr>
+                <tr><td>Backend API</td><td><code>http://localhost:5163</code></td></tr>
+                <tr><td>Admin web</td><td><code>http://localhost:5173</code></td></tr>
+                <tr><td>Public web</td><td><code>http://localhost:5174</code></td></tr>
+              </tbody>
+            </table>
+
+            <h3>Biến môi trường đáng nhớ</h3>
+            <div class="grid-2">
+              <div class="card">
+                <h4>website-user</h4>
+                <ul>
+                  <li><code>VITE_API_BASE_URL</code></li>
+                  <li><code>VITE_MAPTILER_KEY</code></li>
+                  <li><code>VITE_OSRM_BASE_URL</code></li>
+                  <li><code>VITE_OSRM_PROFILE</code></li>
+                </ul>
+              </div>
+              <div class="card">
+                <h4>backend</h4>
+                <ul>
+                  <li><code>MongoDbSettings</code></li>
+                  <li><code>JwtSettings</code></li>
+                  <li><code>UploadSettings</code></li>
+                  <li><code>TextToSpeechSettings</code></li>
+                  <li><code>Cors.AllowedOrigins</code></li>
+                  <li><code>DefaultAdmin</code></li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="note" style="margin-top: 18px">
+              Với map và GPS khi deploy: frontend cần API base URL đúng, tile/route provider đúng,
+              backend cần CORS đúng, và trình duyệt cần HTTPS để geolocation hoạt động ổn định.
+            </div>
+          </section>
+
+          <section class="section" id="goi-y-doc">
+            <h2>Nên Đọc Repo Theo Thứ Tự Nào</h2>
+            <ol>
+              <li>Đọc repo root <code>README.md</code> để biết 4 ứng dụng và cách chạy.</li>
+              <li>Đọc <code>website-user/src/App.tsx</code> để hiểu public routes và luồng người dùng.</li>
+              <li>Đọc <code>website-admin/src/routes/AppRoutes.tsx</code> để hiểu toàn bộ bề mặt quản trị.</li>
+              <li>Đọc các controller trong <code>backend/.../src/Controllers</code> để thấy các nhóm API.</li>
+              <li>Đọc <code>PoiService</code>, <code>AdminService</code>, <code>AnalyticsService</code>, <code>OwnerService</code> để hiểu nghiệp vụ lõi.</li>
+              <li>Đọc mobile README và các page/viewmodel quan trọng nếu muốn hiểu offline/geofence/audio trên di động.</li>
+            </ol>
+
+            <div class="footer">
+              File này được viết để giúp nắm toàn bộ dự án theo góc nhìn nghiệp vụ + kiến trúc + luồng sử dụng,
+              không thay thế tài liệu API chi tiết. Khi cần đào sâu hơn, nên mở thêm:
+              <code>docs/API_CONTRACT.md</code> và <code>docs/API_TEST_FLOW.md</code>.
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

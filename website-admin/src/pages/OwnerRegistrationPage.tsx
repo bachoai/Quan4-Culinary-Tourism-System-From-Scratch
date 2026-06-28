@@ -38,7 +38,7 @@ export function OwnerRegistrationPage() {
   return (
     <PageContainer title={t('owner_registrations_title')} subtitle={t('owner_registrations_subtitle')}>
       <Card className="glass-card">
-        <Space style={{ marginBottom: 16 }}>
+        <Space wrap className="page-toolbar" style={{ marginBottom: 16 }}>
           <Select
             allowClear
             placeholder={t('status')}
@@ -56,6 +56,7 @@ export function OwnerRegistrationPage() {
           rowKey="id"
           dataSource={query.data ?? []}
           loading={query.isFetching}
+          scroll={{ x: 1080 }}
           columns={[
             { title: t('business'), dataIndex: 'businessName' },
             { title: t('business_address'), dataIndex: 'businessAddress' },

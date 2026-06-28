@@ -90,7 +90,7 @@ export function PoiDetailPage() {
       title={poiQuery.data.name}
       subtitle={t('poi_detail_subtitle')}
       extra={
-        <Space>
+        <Space wrap className="page-toolbar">
           <Button onClick={() => navigate(`/admin/pois/${id}/edit`)}>{t('edit')}</Button>
           <Button onClick={() => setAudioModalOpen(true)}>{t('upload_audio')}</Button>
           <Button onClick={() => setLocalizationModalOpen(true)}>{t('add_localization')}</Button>
@@ -170,6 +170,7 @@ export function PoiDetailPage() {
           className="table-responsive"
           rowKey={(record) => `${record.dayOfWeek}-${record.openTime}`}
           dataSource={poiQuery.data.openingHours}
+          scroll={{ x: 760 }}
           pagination={false}
           columns={[
             { title: 'Day', dataIndex: 'dayOfWeek' },
@@ -196,6 +197,7 @@ export function PoiDetailPage() {
           className="table-responsive"
           rowKey="id"
           dataSource={localizationsQuery.data ?? []}
+          scroll={{ x: 960 }}
               columns={[
                 { title: t('language'), dataIndex: 'lang' },
                 { title: t('name'), dataIndex: 'name' },

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using MongoDB.Driver.GeoJsonObjectModel;
 using Quan4CulinaryTourism.Api.Common;
 using Quan4CulinaryTourism.Api.DTOs;
@@ -155,11 +155,11 @@ public class OwnerService
         CancellationToken cancellationToken = default)
     {
         var entity = await _ownerSubmissionRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new ApiException("Khong tim thay submission.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("Không tìm thấy submission.", StatusCodes.Status404NotFound);
 
         if (entity.OwnerId != ownerId)
         {
-            throw new ApiException("Khong co quyen truy cap.", StatusCodes.Status403Forbidden);
+            throw new ApiException("Không có quyền truy cập.", StatusCodes.Status403Forbidden);
         }
 
         return ToResponse(entity);
@@ -172,16 +172,16 @@ public class OwnerService
         CancellationToken cancellationToken = default)
     {
         var entity = await _ownerSubmissionRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new ApiException("Khong tim thay submission.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("Không tìm thấy submission.", StatusCodes.Status404NotFound);
 
         if (entity.OwnerId != ownerId)
         {
-            throw new ApiException("Khong co quyen truy cap.", StatusCodes.Status403Forbidden);
+            throw new ApiException("Không có quyền truy cập.", StatusCodes.Status403Forbidden);
         }
 
         if (entity.Status != SharedConstants.SubmissionPending)
         {
-            throw new ApiException("Chi duoc sua submission dang pending.");
+            throw new ApiException("Chỉ được sửa submission đang pending.");
         }
 
         entity.SubmissionType = request.SubmissionType;
@@ -284,3 +284,4 @@ public class OwnerService
         return string.IsNullOrWhiteSpace(localizedScript) ? null : localizedScript;
     }
 }
+

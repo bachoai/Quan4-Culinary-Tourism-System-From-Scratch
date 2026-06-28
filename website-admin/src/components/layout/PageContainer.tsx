@@ -13,13 +13,13 @@ export function PageContainer({ title, subtitle, extra, children }: PageContaine
     <AnimatedPage>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <div className="page-heading">
-          <div>
+          <div className="page-heading-content">
             <Typography.Title level={2} style={{ marginBottom: 4 }}>
               {title}
             </Typography.Title>
             {subtitle ? <Typography.Text type="secondary">{subtitle}</Typography.Text> : null}
           </div>
-          {extra ? <div>{extra}</div> : null}
+          {extra ? <div className="page-heading-extra">{extra}</div> : null}
         </div>
         {children}
       </Space>

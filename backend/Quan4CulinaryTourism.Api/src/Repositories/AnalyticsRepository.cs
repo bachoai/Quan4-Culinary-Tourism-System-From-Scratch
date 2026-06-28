@@ -11,6 +11,7 @@ public class AnalyticsRepository
 {
     private static readonly string[] AudioEventNames = ["audio_played", "tts_played"];
     private static readonly string[] OwnerTrackedEventNames = ["poi_viewed", "audio_played", "tts_played", "qr_scanned"];
+    private const string PresencePingEventName = "presence_ping";
 
     private readonly MongoDbContext _context;
     public AnalyticsRepository(MongoDbContext context) => _context = context;
@@ -235,6 +236,57 @@ public class AnalyticsRepository
             .ToList();
     }
 
+    public async Task<AnalyticsRealtimeSnapshotResponse> GetRealtimeSnapshotAsync(
+        int activeWindowSeconds = 90,
+        int maxVisitors = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedWindowSeconds = Math.Clamp(activeWindowSeconds, 30, 300);
+        var cutoff = DateTime.UtcNow.AddSeconds(-normalizedWindowSeconds);
+        var recentEvents = await _context.AnalyticsEvents.Find(x =>
+                x.EventName == PresencePingEventName
+                && x.CreatedAt >= cutoff
+                && (x.AnonymousId != null || x.SessionId != null))
+            .SortByDescending(x => x.CreatedAt)
+            .Limit(Math.Max(maxVisitors * 20, 5000))
+            .ToListAsync(cancellationToken);
+
+        var activeVisitors = recentEvents
+            .Select(item => new
+            {
+                Event = item,
+                VisitorKey = CreateTrackedUserKey(item)
+            })
+            .Where(item => !string.IsNullOrWhiteSpace(item.VisitorKey))
+            .GroupBy(item => item.VisitorKey!, StringComparer.Ordinal)
+            .Select(group =>
+            {
+                var latest = group.First().Event;
+                return new AnalyticsActiveVisitorResponse
+                {
+                    VisitorKey = group.Key,
+                    AnonymousId = latest.AnonymousId,
+                    SessionId = latest.SessionId,
+                    Lang = latest.Lang,
+                    Path = GetMetadataString(latest.Metadata, "path") ?? GetMetadataString(latest.Metadata, "route"),
+                    PageTitle = GetMetadataString(latest.Metadata, "title"),
+                    IsAuthenticated = GetMetadataBool(latest.Metadata, "isAuthenticated"),
+                    LastSeenAt = latest.CreatedAt
+                };
+            })
+            .OrderByDescending(item => item.LastSeenAt)
+            .ToList();
+
+        return new AnalyticsRealtimeSnapshotResponse
+        {
+            ActiveVisitorCount = activeVisitors.Count,
+            AnonymousVisitorCount = activeVisitors.LongCount(item => !item.IsAuthenticated),
+            AuthenticatedVisitorCount = activeVisitors.LongCount(item => item.IsAuthenticated),
+            ActiveWindowSeconds = normalizedWindowSeconds,
+            ActiveVisitors = activeVisitors.Take(maxVisitors).ToList()
+        };
+    }
+
     public async Task<PagedResponse<UsageHistoryEntryResponse>> SearchUsageHistoryAsync(UsageHistoryRequest request, CancellationToken cancellationToken = default)
     {
         var page = Math.Max(1, request.Page);
@@ -374,4 +426,40 @@ public class AnalyticsRepository
                 })
             }
         }));
+
+    private static string? CreateTrackedUserKey(AnalyticsEvent item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.AnonymousId))
+        {
+            return item.AnonymousId;
+        }
+
+        return string.IsNullOrWhiteSpace(item.SessionId) ? null : item.SessionId;
+    }
+
+    private static string? GetMetadataString(Dictionary<string, object> metadata, string key)
+    {
+        if (!metadata.TryGetValue(key, out var raw) || raw is null)
+        {
+            return null;
+        }
+
+        var value = raw.ToString();
+        return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    private static bool GetMetadataBool(Dictionary<string, object> metadata, string key)
+    {
+        if (!metadata.TryGetValue(key, out var raw) || raw is null)
+        {
+            return false;
+        }
+
+        return raw switch
+        {
+            bool boolValue => boolValue,
+            string text when bool.TryParse(text, out var parsed) => parsed,
+            _ => false
+        };
+    }
 }
