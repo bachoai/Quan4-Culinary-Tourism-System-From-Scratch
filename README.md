@@ -1,24 +1,24 @@
-﻿# Quan4 Culinary Tourism System
+# Quan4 Culinary Tourism System
 
-Monorepo gá»“m:
+Monorepo gồm:
 
 - Backend API ASP.NET Core + MongoDB
 - Admin web React/Vite
 - Public web React/Vite
 - Mobile app .NET MAUI
 
-## Cáº¥u trĂºc chĂ­nh
+## Cấu trúc chính
 
 - `backend/Quan4CulinaryTourism.Api`: backend API
-- `website-admin`: trang quáº£n trá»‹
-- `website-user`: website public cho du khĂ¡ch
-- `mobile/Quan4CulinaryTourism.Mobile`: á»©ng dá»¥ng mobile
-- `docs/API_CONTRACT.md`: há»£p Ä‘á»“ng API vĂ  cĂ¡c flow chĂ­nh
-- `scripts/create-clean-zip.ps1`: táº¡o file zip sáº¡ch trÆ°á»›c khi bĂ n giao/demo
+- `website-admin`: trang quản trị
+- `website-user`: website public cho du khách
+- `mobile/Quan4CulinaryTourism.Mobile`: ứng dụng mobile
+- `docs/API_CONTRACT.md`: hợp đồng API và các flow chính
+- `scripts/create-clean-zip.ps1`: tạo file zip sạch trước khi bàn giao/demo
 
-## Cá»•ng máº·c Ä‘á»‹nh khi cháº¡y local
+## Cổng mặc định khi chạy local
 
-| ThĂ nh pháº§n | URL / káº¿t ná»‘i |
+| Thành phần | URL / kết nối |
 | --- | --- |
 | MongoDB | `mongodb://localhost:27017` |
 | API backend | `http://localhost:5163` |
@@ -26,16 +26,16 @@ Monorepo gá»“m:
 | Admin web | `http://localhost:5173` |
 | Public web | `http://localhost:5174` |
 
-## YĂªu cáº§u mĂ´i trÆ°á»ng
+## Yêu cầu môi trường
 
-- Docker Desktop hoáº·c Docker Engine + Docker Compose
+- Docker Desktop hoặc Docker Engine + Docker Compose
 - .NET SDK 10
 - Node.js 20+
-- .NET MAUI workload náº¿u cáº§n cháº¡y mobile
+- .NET MAUI workload nếu cần chạy mobile
 
-## Cháº¡y local
+## Chạy local
 
-CĂ¡c lá»‡nh dÆ°á»›i Ä‘Ă¢y viáº¿t theo PowerShell vĂ  nĂªn cháº¡y tá»« repo root:
+Các lệnh dưới đây viết theo PowerShell và nên chạy từ repo root:
 
 ```powershell
 cd D:\bac\PhoAmThucVinhKhanh
@@ -55,14 +55,14 @@ dotnet restore
 dotnet run
 ```
 
-Ghi chĂº:
+Ghi chú:
 
-- Swagger chá»‰ báº­t trong `Development`.
-- Backend tá»± load file `.env` trong thÆ° má»¥c backend náº¿u cĂ³.
-- `appsettings.Development.json` Ä‘Ă£ cĂ³ cáº¥u hĂ¬nh local Ä‘á»ƒ cháº¡y nhanh.
-- Náº¿u database trá»‘ng, backend sáº½ seed role, admin, category vĂ  dá»¯ liá»‡u demo.
+- Swagger chỉ bật trong `Development`.
+- Backend tự load file `.env` trong thư mục backend nếu có.
+- `appsettings.Development.json` đã có cấu hình local để chạy nhanh.
+- Nếu database trống, backend sẽ seed role, admin, category và dữ liệu demo.
 
-TĂ i khoáº£n admin local máº·c Ä‘á»‹nh:
+Tài khoản admin local mặc định:
 
 - Email: `admin@quan4tourism.local`
 - Password: `Admin@123456`
@@ -76,7 +76,7 @@ npm ci
 npm run dev
 ```
 
-Admin web cháº¡y táº¡i `http://localhost:5173`.
+Admin web chạy tại `http://localhost:5173`.
 
 ### 4. Public web
 
@@ -87,7 +87,7 @@ npm ci
 npm run dev
 ```
 
-Public web cháº¡y táº¡i `http://localhost:5174`.
+Public web chạy tại `http://localhost:5174`.
 
 ### 5. Mobile
 
@@ -105,22 +105,22 @@ cd mobile\Quan4CulinaryTourism.Mobile
 dotnet build -f net10.0-android
 ```
 
-API base URL nĂªn dĂ¹ng:
+API base URL nên dùng:
 
 - Windows: `http://localhost:5163`
 - Android Emulator: `http://10.0.2.2:5163`
-- MĂ¡y tháº­t: LAN IP cá»§a mĂ¡y Ä‘ang cháº¡y backend, vĂ­ dá»¥ `http://192.168.1.50:5163`
+- Máy thật: LAN IP của máy đang chạy backend, ví dụ `http://192.168.1.50:5163`
 
-## Cháº¡y backend báº±ng Docker
+## Chạy backend bằng Docker
 
-Náº¿u muá»‘n cháº¡y cáº£ MongoDB vĂ  API trong Docker:
+Nếu muốn chạy cả MongoDB và API trong Docker:
 
 ```powershell
 Copy-Item .env.example .env
 docker compose up --build
 ```
 
-Biáº¿n cáº§n cĂ³ trong `.env`:
+Biến cần có trong `.env`:
 
 - `JwtSettings__SecretKey`
 - `DefaultAdmin__Email`
@@ -128,53 +128,53 @@ Biáº¿n cáº§n cĂ³ trong `.env`:
 - `Cors__AllowedOrigins__0`
 - `Cors__AllowedOrigins__1`
 
-LÆ°u Ă½:
+Lưu ý:
 
-- `docker compose up mongo -d` khĂ´ng cáº§n `.env`.
-- `docker compose up --build` cáº§n `.env` Ä‘á»ƒ API container khá»Ÿi Ä‘á»™ng thĂ nh cĂ´ng.
-- API container cháº¡y `Production`, nĂªn khĂ´ng cĂ³ Swagger.
+- `docker compose up mongo -d` không cần `.env`.
+- `docker compose up --build` cần `.env` để API container khởi động thành công.
+- API container chạy `Production`, nên không có Swagger.
 
-## Deploy tĂ¡ch backend/admin/public
+## Deploy tách backend/admin/public
 
 ### Backend API
 
-- Deploy API riĂªng.
-- Cáº¥u hĂ¬nh `JwtSettings__SecretKey` báº±ng secret tháº­t, tá»‘i thiá»ƒu 32 kĂ½ tá»±.
-- KhĂ´ng Ä‘á»ƒ `DefaultAdmin__Password` rá»—ng trong production náº¿u váº«n báº­t seed admin.
-- Chá»‰ báº­t CORS cho Ä‘Ăºng domain admin vĂ  public.
-- KhĂ´ng commit `.env`, secret, hoáº·c file upload demo.
+- Deploy API riêng.
+- Cấu hình `JwtSettings__SecretKey` bằng secret thật, tối thiểu 32 ký tự.
+- Không để `DefaultAdmin__Password` rỗng trong production nếu vẫn bật seed admin.
+- Chỉ bật CORS cho đúng domain admin và public.
+- Không commit `.env`, secret, hoặc file upload demo.
 
 ### Admin web
 
-- Deploy `website-admin` riĂªng, domain riĂªng.
-- Chá»‰ cáº¥u hĂ¬nh `VITE_API_BASE_URL` trá» tá»›i domain API.
-- KhĂ´ng hardcode production API URL trong source.
+- Deploy `website-admin` riêng, domain riêng.
+- Chỉ cấu hình `VITE_API_BASE_URL` trỏ tới domain API.
+- Không hardcode production API URL trong source.
 
 ### Public web
 
-- Deploy `website-user` riĂªng, domain riĂªng.
-- Cáº¥u hĂ¬nh:
+- Deploy `website-user` riêng, domain riêng.
+- Cấu hình:
   - `VITE_API_BASE_URL`
   - `VITE_MAPTILER_KEY`
   - `VITE_OSRM_BASE_URL`
   - `VITE_OSRM_PROFILE`
-- Backend `PublicSiteSettings:BaseUrl` pháº£i trá» Ä‘Ăºng domain public Ä‘á»ƒ QR/deep link má»Ÿ Ä‘Ăºng trang khĂ¡ch.
+- Backend `PublicSiteSettings:BaseUrl` phải trỏ đúng domain public để QR/deep link mở đúng trang khách.
 
 ### CORS backend
 
-Backend pháº£i thĂªm Ä‘Ăºng domain cá»§a:
+Backend phải thêm đúng domain của:
 
 - Admin web
 - Public web
 
-VĂ­ dá»¥ production:
+Ví dụ production:
 
 ```env
 Cors__AllowedOrigins__0=https://admin.example.com
 Cors__AllowedOrigins__1=https://www.example.com
 ```
 
-## Build kiá»ƒm tra
+## Build kiểm tra
 
 ### Backend
 
@@ -239,4 +239,3 @@ powershell -ExecutionPolicy Bypass -File .\scripts\create-clean-zip.ps1 -OutputP
 - [Admin website](website-admin/README.md)
 - [Public website](website-user/README.md)
 - [Mobile app](mobile/Quan4CulinaryTourism.Mobile/README.md)
-
