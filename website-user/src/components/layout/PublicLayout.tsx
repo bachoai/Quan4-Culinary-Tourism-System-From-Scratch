@@ -13,13 +13,11 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { audioApi } from '../../api/audioApi';
 import { healthApi } from '../../api/healthApi';
 import { ChatWidget } from '../ChatWidget';
-import { LANGUAGE_OPTIONS } from '../../constants/languages';
+import { UI_LANGUAGE_OPTIONS } from '../../constants/languages';
 import { getCopy } from '../../i18n/copy';
 import { useAppStore } from '../../store/appStore';
-import type { Lang } from '../../types/responses';
 import { hasRole } from '../../utils/auth';
 
 export function PublicLayout() {
@@ -35,12 +33,6 @@ export function PublicLayout() {
   const ui = getCopy(lang);
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  const audioLanguagesQuery = useQuery({
-    queryKey: ['audio-languages'],
-    queryFn: audioApi.getLanguages,
-    retry: false,
-    staleTime: 300000,
-  });
   const healthQuery = useQuery({
     queryKey: ['api-health'],
     queryFn: healthApi.check,
@@ -61,10 +53,6 @@ export function PublicLayout() {
   const nav = hasRole(currentUser?.roles, 'Owner')
     ? [...baseNav, ['/owner', ui.nav.owner] as const]
     : baseNav;
-  const supportedLanguageCodes = new Set(
-    audioLanguagesQuery.data?.map((item) => item.code) ?? LANGUAGE_OPTIONS.map((item) => item.value),
-  );
-  const languageOptions = LANGUAGE_OPTIONS.filter((option) => supportedLanguageCodes.has(option.value));
 
   const healthOk = healthQuery.data?.mongoConnected && healthQuery.data.status === 'Healthy';
   const showChatWidget =
@@ -108,11 +96,11 @@ export function PublicLayout() {
           <div className="flex items-center gap-2">
             <select
               value={lang}
-              onChange={(event) => setLang(event.target.value as Lang)}
+              onChange={(event) => setLang(event.target.value === 'en' ? 'en' : 'vi')}
               aria-label={ui.common.languageLabel}
               className="rounded-full bg-transparent px-2 py-2 text-sm font-semibold"
             >
-              {languageOptions.map((option) => (
+              {UI_LANGUAGE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>

@@ -24,6 +24,14 @@ python -m pip install -r tools\requirements-tts.txt
 dotnet run
 ```
 
+If Windows shows `An Application Control policy has blocked this file.`, use the Docker fallback from the backend folder:
+
+```powershell
+.\run-in-docker.ps1
+```
+
+That script starts `mongo` + `api` through repo-root Compose and waits for `http://localhost:5163/api/health`.
+
 Khi chạy bằng `dotnet run`:
 
 - profile mặc định là `Development`

@@ -1,16 +1,20 @@
 import { Pause, Play, Volume2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { getCopy } from '../../i18n/copy';
+import { getCopy, type UiLanguage } from '../../i18n/copy';
+import type { Lang } from '../../types/responses';
 import { normalizeMediaUrl } from '../../utils/media';
 
 type AudioPlayerProps = {
   audioUrl?: string;
   text?: string;
-  lang: string;
+  uiLang: UiLanguage;
+  narrationLang: Lang;
   onPlay: (mode: 'audio' | 'tts') => void;
   autoplay?: boolean;
   loading?: boolean;
   errorText?: string;
+  languageOptions?: Array<{ value: Lang; label: string }>;
+  onLanguageChange?: (lang: Lang) => void;
 };
 
 const narrationLangMap: Record<string, string> = {
@@ -33,8 +37,19 @@ function resolveVoice(lang: string, voices: SpeechSynthesisVoice[]) {
   );
 }
 
-export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, loading = false, errorText }: AudioPlayerProps) {
-  const ui = getCopy(lang);
+export function AudioPlayer({
+  audioUrl,
+  text,
+  uiLang,
+  narrationLang,
+  onPlay,
+  autoplay = false,
+  loading = false,
+  errorText,
+  languageOptions,
+  onLanguageChange,
+}: AudioPlayerProps) {
+  const ui = getCopy(uiLang);
   const audio = useRef<HTMLAudioElement>(null);
   const autoStarted = useRef(false);
   const utterance = useRef<SpeechSynthesisUtterance | null>(null);
@@ -48,6 +63,7 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, lo
   const hasAudio = Boolean(audioUrl);
   const hasMatchingVoice = Boolean(ttsVoice);
   const canUseTts = hasNarration && hasSpeechSynthesis && hasMatchingVoice;
+  const showLanguageSelector = Boolean(languageOptions?.length && onLanguageChange);
 
   useEffect(() => {
     if (!hasSpeechSynthesis) {
@@ -57,7 +73,7 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, lo
     }
 
     const syncVoice = () => {
-      const nextVoice = resolveVoice(lang, window.speechSynthesis.getVoices());
+      const nextVoice = resolveVoice(narrationLang, window.speechSynthesis.getVoices());
       setTtsVoice(nextVoice);
       setVoiceChecked(true);
     };
@@ -68,7 +84,7 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, lo
     return () => {
       window.speechSynthesis.removeEventListener('voiceschanged', syncVoice);
     };
-  }, [hasSpeechSynthesis, lang]);
+  }, [hasSpeechSynthesis, narrationLang]);
 
   useEffect(() => {
     autoStarted.current = false;
@@ -83,7 +99,7 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, lo
 
     setPlaying(false);
     setPlaybackError('');
-  }, [audioUrl, narrationText, hasSpeechSynthesis, lang]);
+  }, [audioUrl, narrationText, hasSpeechSynthesis, narrationLang]);
 
   useEffect(() => {
     return () => {
@@ -192,7 +208,7 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, lo
     setPlaybackError('');
 
     const nextUtterance = new SpeechSynthesisUtterance(narrationText);
-    nextUtterance.lang = narrationLangMap[lang] ?? lang;
+    nextUtterance.lang = narrationLangMap[narrationLang] ?? narrationLang;
     if (ttsVoice) {
       nextUtterance.voice = ttsVoice;
     }
@@ -231,28 +247,47 @@ export function AudioPlayer({ audioUrl, text, lang, onPlay, autoplay = false, lo
   };
 
   return (
-    <div className="flex items-center gap-4 rounded-2xl bg-teal/10 p-4">
-      <button
-        onClick={toggle}
-        className="grid h-11 w-11 place-items-center rounded-full bg-teal text-white"
-      >
-        {playing ? <Pause size={19} /> : <Play size={19} />}
-      </button>
+    <div className="rounded-2xl bg-teal/10 p-4">
+      <div className="flex flex-wrap items-center gap-4">
+        <button
+          onClick={toggle}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-teal text-white"
+        >
+          {playing ? <Pause size={19} /> : <Play size={19} />}
+        </button>
 
-      <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-2 text-sm font-bold">
-          <Volume2 size={16} />
-          {hasAudio ? ui.audio.audioGuideTitle : ui.audio.ttsGuideTitle}
-        </p>
-        <p className="text-xs text-slate-500">
-          {hasAudio
-            ? ui.audio.audioGuideText
-            : voiceChecked
-              ? ui.audio.ttsGuideText
-              : ui.audio.checkingVoice}
-        </p>
-        {errorText || playbackError ? (
-          <p className="mt-1 text-xs text-rose-600">{errorText || playbackError}</p>
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-2 text-sm font-bold">
+            <Volume2 size={16} />
+            {hasAudio ? ui.audio.audioGuideTitle : ui.audio.ttsGuideTitle}
+          </p>
+          <p className="text-xs text-slate-500">
+            {hasAudio
+              ? ui.audio.audioGuideText
+              : voiceChecked
+                ? ui.audio.ttsGuideText
+                : ui.audio.checkingVoice}
+          </p>
+          {errorText || playbackError ? (
+            <p className="mt-1 text-xs text-rose-600">{errorText || playbackError}</p>
+          ) : null}
+        </div>
+
+        {showLanguageSelector ? (
+          <label className="flex min-w-[11rem] flex-col gap-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
+            <span>{ui.common.languageLabel}</span>
+            <select
+              value={narrationLang}
+              onChange={(event) => onLanguageChange?.(event.target.value as Lang)}
+              className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            >
+              {languageOptions?.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
         ) : null}
       </div>
 

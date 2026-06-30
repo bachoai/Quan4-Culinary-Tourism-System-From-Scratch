@@ -1,6 +1,5 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
-import QRCode from 'react-qr-code';
 import type { RouteGeometry } from '../../api/routeApi';
 import type { Poi } from '../../types/responses';
 
@@ -30,15 +29,6 @@ function buildPublicPoiLink(poiId: string) {
   }
 
   return `${window.location.origin}${window.location.pathname}${path}`;
-}
-
-function buildPublicQrLink(poiId: string) {
-  const hash = `#/qr?code=${encodeURIComponent(poiId)}`;
-  if (typeof window === 'undefined') {
-    return hash;
-  }
-
-  return `${window.location.origin}${window.location.pathname}${hash}`;
 }
 
 function popupContent(poi: Poi, onSelectPoi?: (poiId: string) => void) {
@@ -164,9 +154,6 @@ export function PoiMap({
   const poiMarkersRef = useRef<maplibregl.Marker[]>([]);
   const userMarkerRef = useRef<maplibregl.Marker | null>(null);
   const [failed, setFailed] = useState(false);
-  const selectedPoi = selectedPoiId ? pois.find((poi) => poi.id === selectedPoiId) : undefined;
-  const selectedPoiQrLink = selectedPoi ? buildPublicQrLink(selectedPoi.id) : '';
-  const selectedPoiDetailLink = selectedPoi ? buildPublicPoiLink(selectedPoi.id) : '';
 
   useEffect(() => {
     if (!node.current || mapRef.current) {
@@ -335,60 +322,11 @@ export function PoiMap({
   }
 
   return (
-    <div className="relative">
-      <div
-        ref={node}
-        className="min-h-[620px] overflow-hidden rounded-[2rem] bg-slate-200 md:min-h-[700px] xl:min-h-[760px] dark:bg-slate-800"
-        aria-label="Bản đồ POI Quận 4"
-      />
-
-      {selectedPoi ? (
-        <div className="pointer-events-none absolute inset-x-4 top-4 z-10 sm:inset-x-auto sm:w-64">
-          <div className="pointer-events-auto rounded-[1.75rem] border border-white/70 bg-white/95 p-4 shadow-soft backdrop-blur dark:border-slate-700/80 dark:bg-slate-950/95">
-            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-coral">QR mo nhanh</p>
-            <p className="mt-2 text-base font-bold text-slate-900 dark:text-white">{selectedPoi.name}</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
-              Quet bang dien thoai khac de mo ngay trang POI nay tu luong QR cong khai.
-            </p>
-
-            <div className="mt-4 rounded-[1.5rem] bg-white p-3 ring-1 ring-slate-200 dark:ring-slate-700">
-              <div className="mx-auto w-fit rounded-2xl bg-white p-2">
-                <QRCode
-                  value={selectedPoiQrLink}
-                  size={168}
-                  bgColor="#FFFFFF"
-                  fgColor="#0f172a"
-                  title={`QR mo ${selectedPoi.name}`}
-                />
-              </div>
-            </div>
-
-            <div className="mt-3 space-y-2">
-              <a
-                href={selectedPoiQrLink}
-                className="block truncate text-xs font-medium text-teal underline-offset-2 hover:underline"
-              >
-                {selectedPoiQrLink}
-              </a>
-              <div className="flex flex-wrap gap-2">
-                <a
-                  href={selectedPoiDetailLink}
-                  className="rounded-full border border-slate-300 px-3 py-1 text-xs font-bold text-slate-700 dark:border-slate-600 dark:text-slate-100"
-                >
-                  Xem chi tiet
-                </a>
-                <a
-                  href={selectedPoiQrLink}
-                  className="rounded-full bg-teal px-3 py-1 text-xs font-bold text-white"
-                >
-                  Mo trang QR
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </div>
+    <div
+      ref={node}
+      className="min-h-[620px] overflow-hidden rounded-[2rem] bg-slate-200 md:min-h-[700px] xl:min-h-[760px] dark:bg-slate-800"
+      aria-label="Bản đồ POI Quận 4"
+    />
   );
 }
 

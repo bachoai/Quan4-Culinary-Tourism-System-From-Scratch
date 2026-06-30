@@ -11,7 +11,7 @@ services:
     env_file:
       - ./backend/Quan4CulinaryTourism.Api/.env
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_ENVIRONMENT: Development
       MongoDbSettings__ConnectionString: mongodb://mongo:27017
 volumes:
   mongo-data:

@@ -1,21 +1,25 @@
 import { create } from 'zustand';
+import { normalizeUiLanguage, type UiLanguage } from '../i18n/copy';
 import type { AuthResponse, CurrentUser, Lang } from '../types/responses';
 import { track } from '../utils/analytics';
 
 const THEME_KEY = 'q4-theme';
 const LANG_KEY = 'q4-lang';
+const AUDIO_LANG_KEY = 'q4-audio-lang';
 const TOKEN_KEY = 'q4-token';
 const USER_KEY = 'q4-current-user';
 
 type State = {
   theme: 'light' | 'dark';
-  lang: Lang;
+  lang: UiLanguage;
+  audioLang: Lang;
   location?: { lat: number; lng: number };
   token?: string;
   currentUser?: CurrentUser;
   isAuthenticated: boolean;
   toggleTheme: () => void;
-  setLang: (lang: Lang) => void;
+  setLang: (lang: UiLanguage) => void;
+  setAudioLang: (lang: Lang) => void;
   setLocation: (location: { lat: number; lng: number }) => void;
   setAuth: (auth: AuthResponse) => void;
   setCurrentUser: (user?: CurrentUser) => void;
@@ -36,15 +40,28 @@ function readStoredUser(): CurrentUser | undefined {
   }
 }
 
+function isSupportedAudioLanguage(value: string | null | undefined): value is Lang {
+  return value === 'vi' || value === 'en' || value === 'zh' || value === 'ja' || value === 'ko';
+}
+
 const initialTheme = (localStorage.getItem(THEME_KEY) as 'light' | 'dark') || 'light';
 const initialToken = localStorage.getItem(TOKEN_KEY) || undefined;
 const initialUser = readStoredUser();
+const storedUiLanguage = localStorage.getItem(LANG_KEY);
+const storedAudioLanguage = localStorage.getItem(AUDIO_LANG_KEY);
+const initialUiLanguage = normalizeUiLanguage(storedUiLanguage || undefined);
+const initialAudioLanguage = isSupportedAudioLanguage(storedAudioLanguage)
+  ? storedAudioLanguage
+  : isSupportedAudioLanguage(storedUiLanguage)
+    ? storedUiLanguage
+    : initialUiLanguage;
 
 document.documentElement.classList.toggle('dark', initialTheme === 'dark');
 
 export const useAppStore = create<State>((set, get) => ({
   theme: initialTheme,
-  lang: (localStorage.getItem(LANG_KEY) as Lang) || 'vi',
+  lang: initialUiLanguage,
+  audioLang: initialAudioLanguage,
   location: undefined,
   token: initialToken,
   currentUser: initialUser,
@@ -64,6 +81,16 @@ export const useAppStore = create<State>((set, get) => ({
     localStorage.setItem(LANG_KEY, lang);
     set({ lang });
     track('language_changed', lang, undefined, { previousLanguage });
+  },
+  setAudioLang: (lang) => {
+    const previousLanguage = get().audioLang;
+    if (lang === previousLanguage) {
+      return;
+    }
+
+    localStorage.setItem(AUDIO_LANG_KEY, lang);
+    set({ audioLang: lang });
+    track('audio_language_changed', get().lang, undefined, { previousLanguage, nextLanguage: lang });
   },
   setLocation: (location) => set({ location }),
   setAuth: ({ token, user }) => {

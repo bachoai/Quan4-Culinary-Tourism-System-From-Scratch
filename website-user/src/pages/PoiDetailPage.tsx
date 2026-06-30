@@ -10,28 +10,33 @@ import { AudioPlayer } from '../components/common/AudioPlayer';
 import { ErrorBox } from '../components/common/ErrorBox';
 import { PoiCard } from '../components/common/PoiCard';
 import { Spinner } from '../components/common/Spinner';
+import { LANGUAGE_OPTIONS } from '../constants/languages';
 import { getCopy } from '../i18n/copy';
 import { useAppStore } from '../store/appStore';
-import type { Lang } from '../types/responses';
 import { track } from '../utils/analytics';
 import { poiImage } from '../utils/media';
 
 export default function PoiDetailPage() {
   const { id = '' } = useParams();
   const location = useLocation();
-  const { lang } = useAppStore();
+  const { lang, audioLang, setAudioLang } = useAppStore();
   const ui = getCopy(lang);
   const queryParams = new URLSearchParams(location.search);
-  const narrationLang: Lang = lang;
   const autoplay = queryParams.get('autoplay');
   const source = queryParams.get('source');
   const { data: poi, isLoading, isError, error } = useQuery({
     queryKey: ['detail', id, lang],
     queryFn: () => poiApi.detail(id, lang),
   });
+  const audioLanguagesQuery = useQuery({
+    queryKey: ['audio-languages'],
+    queryFn: audioApi.getLanguages,
+    retry: false,
+    staleTime: 300000,
+  });
   const audioQuery = useQuery({
-    queryKey: ['audio', id, narrationLang],
-    queryFn: () => audioApi.getPoiAudio(id, narrationLang),
+    queryKey: ['audio', id, audioLang],
+    queryFn: () => audioApi.getPoiAudio(id, audioLang),
     enabled: Boolean(id),
     retry: false,
   });
@@ -53,6 +58,11 @@ export default function PoiDetailPage() {
       track('poi_viewed', lang, id, source ? { source } : undefined);
     }
   }, [id, lang, source]);
+
+  const supportedAudioLanguageCodes = new Set(
+    audioLanguagesQuery.data?.map((item) => item.code) ?? LANGUAGE_OPTIONS.map((item) => item.value),
+  );
+  const audioLanguageOptions = LANGUAGE_OPTIONS.filter((option) => supportedAudioLanguageCodes.has(option.value));
 
   if (isLoading) {
     return <Spinner />;
@@ -120,12 +130,15 @@ export default function PoiDetailPage() {
             <AudioPlayer
               audioUrl={audioQuery.data?.audioUrl}
               text={narrationText}
-              lang={narrationLang}
+              uiLang={lang}
+              narrationLang={audioLang}
               autoplay={Boolean(autoplay)}
               loading={audioQuery.isLoading}
               errorText={audioQuery.isError ? ui.detail.audioError : undefined}
+              languageOptions={audioLanguageOptions}
+              onLanguageChange={setAudioLang}
               onPlay={(mode) =>
-                track('audio_played', narrationLang, poi.id, autoplay ? { autoplay, mode } : { mode })
+                track('audio_played', audioLang, poi.id, autoplay ? { autoplay, mode } : { mode })
               }
             />
           </div>

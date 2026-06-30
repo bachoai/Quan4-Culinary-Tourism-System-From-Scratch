@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { MapPin, Navigation } from 'lucide-react';
+import QRCode from 'react-qr-code';
 import { audioApi } from '../api/audioApi';
 import { mapsApi } from '../api/mapsApi';
 import { poiApi } from '../api/poiApi';
@@ -11,11 +12,21 @@ import { Categories } from '../components/common/Categories';
 import { ErrorBox } from '../components/common/ErrorBox';
 import { Spinner } from '../components/common/Spinner';
 import { PoiMap } from '../components/map/PoiMap';
+import { LANGUAGE_OPTIONS } from '../constants/languages';
 import { useAppStore } from '../store/appStore';
 import { distance, track } from '../utils/analytics';
 
 const EARTH_RADIUS_METERS = 6371000;
 const DEFAULT_ARRIVAL_RADIUS_METERS = 60;
+
+function buildPublicQrLink(poiId: string) {
+  const hash = `#/qr?code=${encodeURIComponent(poiId)}`;
+  if (typeof window === 'undefined') {
+    return hash;
+  }
+
+  return `${window.location.origin}${window.location.pathname}${hash}`;
+}
 
 function toRadians(degrees: number) {
   return (degrees * Math.PI) / 180;
@@ -34,7 +45,7 @@ function calculateDistanceMeters(from: { lat: number; lng: number }, to: { lat: 
 }
 
 export default function MapPage() {
-  const { lang, location, setLocation } = useAppStore();
+  const { lang, audioLang, setAudioLang, location, setLocation } = useAppStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const [geoError, setGeoError] = useState('');
   const [isLocating, setIsLocating] = useState(false);
@@ -50,6 +61,12 @@ export default function MapPage() {
   const mapPackQuery = useQuery({
     queryKey: ['map-pack-manifest'],
     queryFn: mapsApi.getPackManifest,
+    retry: false,
+    staleTime: 300000,
+  });
+  const audioLanguagesQuery = useQuery({
+    queryKey: ['audio-languages'],
+    queryFn: audioApi.getLanguages,
     retry: false,
     staleTime: 300000,
   });
@@ -102,11 +119,15 @@ export default function MapPage() {
     retry: 1,
   });
   const audioQuery = useQuery({
-    queryKey: ['map-navigation-audio', selectedPoiId, lang],
-    queryFn: () => audioApi.getPoiAudio(selectedPoiId, lang),
+    queryKey: ['map-navigation-audio', selectedPoiId, audioLang],
+    queryFn: () => audioApi.getPoiAudio(selectedPoiId, audioLang),
     enabled: Boolean(navigationMode && selectedPoiId),
     retry: false,
   });
+  const supportedAudioLanguageCodes = new Set(
+    audioLanguagesQuery.data?.map((item) => item.code) ?? LANGUAGE_OPTIONS.map((item) => item.value),
+  );
+  const audioLanguageOptions = LANGUAGE_OPTIONS.filter((option) => supportedAudioLanguageCodes.has(option.value));
 
   const arrivalRadiusMeters = selectedPoi?.geofenceRadiusMeters && selectedPoi.geofenceRadiusMeters > 0
     ? selectedPoi.geofenceRadiusMeters
@@ -128,6 +149,7 @@ export default function MapPage() {
       arrivalDistanceMeters <= arrivalRadiusMeters,
   );
   const narrationText = selectedPoi?.ttsScript?.trim() || selectedPoi?.description?.trim() || '';
+  const selectedPoiQrLink = selectedPoi ? buildPublicQrLink(selectedPoi.id) : '';
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -398,12 +420,15 @@ export default function MapPage() {
                 key={`map-navigation-${selectedPoi.id}`}
                 audioUrl={audioQuery.data?.audioUrl}
                 text={narrationText}
-                lang={lang}
+                uiLang={lang}
+                narrationLang={audioLang}
                 autoplay
                 loading={audioQuery.isLoading}
                 errorText={audioQuery.isError ? 'Khong tai duoc audio gioi thieu luc den noi.' : undefined}
+                languageOptions={audioLanguageOptions}
+                onLanguageChange={setAudioLang}
                 onPlay={(mode) =>
-                  track('audio_played', lang, selectedPoi.id, {
+                  track('audio_played', audioLang, selectedPoi.id, {
                     source: 'navigation_mode',
                     autoplay: 'arrived',
                     mode,
@@ -425,6 +450,51 @@ export default function MapPage() {
         />
 
         <div className="max-h-[620px] space-y-3 overflow-y-auto pr-1 md:max-h-[700px] xl:max-h-[760px]">
+          {selectedPoi ? (
+            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-soft dark:border-slate-700 dark:bg-slate-900">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-coral">QR mo nhanh</p>
+              <p className="mt-2 text-base font-bold text-slate-900 dark:text-white">{selectedPoi.name}</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                Quet bang dien thoai khac de mo ngay trang POI nay tu luong QR cong khai.
+              </p>
+
+              <div className="mt-4 rounded-[1.5rem] bg-white p-3 ring-1 ring-slate-200 dark:bg-slate-950 dark:ring-slate-700">
+                <div className="mx-auto w-fit rounded-2xl bg-white p-2">
+                  <QRCode
+                    value={selectedPoiQrLink}
+                    size={168}
+                    bgColor="#FFFFFF"
+                    fgColor="#0f172a"
+                    title={`QR mo ${selectedPoi.name}`}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-3 space-y-2">
+                <a
+                  href={selectedPoiQrLink}
+                  className="block truncate text-xs font-medium text-teal underline-offset-2 hover:underline"
+                >
+                  {selectedPoiQrLink}
+                </a>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    to={`/poi/${selectedPoi.id}`}
+                    className="rounded-full border border-slate-300 px-3 py-1 text-xs font-bold text-slate-700 dark:border-slate-600 dark:text-slate-100"
+                  >
+                    Xem chi tiet
+                  </Link>
+                  <a
+                    href={selectedPoiQrLink}
+                    className="rounded-full bg-teal px-3 py-1 text-xs font-bold text-white"
+                  >
+                    Mo trang QR
+                  </a>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           {isLoading ? (
             <Spinner />
           ) : isError ? (

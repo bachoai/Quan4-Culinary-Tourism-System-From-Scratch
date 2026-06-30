@@ -1,0 +1,7 @@
+bin/
+obj/
+artifacts/
+wwwroot/uploads/
+.env
+backend-run.err.log
+backend-run.out.log
