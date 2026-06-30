@@ -8,13 +8,10 @@ services:
     build: ./backend/Quan4CulinaryTourism.Api
     depends_on: [mongo]
     ports: ["5163:8080"]
+    env_file:
+      - ./backend/Quan4CulinaryTourism.Api/.env
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       MongoDbSettings__ConnectionString: mongodb://mongo:27017
-      JwtSettings__SecretKey: ${JwtSettings__SecretKey:-__SET_JWT_SECRET_IN_ENVIRONMENT__}
-      DefaultAdmin__Email: ${DefaultAdmin__Email:-admin@quan4tourism.local}
-      DefaultAdmin__Password: ${DefaultAdmin__Password:-}
-      Cors__AllowedOrigins__0: ${Cors__AllowedOrigins__0:-http://localhost:5173}
-      Cors__AllowedOrigins__1: ${Cors__AllowedOrigins__1:-http://localhost:5174}
 volumes:
   mongo-data:

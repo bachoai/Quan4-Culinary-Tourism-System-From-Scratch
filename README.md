@@ -59,6 +59,7 @@ Ghi chú:
 
 - Swagger chỉ bật trong `Development`.
 - Backend tự load file `.env` trong thư mục backend nếu có.
+- Template backend nằm ở `backend/Quan4CulinaryTourism.Api/.env.example`.
 - `appsettings.Development.json` đã có cấu hình local để chạy nhanh.
 - Nếu database trống, backend sẽ seed role, admin, category và dữ liệu demo.
 
@@ -116,11 +117,11 @@ API base URL nên dùng:
 Nếu muốn chạy cả MongoDB và API trong Docker:
 
 ```powershell
-Copy-Item .env.example .env
+Copy-Item backend\Quan4CulinaryTourism.Api\.env.example backend\Quan4CulinaryTourism.Api\.env
 docker compose up --build
 ```
 
-Biến cần có trong `.env`:
+Biến cần có trong `backend/Quan4CulinaryTourism.Api/.env`:
 
 - `JwtSettings__SecretKey`
 - `DefaultAdmin__Email`
@@ -130,8 +131,8 @@ Biến cần có trong `.env`:
 
 Lưu ý:
 
-- `docker compose up mongo -d` không cần `.env`.
-- `docker compose up --build` cần `.env` để API container khởi động thành công.
+- `docker compose up mongo -d` không cần file env nào.
+- `docker compose up --build` dùng `backend/Quan4CulinaryTourism.Api/.env` cho API container.
 - API container chạy `Production`, nên không có Swagger.
 
 ## Deploy tách backend/admin/public

@@ -49,7 +49,8 @@ Tóm tắt:
 
 - `dotnet run` không tự đọc file `.env.example`
 - backend có `EnvFileLoader`, nên nếu tạo file `.env` thật trong `backend/Quan4CulinaryTourism.Api` thì API sẽ tự nạp
-- `backend/Quan4CulinaryTourism.Api/.env.example` chỉ là template để copy thành `.env` hoặc import vào shell/IDE/server
+- `backend/Quan4CulinaryTourism.Api/.env.example` là template duy nhất của backend để copy thành `.env` hoặc import vào shell/IDE/server
+- `docker compose up --build` ở repo root cũng dùng chính file `backend/Quan4CulinaryTourism.Api/.env`
 
 Section quan trọng:
 
