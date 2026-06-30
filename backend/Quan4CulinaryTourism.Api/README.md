@@ -15,6 +15,28 @@ Nếu chưa có MongoDB local, từ repo root chạy:
 docker compose up mongo -d
 ```
 
+## Cài Python cho TTS
+
+Backend dùng Python + `gTTS` để tự sinh file audio. Trên Windows, cài Python bằng `winget`:
+
+```powershell
+winget install Python.Python.3.12
+```
+
+Đóng mở lại terminal, rồi kiểm tra:
+
+```powershell
+python --version
+python -m pip --version
+```
+
+Sau khi vào thư mục backend, cài thư viện TTS:
+
+```powershell
+cd backend\Quan4CulinaryTourism.Api
+python -m pip install -r tools\requirements-tts.txt
+```
+
 ## Chạy backend local
 
 ```powershell
