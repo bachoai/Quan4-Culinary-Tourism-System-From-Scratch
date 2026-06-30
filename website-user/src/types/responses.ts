@@ -47,16 +47,18 @@ export interface Poi {
   rating: number;
   reviewCount: number;
   priority: number;
+  mapUrl?: string | null;
+  ttsScript?: string | null;
   latitude: number;
   longitude: number;
+  geofenceRadiusMeters?: number;
+  autoNarrationEnabled?: boolean;
   tags: string[];
   images: PoiImage[];
+  isActive?: boolean;
 }
 
 export interface PoiDetail extends Poi {
-  mapUrl?: string | null;
-  ttsScript?: string | null;
-  autoNarrationEnabled?: boolean;
   openingHours: OpeningHour[];
   contactInfo?: ContactInfo | null;
   audioStatus?: string;
