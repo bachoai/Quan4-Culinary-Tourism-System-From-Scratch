@@ -6,9 +6,22 @@ import { useAppStore } from '../../store/appStore';
 import type { Poi } from '../../types/responses';
 import { poiImage } from '../../utils/media';
 
+import { useQuery } from '@tanstack/react-query';
+import { categoryApi } from '../../api/categoryApi';
+
 export function PoiCard({ poi, category }: { poi: Poi; category?: string }) {
   const lang = useAppStore((state) => state.lang);
   const ui = getCopy(lang);
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: categoryApi.list,
+  });
+
+  const matchedCategory = categories.find((c) => c.id === poi.categoryId);
+  const displayCategory = matchedCategory
+    ? (ui as any).categories?.[matchedCategory.code] || matchedCategory.name
+    : category || ui.poiCard.defaultCategory;
 
   return (
     <motion.article whileHover={{ y: -6 }} className="group overflow-hidden rounded-3xl bg-white shadow-soft dark:bg-slate-900">
@@ -21,7 +34,7 @@ export function PoiCard({ poi, category }: { poi: Poi; category?: string }) {
 
       <div className="p-5">
         <div className="mb-2 flex items-start justify-between gap-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-teal">{category || ui.poiCard.defaultCategory}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-teal">{displayCategory}</p>
           {poi.rating > 0 ? (
             <span className="flex items-center gap-1 text-sm font-semibold">
               <Star size={15} className="fill-amber-400 text-amber-400" />
