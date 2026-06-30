@@ -11,8 +11,17 @@ import { Spinner } from '../components/common/Spinner';
 import { StatusPill } from '../components/common/StatusPill';
 import { useAppStore } from '../store/appStore';
 import type { CreateOwnerSubmissionRequest } from '../types/requests';
-import type { OwnerManagedPoi, OwnerSubmissionResponse, PoiImage } from '../types/responses';
+import type { OpeningHour, OwnerManagedPoi, OwnerSubmissionResponse, PoiImage } from '../types/responses';
 import { normalizeMediaUrl, poiImage } from '../utils/media';
+
+function createEmptyOpeningHour(): OpeningHour {
+  return {
+    dayOfWeek: '',
+    openTime: '',
+    closeTime: '',
+    isClosed: false,
+  };
+}
 
 function OwnerPoiCard({
   poi,
@@ -362,6 +371,32 @@ export default function OwnerPage() {
     setManualImageCaption('');
   };
 
+  const addOpeningHourRow = () => {
+    setSubmissionNotice('');
+    setSubmissionForm((current) => ({
+      ...current,
+      openingHours: [...current.openingHours, createEmptyOpeningHour()],
+    }));
+  };
+
+  const updateOpeningHourRow = (index: number, patch: Partial<OpeningHour>) => {
+    setSubmissionNotice('');
+    setSubmissionForm((current) => ({
+      ...current,
+      openingHours: current.openingHours.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...patch } : item,
+      ),
+    }));
+  };
+
+  const removeOpeningHourRow = (index: number) => {
+    setSubmissionNotice('');
+    setSubmissionForm((current) => ({
+      ...current,
+      openingHours: current.openingHours.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
   return (
     <section className="shell py-12">
       <p className="section-kicker">KHÔNG GIAN ĐỐI TÁC</p>
@@ -495,9 +530,27 @@ export default function OwnerPage() {
                 }
               }
 
+              const normalizedOpeningHours = submissionForm.openingHours
+                .map((item) => ({
+                  dayOfWeek: item.dayOfWeek.trim(),
+                  openTime: item.isClosed ? '' : item.openTime.trim(),
+                  closeTime: item.isClosed ? '' : item.closeTime.trim(),
+                  isClosed: item.isClosed,
+                }))
+                .filter((item) => item.dayOfWeek || item.openTime || item.closeTime || item.isClosed);
+
+              const hasInvalidOpeningHours = normalizedOpeningHours.some(
+                (item) => !item.dayOfWeek || (!item.isClosed && (!item.openTime || !item.closeTime)),
+              );
+              if (hasInvalidOpeningHours) {
+                setSubmissionNotice('Vui long nhap day du ngay va gio mo/dong cua, hoac danh dau dang nghi.');
+                return;
+              }
+
               setSubmissionNotice('');
               saveSubmissionMutation.mutate({
                 ...submissionForm,
+                openingHours: normalizedOpeningHours,
                 poiId: isUpdateSubmission ? submissionForm.poiId || undefined : undefined,
               });
             }}
@@ -711,6 +764,73 @@ export default function OwnerPage() {
                 className="md:col-span-2"
               />
             </Field>
+            <div className="rounded-3xl border border-slate-200 p-5 md:col-span-2 dark:border-slate-700">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-bold">Gio mo cua</p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Moi dong co the la mot ngay cu the hoac mot khoang ngay, vi du: Thu Hai - Chu Nhat.
+                  </p>
+                </div>
+                <button type="button" className="btn-secondary !px-4 !py-2" onClick={addOpeningHourRow}>
+                  Them khung gio
+                </button>
+              </div>
+
+              {submissionForm.openingHours.length ? (
+                <div className="mt-4 space-y-3">
+                  {submissionForm.openingHours.map((item, index) => (
+                    <div
+                      key={`${item.dayOfWeek || 'opening-hour'}-${index}`}
+                      className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700"
+                    >
+                      <div className="grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)_minmax(0,.8fr)_auto_auto]">
+                        <TextInput
+                          value={item.dayOfWeek}
+                          onChange={(event) => updateOpeningHourRow(index, { dayOfWeek: event.target.value })}
+                          placeholder="Ngay hoac khoang ngay"
+                        />
+                        <TextInput
+                          type="time"
+                          value={item.openTime}
+                          onChange={(event) => updateOpeningHourRow(index, { openTime: event.target.value })}
+                          disabled={item.isClosed}
+                        />
+                        <TextInput
+                          type="time"
+                          value={item.closeTime}
+                          onChange={(event) => updateOpeningHourRow(index, { closeTime: event.target.value })}
+                          disabled={item.isClosed}
+                        />
+                        <label className="flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium dark:border-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={item.isClosed}
+                            onChange={(event) =>
+                              updateOpeningHourRow(index, {
+                                isClosed: event.target.checked,
+                                openTime: event.target.checked ? '' : item.openTime,
+                                closeTime: event.target.checked ? '' : item.closeTime,
+                              })
+                            }
+                          />
+                          <span>Nghi</span>
+                        </label>
+                        <button
+                          type="button"
+                          className="btn-secondary !px-4 !py-2"
+                          onClick={() => removeOpeningHourRow(index)}
+                        >
+                          Xoa
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-slate-500">Chua khai bao gio mo cua cho de xuat nay.</p>
+              )}
+            </div>
             <div className="rounded-3xl border border-slate-200 p-5 md:col-span-2 dark:border-slate-700">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>

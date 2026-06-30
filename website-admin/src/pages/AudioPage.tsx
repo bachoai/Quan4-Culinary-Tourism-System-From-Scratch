@@ -11,6 +11,7 @@ import { useI18n } from '../i18n/provider';
 import { PageContainer } from '../components/layout/PageContainer';
 import type { UpdateLocalizationRequest, UpdatePoiRequest } from '../types/requests';
 import type { PoiDetailResponse } from '../types/responses';
+import { SUPPORTED_LANGUAGES } from '../utils/constants';
 import { normalizeMediaUrl } from '../utils/media';
 
 type NarrationScriptFormValues = {
@@ -45,6 +46,9 @@ function toPoiUpdatePayload(poi: PoiDetailResponse, ttsScript: string): UpdatePo
     tags: poi.tags,
     isActive: poi.isActive,
     activationRequested: false,
+    autoTranslateAudioContent: false,
+    overwriteAutoTranslations: false,
+    autoTranslateLanguages: SUPPORTED_LANGUAGES.filter((value) => value !== 'vi'),
   };
 }
 
@@ -212,7 +216,7 @@ export function AudioPage() {
             <Select
               value={lang}
               style={{ width: 140 }}
-              options={['vi', 'en', 'zh', 'ja', 'ko'].map((value) => ({ value, label: value.toUpperCase() }))}
+              options={SUPPORTED_LANGUAGES.map((value) => ({ value, label: value.toUpperCase() }))}
               onChange={setLang}
             />
           </Space>

@@ -8,6 +8,7 @@ import { LoadingScreen } from '../components/common/LoadingScreen';
 import { PageContainer } from '../components/layout/PageContainer';
 import { useI18n } from '../i18n/provider';
 import { formatDateTime } from '../utils/format';
+import { SUPPORTED_LANGUAGES } from '../utils/constants';
 
 const EVENT_OPTIONS = [
   'poi_viewed',
@@ -64,7 +65,7 @@ export function UsageHistoryPage() {
             allowClear
             placeholder={t('language')}
             style={{ width: 120 }}
-            options={['vi', 'en', 'zh', 'ja', 'ko'].map((value) => ({ value, label: value.toUpperCase() }))}
+            options={SUPPORTED_LANGUAGES.map((value) => ({ value, label: value.toUpperCase() }))}
             onChange={(value) => { setLang(value); setPage(1); }}
           />
         </Space>

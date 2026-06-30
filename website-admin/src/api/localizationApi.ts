@@ -1,5 +1,9 @@
 import axiosClient from './axiosClient';
-import type { CreateLocalizationRequest, UpdateLocalizationRequest } from '../types/requests';
+import type {
+  CreateLocalizationRequest,
+  TranslatePoiLocalizationRequest,
+  UpdateLocalizationRequest,
+} from '../types/requests';
 import type { PoiLocalizationResponse } from '../types/responses';
 
 export const localizationApi = {
@@ -7,6 +11,8 @@ export const localizationApi = {
     axiosClient.get<never, PoiLocalizationResponse[]>(`/api/v1/admin/pois/${poiId}/localizations`),
   create: (poiId: string, payload: CreateLocalizationRequest) =>
     axiosClient.post<never, PoiLocalizationResponse>(`/api/v1/admin/pois/${poiId}/localizations`, payload),
+  translate: (poiId: string, payload: TranslatePoiLocalizationRequest) =>
+    axiosClient.post<never, PoiLocalizationResponse>(`/api/v1/admin/pois/${poiId}/localizations/translate`, payload),
   update: (poiId: string, lang: string, payload: UpdateLocalizationRequest) =>
     axiosClient.put<never, PoiLocalizationResponse>(`/api/v1/admin/pois/${poiId}/localizations/${lang}`, payload),
   delete: (poiId: string, lang: string) =>

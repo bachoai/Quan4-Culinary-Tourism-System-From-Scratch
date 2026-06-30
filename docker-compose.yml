@@ -13,5 +13,6 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       MongoDbSettings__ConnectionString: mongodb://mongo:27017
+      TextToSpeechSettings__PythonCommand: /opt/ttsenv/bin/python
 volumes:
   mongo-data:

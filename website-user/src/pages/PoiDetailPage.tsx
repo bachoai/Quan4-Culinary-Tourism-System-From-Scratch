@@ -25,8 +25,8 @@ export default function PoiDetailPage() {
   const autoplay = queryParams.get('autoplay');
   const source = queryParams.get('source');
   const { data: poi, isLoading, isError, error } = useQuery({
-    queryKey: ['detail', id, lang],
-    queryFn: () => poiApi.detail(id, lang),
+    queryKey: ['detail', id, lang, audioLang],
+    queryFn: () => poiApi.detail(id, lang, audioLang),
   });
   const audioLanguagesQuery = useQuery({
     queryKey: ['audio-languages'],

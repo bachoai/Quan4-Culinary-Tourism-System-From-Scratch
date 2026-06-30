@@ -38,6 +38,9 @@ export interface PoiPayloadBase {
   ownerId?: string | null;
   tags: string[];
   isActive: boolean;
+  autoTranslateAudioContent: boolean;
+  overwriteAutoTranslations: boolean;
+  autoTranslateLanguages: string[];
 }
 
 export interface CreatePoiRequest extends PoiPayloadBase {}
@@ -56,6 +59,12 @@ export interface CreateLocalizationRequest {
 }
 
 export interface UpdateLocalizationRequest extends CreateLocalizationRequest {}
+
+export interface TranslatePoiLocalizationRequest {
+  lang: string;
+  sourceLang: string;
+  overwriteExisting: boolean;
+}
 
 export interface UploadPoiAudioRequest {
   lang: string;

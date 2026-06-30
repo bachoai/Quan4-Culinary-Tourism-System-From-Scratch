@@ -50,6 +50,9 @@ public abstract class BaseDocument
 
 public static class SharedConstants
 {
+    public const string DefaultUiLanguage = "vi";
+    public const string DefaultAudioLanguage = "vi";
+
     public static class UserRoles
     {
         public const string Admin = "Admin";
@@ -79,7 +82,21 @@ public static class SharedConstants
     public const string AudioTaskCancelled = "cancelled";
 
     public static readonly string[] PriceRanges = ["$", "$$", "$$$"];
-    public static readonly string[] SupportedLanguages = ["vi", "en", "zh", "ja", "ko"];
+    public static readonly string[] SupportedUiLanguages = ["vi", "en"];
+    public static readonly string[] SupportedLanguages = ["vi", "en", "zh", "ja", "ko", "fr", "de", "es", "th", "ru"];
+    public static readonly Dictionary<string, string> SupportedLanguageNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["vi"] = "Vietnamese",
+        ["en"] = "English",
+        ["zh"] = "Chinese",
+        ["ja"] = "Japanese",
+        ["ko"] = "Korean",
+        ["fr"] = "French",
+        ["de"] = "German",
+        ["es"] = "Spanish",
+        ["th"] = "Thai",
+        ["ru"] = "Russian",
+    };
     public static readonly string[] SubmissionTypes = ["create", "update"];
     public static readonly string[] MediaTypes = ["image", "audio", "map"];
     public static readonly string[] StorageProviders = ["local", "cloudinary", "minio", "s3"];

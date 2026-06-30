@@ -1,4 +1,4 @@
-export type Lang = 'vi' | 'en' | 'zh' | 'ja' | 'ko';
+export type Lang = 'vi' | 'en' | 'zh' | 'ja' | 'ko' | 'fr' | 'de' | 'es' | 'th' | 'ru';
 
 export interface ApiResponse<T> {
   success: boolean;

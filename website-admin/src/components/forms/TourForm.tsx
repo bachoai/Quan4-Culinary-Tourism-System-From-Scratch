@@ -4,6 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { useI18n } from '../../i18n/provider';
 import type { CreateTourRequest, TourStopRequest, UpdateTourRequest } from '../../types/requests';
 import type { TourResponse } from '../../types/responses';
+import { SUPPORTED_LANGUAGES } from '../../utils/constants';
 import { tourSchema } from '../../utils/validators';
 
 type TourFormValues = {
@@ -78,7 +79,7 @@ export function TourForm({ initialValues, loading, onSubmit }: TourFormProps) {
     >
       <Controller name="title" control={control} render={({ field, fieldState }) => <Form.Item label={t('name')} validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}><Input {...field} /></Form.Item>} />
       <Controller name="description" control={control} render={({ field, fieldState }) => <Form.Item label={t('description')} validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}><Input.TextArea rows={4} {...field} /></Form.Item>} />
-      <Controller name="lang" control={control} render={({ field }) => <Form.Item label={t('language')}><Select {...field} options={['vi', 'en', 'zh', 'ja', 'ko'].map((value) => ({ value, label: value.toUpperCase() }))} /></Form.Item>} />
+      <Controller name="lang" control={control} render={({ field }) => <Form.Item label={t('language')}><Select {...field} options={SUPPORTED_LANGUAGES.map((value) => ({ value, label: value.toUpperCase() }))} /></Form.Item>} />
       <Controller name="coverImageUrl" control={control} render={({ field }) => <Form.Item label={t('cover_image_url')}><Input {...field} /></Form.Item>} />
       <Controller name="estimatedDurationMinutes" control={control} render={({ field }) => <Form.Item label={t('tour_duration_minutes')}><InputNumber min={1} max={1440} style={{ width: '100%' }} value={field.value} onChange={(value) => field.onChange(value ?? 60)} /></Form.Item>} />
       <Controller name="isActive" control={control} render={({ field }) => <Form.Item label={t('active')}><Switch checked={field.value} onChange={field.onChange} /></Form.Item>} />

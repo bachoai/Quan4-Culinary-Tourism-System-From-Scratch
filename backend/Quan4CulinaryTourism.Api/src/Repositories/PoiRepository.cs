@@ -29,6 +29,9 @@ public class PoiRepository
     public async Task CreateAsync(Poi poi, CancellationToken cancellationToken = default) =>
         await _context.Pois.InsertOneAsync(poi, cancellationToken: cancellationToken);
 
+    public async Task DeleteHardAsync(string id, CancellationToken cancellationToken = default) =>
+        await _context.Pois.DeleteOneAsync(x => x.Id == id, cancellationToken);
+
     public async Task UpdateAsync(Poi poi, CancellationToken cancellationToken = default)
     {
         poi.UpdatedAt = DateTime.UtcNow;

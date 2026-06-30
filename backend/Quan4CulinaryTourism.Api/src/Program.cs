@@ -16,6 +16,7 @@ EnvFileLoader.LoadIfPresent(
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection(nameof(MongoDbSettings)));
+builder.Services.Configure<DatabaseResetSettings>(builder.Configuration.GetSection(nameof(DatabaseResetSettings)));
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection(nameof(JwtSettings)));
 builder.Services.Configure<UploadSettings>(builder.Configuration.GetSection(nameof(UploadSettings)));
 builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection(nameof(CloudinarySettings)));
@@ -127,13 +128,14 @@ builder.Services
 builder.Services.AddAuthorization();
 
 builder.Services.AddSingleton<MongoDbContext>();
+builder.Services.AddSingleton<DeploymentDatabaseResetService>();
 builder.Services.AddSingleton<MongoIndexInitializer>();
 builder.Services.AddSingleton<PasswordHasher>();
 builder.Services.AddSingleton<JwtHelper>();
 builder.Services.AddSingleton<DistanceHelper>();
 builder.Services.AddScoped<FileUploadHelper>();
 builder.Services.AddSingleton<ClaimsHelper>();
-builder.Services.AddSingleton<DbSeeder>();
+builder.Services.AddScoped<DbSeeder>();
 builder.Services.AddScoped<IClaimsTransformation, UserRoleClaimsTransformation>();
 
 builder.Services.AddScoped<UserRepository>();
@@ -157,6 +159,7 @@ builder.Services.AddScoped<OwnerService>();
 builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<AudioService>();
 builder.Services.AddScoped<PythonTextToSpeechService>();
+builder.Services.AddScoped<PythonTranslationService>();
 builder.Services.AddScoped<LocalizationService>();
 builder.Services.AddScoped<MediaService>();
 builder.Services.AddScoped<AnalyticsService>();
@@ -186,6 +189,9 @@ app.UseAuthorization();
 
 using (var scope = app.Services.CreateScope())
 {
+    var deploymentResetService = scope.ServiceProvider.GetRequiredService<DeploymentDatabaseResetService>();
+    await deploymentResetService.ResetIfNeededAsync();
+
     var indexInitializer = scope.ServiceProvider.GetRequiredService<MongoIndexInitializer>();
     await indexInitializer.InitializeAsync();
 

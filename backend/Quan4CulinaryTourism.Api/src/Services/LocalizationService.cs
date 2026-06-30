@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Quan4CulinaryTourism.Api.Common;
 using Quan4CulinaryTourism.Api.DTOs;
@@ -9,21 +8,24 @@ namespace Quan4CulinaryTourism.Api.Services;
 
 public class LocalizationService
 {
-    private static readonly JsonSerializerOptions TranslationJsonOptions = new(JsonSerializerDefaults.Web)
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
     private readonly PoiRepository _poiRepository;
     private readonly PoiLocalizationRepository _repository;
-    private readonly AiChatClient _aiChatClient;
+    private readonly PythonTranslationService _pythonTranslationService;
+    private readonly ILogger<LocalizationService> _logger;
 
-    public LocalizationService(PoiRepository poiRepository, PoiLocalizationRepository repository, AiChatClient aiChatClient)
+    public LocalizationService(
+        PoiRepository poiRepository,
+        PoiLocalizationRepository repository,
+        PythonTranslationService pythonTranslationService,
+        ILogger<LocalizationService> logger)
     {
         _poiRepository = poiRepository;
         _repository = repository;
-        _aiChatClient = aiChatClient;
+        _pythonTranslationService = pythonTranslationService;
+        _logger = logger;
     }
+
+    public bool CanAutoTranslate() => _pythonTranslationService.IsAvailable();
 
     public async Task<List<PoiLocalizationResponse>> GetPoiLocalizationsAsync(string poiId, CancellationToken cancellationToken = default)
     {
@@ -95,9 +97,11 @@ public class LocalizationService
         TranslatePoiLocalizationRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!_aiChatClient.CanUseAi())
+        if (!CanAutoTranslate())
         {
-            throw new ApiException("AI translation chua duoc cau hinh.", StatusCodes.Status503ServiceUnavailable);
+            throw new ApiException(
+                "Auto-translate chua san sang. Can Python translation runtime tren backend.",
+                StatusCodes.Status503ServiceUnavailable);
         }
 
         var poi = await _poiRepository.GetByIdAsync(poiId, cancellationToken)
@@ -117,8 +121,10 @@ public class LocalizationService
         }
 
         var sourcePayload = await LoadSourcePayloadAsync(poi, sourceLang, cancellationToken);
-        var translated = await TranslatePayloadAsync(sourceLang, targetLang, sourcePayload, cancellationToken)
-            ?? throw new ApiException("AI translation khong tra ve du lieu hop le.", StatusCodes.Status502BadGateway);
+        var translated = await _pythonTranslationService.TranslateAsync(sourceLang, targetLang, sourcePayload, cancellationToken)
+            ?? throw new ApiException(
+                "Khong the tu dong dich localization. Hay kiem tra Python translation tren backend.",
+                StatusCodes.Status502BadGateway);
 
         return await UpsertAsync(
             poiId,
@@ -156,6 +162,59 @@ public class LocalizationService
         await _repository.DeleteAsync(entity.PoiId, entity.Lang, cancellationToken);
     }
 
+    public async Task<PoiLocalization?> EnsureLocalizationAsync(
+        string poiId,
+        string lang,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedLang = NormalizeLanguage(lang);
+        if (string.Equals(normalizedLang, SharedConstants.DefaultAudioLanguage, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var existing = await _repository.GetByPoiAndLangAsync(poiId, normalizedLang, cancellationToken);
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        if (!CanAutoTranslate())
+        {
+            return null;
+        }
+
+        try
+        {
+            await TranslateAsync(
+                poiId,
+                new TranslatePoiLocalizationRequest
+                {
+                    Lang = normalizedLang,
+                    SourceLang = SharedConstants.DefaultAudioLanguage,
+                    OverwriteExisting = false
+                },
+                cancellationToken);
+
+            return await _repository.GetByPoiAndLangAsync(poiId, normalizedLang, cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            var createdByAnotherRequest = await _repository.GetByPoiAndLangAsync(poiId, normalizedLang, cancellationToken);
+            if (createdByAnotherRequest is not null)
+            {
+                return createdByAnotherRequest;
+            }
+
+            _logger.LogWarning(
+                exception,
+                "Unable to auto-create localization for POI {PoiId} in {Lang}",
+                poiId,
+                normalizedLang);
+            return null;
+        }
+    }
+
     private static PoiLocalizationResponse ToResponse(PoiLocalization entity) => new()
     {
         Id = entity.Id,
@@ -191,99 +250,12 @@ public class LocalizationService
         };
     }
 
-    private async Task<LocalizationTranslationPayload?> TranslatePayloadAsync(
-        string sourceLang,
-        string targetLang,
-        LocalizationTranslationPayload sourcePayload,
-        CancellationToken cancellationToken)
-    {
-        var rawResponse = await _aiChatClient.GenerateReplyAsync(
-            BuildTranslationSystemPrompt(targetLang),
-            BuildTranslationUserPrompt(sourceLang, targetLang, sourcePayload),
-            cancellationToken);
-
-        if (string.IsNullOrWhiteSpace(rawResponse))
-        {
-            return null;
-        }
-
-        var json = ExtractJsonObject(rawResponse);
-        if (json is null)
-        {
-            return null;
-        }
-
-        try
-        {
-            var payload = JsonSerializer.Deserialize<LocalizationTranslationPayload>(json, TranslationJsonOptions);
-            if (payload is null)
-            {
-                return null;
-            }
-
-            payload.Name = payload.Name?.Trim() ?? string.Empty;
-            payload.Description = payload.Description?.Trim() ?? string.Empty;
-            payload.TtsScript = payload.TtsScript?.Trim();
-            if (string.IsNullOrWhiteSpace(payload.Name) || string.IsNullOrWhiteSpace(payload.Description))
-            {
-                return null;
-            }
-
-            return payload;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private static string BuildTranslationSystemPrompt(string targetLang) =>
-        $"""
-        You translate POI content for a culinary tourism app.
-        Return strict JSON only with keys: name, description, ttsScript.
-        Translate into {targetLang}.
-        Keep the meaning accurate, keep proper nouns natural, and do not add markdown.
-        The description should read naturally for an app detail page.
-        The ttsScript should read naturally as spoken narration in the target language.
-        """;
-
-    private static string BuildTranslationUserPrompt(
-        string sourceLang,
-        string targetLang,
-        LocalizationTranslationPayload sourcePayload) =>
-        $$"""
-        Source language: {{sourceLang}}
-        Target language: {{targetLang}}
-
-        Translate this JSON payload and return JSON only:
-        {{JsonSerializer.Serialize(sourcePayload, TranslationJsonOptions)}}
-        """;
-
     private static string NormalizeLanguage(string lang)
     {
-        var normalized = string.IsNullOrWhiteSpace(lang) ? "vi" : lang.Trim().ToLowerInvariant();
-        return SharedConstants.SupportedLanguages.Contains(normalized) ? normalized : "vi";
+        var normalized = string.IsNullOrWhiteSpace(lang) ? SharedConstants.DefaultAudioLanguage : lang.Trim().ToLowerInvariant();
+        return SharedConstants.SupportedLanguages.Contains(normalized) ? normalized : SharedConstants.DefaultAudioLanguage;
     }
 
     private static string? FirstNonEmpty(params string?[] values) =>
         values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim();
-
-    private static string? ExtractJsonObject(string rawResponse)
-    {
-        var start = rawResponse.IndexOf('{');
-        var end = rawResponse.LastIndexOf('}');
-        if (start < 0 || end <= start)
-        {
-            return null;
-        }
-
-        return rawResponse[start..(end + 1)];
-    }
-
-    private sealed class LocalizationTranslationPayload
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string? TtsScript { get; set; }
-    }
 }

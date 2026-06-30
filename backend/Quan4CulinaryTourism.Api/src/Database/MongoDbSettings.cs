@@ -6,6 +6,13 @@ public class MongoDbSettings
     public string DatabaseName { get; set; } = "quan4_culinary_tourism";
 }
 
+public class DatabaseResetSettings
+{
+    public bool Enabled { get; set; }
+    public string Token { get; set; } = string.Empty;
+    public string MarkerCollectionName { get; set; } = "__deployment_resets";
+}
+
 public class JwtSettings
 {
     public string SecretKey { get; set; } = string.Empty;

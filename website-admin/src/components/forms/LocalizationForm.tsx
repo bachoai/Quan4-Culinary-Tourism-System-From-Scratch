@@ -9,10 +9,11 @@ import { localizationSchema } from '../../utils/validators';
 interface LocalizationFormProps {
   initialValues?: CreateLocalizationRequest;
   loading?: boolean;
+  disableLanguage?: boolean;
   onSubmit: (values: CreateLocalizationRequest) => Promise<unknown>;
 }
 
-export function LocalizationForm({ initialValues, loading, onSubmit }: LocalizationFormProps) {
+export function LocalizationForm({ initialValues, loading, disableLanguage, onSubmit }: LocalizationFormProps) {
   const { t } = useI18n();
   const { control, handleSubmit } = useForm<CreateLocalizationRequest>({
     resolver: zodResolver(localizationSchema),
@@ -28,7 +29,19 @@ export function LocalizationForm({ initialValues, loading, onSubmit }: Localizat
 
   return (
     <Form layout="vertical" onFinish={handleSubmit(async (values) => onSubmit(values))}>
-      <Controller name="lang" control={control} render={({ field }) => <Form.Item label={t('language')}><Select {...field} options={SUPPORTED_LANGUAGES.map((value) => ({ value, label: value.toUpperCase() }))} /></Form.Item>} />
+      <Controller
+        name="lang"
+        control={control}
+        render={({ field }) => (
+          <Form.Item label={t('language')}>
+            <Select
+              {...field}
+              disabled={disableLanguage}
+              options={SUPPORTED_LANGUAGES.map((value) => ({ value, label: value.toUpperCase() }))}
+            />
+          </Form.Item>
+        )}
+      />
       <Controller name="name" control={control} render={({ field, fieldState }) => <Form.Item label={t('name')} validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}><Input {...field} /></Form.Item>} />
       <Controller name="description" control={control} render={({ field, fieldState }) => <Form.Item label={t('description')} validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}><Input.TextArea rows={4} {...field} /></Form.Item>} />
       <Controller

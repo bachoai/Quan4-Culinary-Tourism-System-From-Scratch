@@ -23,6 +23,11 @@ const narrationLangMap: Record<string, string> = {
   zh: 'zh-CN',
   ja: 'ja-JP',
   ko: 'ko-KR',
+  fr: 'fr-FR',
+  de: 'de-DE',
+  es: 'es-ES',
+  th: 'th-TH',
+  ru: 'ru-RU',
 };
 
 function resolveVoice(lang: string, voices: SpeechSynthesisVoice[]) {
@@ -33,6 +38,8 @@ function resolveVoice(lang: string, voices: SpeechSynthesisVoice[]) {
     voices.find((voice) => voice.lang.toLowerCase() === preferredLang) ??
     voices.find((voice) => voice.lang.toLowerCase().startsWith(`${baseLang}-`)) ??
     voices.find((voice) => voice.lang.toLowerCase() === baseLang) ??
+    voices.find((voice) => voice.default) ??
+    voices[0] ??
     null
   );
 }

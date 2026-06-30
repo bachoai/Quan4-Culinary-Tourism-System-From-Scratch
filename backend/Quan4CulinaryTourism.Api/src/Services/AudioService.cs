@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Http;
-using System.Security.Cryptography;
-using System.Text;
 using Quan4CulinaryTourism.Api.Common;
 using Quan4CulinaryTourism.Api.DTOs;
 using Quan4CulinaryTourism.Api.Helpers;
 using Quan4CulinaryTourism.Api.Models;
 using Quan4CulinaryTourism.Api.Repositories;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Quan4CulinaryTourism.Api.Services;
 
@@ -16,6 +16,7 @@ public class AudioService
     private readonly PoiAudioRepository _poiAudioRepository;
     private readonly FileUploadHelper _fileUploadHelper;
     private readonly PythonTextToSpeechService _pythonTextToSpeechService;
+    private readonly LocalizationService _localizationService;
     private readonly ILogger<AudioService> _logger;
 
     public AudioService(
@@ -24,6 +25,7 @@ public class AudioService
         PoiAudioRepository poiAudioRepository,
         FileUploadHelper fileUploadHelper,
         PythonTextToSpeechService pythonTextToSpeechService,
+        LocalizationService localizationService,
         ILogger<AudioService> logger)
     {
         _poiRepository = poiRepository;
@@ -31,27 +33,35 @@ public class AudioService
         _poiAudioRepository = poiAudioRepository;
         _fileUploadHelper = fileUploadHelper;
         _pythonTextToSpeechService = pythonTextToSpeechService;
+        _localizationService = localizationService;
         _logger = logger;
     }
 
     public Task<List<AudioLanguageResponse>> GetLanguagesAsync(CancellationToken cancellationToken = default)
     {
-        var languages = SharedConstants.SupportedLanguages.Select(lang => new AudioLanguageResponse { Code = lang, Name = lang }).ToList();
+        var languages = SharedConstants.SupportedLanguages
+            .Select(lang => new AudioLanguageResponse
+            {
+                Code = lang,
+                Name = SharedConstants.SupportedLanguageNames.TryGetValue(lang, out var name) ? name : lang
+            })
+            .ToList();
         return Task.FromResult(languages);
     }
 
     public async Task<PoiAudioResponse?> GetPoiAudioAsync(string poiId, string? lang, CancellationToken cancellationToken = default)
     {
         var normalizedLang = NormalizeLanguage(lang);
+        var hasExplicitLanguage = !string.IsNullOrWhiteSpace(lang);
         var poi = await _poiRepository.GetByIdAsync(poiId, cancellationToken);
         if (poi is null)
         {
             return null;
         }
 
-        var localization = normalizedLang == "vi"
+        var localization = normalizedLang == SharedConstants.DefaultAudioLanguage
             ? null
-            : await _poiLocalizationRepository.GetByPoiAndLangAsync(poiId, normalizedLang, cancellationToken);
+            : await _localizationService.EnsureLocalizationAsync(poiId, normalizedLang, cancellationToken);
         var narrationText = ResolveNarrationText(normalizedLang, poi, localization);
         var narrationSignature = ComputeNarrationSignature(normalizedLang, narrationText);
         var audio = await _poiAudioRepository.GetByPoiAndLangAsync(
@@ -60,33 +70,27 @@ public class AudioService
             cancellationToken,
             includeDeleted: true);
 
-        if (audio?.IsDeleted == true)
+        if (audio?.IsDeleted != true)
         {
-            if (string.IsNullOrWhiteSpace(lang))
+            if (ShouldRegenerateGeneratedAudio(audio, narrationSignature))
             {
-                var fallbackAudio = (await _poiAudioRepository.GetByPoiIdAsync(poiId, cancellationToken)).FirstOrDefault();
-                return fallbackAudio is null ? null : ToResponse(fallbackAudio);
+                var regenerated = await TryGenerateNarrationAudioAsync(
+                    poi,
+                    normalizedLang,
+                    narrationText,
+                    narrationSignature,
+                    cancellationToken);
+                if (regenerated is not null)
+                {
+                    return regenerated;
+                }
             }
 
-            return null;
-        }
-
-        if (ShouldRegenerateGeneratedAudio(audio, narrationSignature))
-        {
-            var regenerated = await TryGenerateNarrationAudioAsync(
-                poi,
-                normalizedLang,
-                narrationText,
-                narrationSignature,
-                cancellationToken);
-            if (regenerated is not null)
+            if (audio is not null)
             {
-                return regenerated;
+                return ToResponse(audio);
             }
-        }
 
-        if (audio is null)
-        {
             var generated = await TryGenerateNarrationAudioAsync(
                 poi,
                 normalizedLang,
@@ -99,18 +103,19 @@ public class AudioService
             }
         }
 
-        if (string.IsNullOrWhiteSpace(lang))
+        if (!hasExplicitLanguage)
         {
-            audio ??= (await _poiAudioRepository.GetByPoiIdAsync(poiId, cancellationToken)).FirstOrDefault();
+            var fallbackAudio = (await _poiAudioRepository.GetByPoiIdAsync(poiId, cancellationToken)).FirstOrDefault();
+            return fallbackAudio is null ? null : ToResponse(fallbackAudio);
         }
 
-        return audio is null ? null : ToResponse(audio);
+        return null;
     }
 
     public async Task<PoiAudioResponse> UploadOrSetAudioAsync(string poiId, UploadPoiAudioRequest request, IFormFile? file, CancellationToken cancellationToken = default)
     {
         var poi = await _poiRepository.GetByIdAsync(poiId, cancellationToken)
-            ?? throw new ApiException("Không tìm thấy POI.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("Khong tim thay POI.", StatusCodes.Status404NotFound);
 
         string audioUrl;
         long fileSize = 0;
@@ -133,13 +138,14 @@ public class AudioService
         }
         else
         {
-            throw new ApiException("Cần upload file hoặc truyền AudioUrl.");
+            throw new ApiException("Can upload file hoac truyen audioUrl.");
         }
 
+        var normalizedLang = NormalizeLanguage(request.Lang);
         var audio = new PoiAudio
         {
             PoiId = poi.Id,
-            Lang = request.Lang,
+            Lang = normalizedLang,
             IsDeleted = false,
             AudioUrl = audioUrl,
             StorageProvider = storageProvider,
@@ -164,15 +170,15 @@ public class AudioService
     {
         var normalizedLang = NormalizeLanguage(request.Lang);
         var poi = await _poiRepository.GetByIdAsync(poiId, cancellationToken)
-            ?? throw new ApiException("Không tìm thấy POI.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("Khong tim thay POI.", StatusCodes.Status404NotFound);
 
-        var localization = normalizedLang == "vi"
+        var localization = normalizedLang == SharedConstants.DefaultAudioLanguage
             ? null
-            : await _poiLocalizationRepository.GetByPoiAndLangAsync(poiId, normalizedLang, cancellationToken);
+            : await _localizationService.EnsureLocalizationAsync(poiId, normalizedLang, cancellationToken);
         var narrationText = ResolveNarrationText(normalizedLang, poi, localization);
         if (string.IsNullOrWhiteSpace(narrationText))
         {
-            throw new ApiException("Không có nội dung lời nói để tạo audio cho ngôn ngữ đã chọn.");
+            throw new ApiException("Khong co noi dung loi noi de tao audio cho ngon ngu da chon.");
         }
 
         var generated = await _pythonTextToSpeechService.GenerateAudioAsync(
@@ -182,7 +188,7 @@ public class AudioService
         if (generated is null)
         {
             throw new ApiException(
-                "Không thể tạo audio từ nội dung lời nói. Hãy kiểm tra cấu hình TTS của máy chủ.",
+                "Khong the tao audio tu noi dung loi noi. Hay kiem tra cau hinh TTS cua may chu.",
                 StatusCodes.Status500InternalServerError);
         }
 
@@ -199,9 +205,9 @@ public class AudioService
     {
         var normalizedLang = NormalizeLanguage(lang);
         var poi = await _poiRepository.GetByIdAsync(poiId, cancellationToken)
-            ?? throw new ApiException("KhĂ´ng tĂ¬m tháº¥y POI.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("Khong tim thay POI.", StatusCodes.Status404NotFound);
         var audio = await _poiAudioRepository.GetByPoiAndLangAsync(poiId, normalizedLang, cancellationToken)
-            ?? throw new ApiException("KhĂ´ng tĂ¬m tháº¥y audio cho ngĂ´n ngá»¯ Ä‘Ă£ chá»n.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("Khong tim thay audio cho ngon ngu da chon.", StatusCodes.Status404NotFound);
 
         await _fileUploadHelper.DeleteManagedFileAsync(
             audio.AudioUrl,
@@ -273,7 +279,10 @@ public class AudioService
                 return null;
             }
 
-            var generated = await _pythonTextToSpeechService.GenerateAudioAsync(narrationText, lang, cancellationToken);
+            var generated = await _pythonTextToSpeechService.GenerateAudioAsync(
+                narrationText,
+                ResolveVoiceHint(lang, null),
+                cancellationToken);
             if (generated is null)
             {
                 return null;
@@ -332,8 +341,8 @@ public class AudioService
 
     private static string NormalizeLanguage(string? lang)
     {
-        var normalized = string.IsNullOrWhiteSpace(lang) ? "vi" : lang.Trim().ToLowerInvariant();
-        return SharedConstants.SupportedLanguages.Contains(normalized) ? normalized : "vi";
+        var normalized = string.IsNullOrWhiteSpace(lang) ? SharedConstants.DefaultAudioLanguage : lang.Trim().ToLowerInvariant();
+        return SharedConstants.SupportedLanguages.Contains(normalized) ? normalized : SharedConstants.DefaultAudioLanguage;
     }
 
     private static string? FirstNonEmpty(params string?[] values) =>
@@ -341,7 +350,7 @@ public class AudioService
 
     private static string? ResolveNarrationText(string lang, Poi poi, PoiLocalization? localization)
     {
-        if (lang == "vi")
+        if (lang == SharedConstants.DefaultAudioLanguage)
         {
             return FirstNonEmpty(
                 poi.TtsScript,
@@ -377,4 +386,5 @@ public class AudioService
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(payload));
         return Convert.ToHexString(bytes);
     }
+
 }

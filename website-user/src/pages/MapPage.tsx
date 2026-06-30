@@ -55,8 +55,8 @@ export default function MapPage() {
   const navigationMode = searchParams.get('nav') === '1' && Boolean(selectedPoiId);
 
   const { data: pois = [], isLoading, isError, error } = useQuery({
-    queryKey: ['map-pois', lang],
-    queryFn: () => poiApi.list({ lang }),
+    queryKey: ['map-pois', lang, audioLang],
+    queryFn: () => poiApi.list({ lang, audioLang }),
   });
   const mapPackQuery = useQuery({
     queryKey: ['map-pack-manifest'],

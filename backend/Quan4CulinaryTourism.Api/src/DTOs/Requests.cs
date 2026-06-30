@@ -92,6 +92,9 @@ public class CreatePoiRequest
     public string? OwnerId { get; set; }
     public List<string> Tags { get; set; } = [];
     public bool IsActive { get; set; } = true;
+    public bool AutoTranslateAudioContent { get; set; } = true;
+    public bool OverwriteAutoTranslations { get; set; }
+    public List<string> AutoTranslateLanguages { get; set; } = [];
 }
 
 public class UpdatePoiRequest : CreatePoiRequest
@@ -102,6 +105,7 @@ public class UpdatePoiRequest : CreatePoiRequest
 public class PoiSearchRequest : PaginationParams
 {
     public string? Lang { get; set; }
+    public string? AudioLang { get; set; }
     public string? Keyword { get; set; }
     public string? CategoryId { get; set; }
     public string? PriceRange { get; set; }

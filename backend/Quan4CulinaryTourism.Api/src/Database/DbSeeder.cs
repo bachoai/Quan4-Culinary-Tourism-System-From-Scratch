@@ -11,7 +11,10 @@ public class DbSeeder
     private readonly DefaultAdminSettings _defaultAdmin;
     private readonly PasswordHasher _passwordHasher;
 
-    public DbSeeder(MongoDbContext context, IOptions<DefaultAdminSettings> defaultAdmin, PasswordHasher passwordHasher)
+    public DbSeeder(
+        MongoDbContext context,
+        IOptions<DefaultAdminSettings> defaultAdmin,
+        PasswordHasher passwordHasher)
     {
         _context = context;
         _defaultAdmin = defaultAdmin.Value;
@@ -35,6 +38,12 @@ public class DbSeeder
         await SeedQrActivationsAsync(cancellationToken);
         await SeedMapPacksAsync(cancellationToken);
     }
+
+    private Task<List<Poi>> GetOrderedPoisAsync(CancellationToken cancellationToken) =>
+        _context.Pois.Find(FilterDefinition<Poi>.Empty)
+            .SortByDescending(x => x.Priority)
+            .ThenBy(x => x.Name)
+            .ToListAsync(cancellationToken);
 
     private async Task SeedAdminAsync(CancellationToken cancellationToken)
     {
@@ -150,73 +159,53 @@ public class DbSeeder
 
     private async Task SeedPoiLocalizationsAsync(CancellationToken cancellationToken)
     {
-        var pois = await _context.Pois.Find(FilterDefinition<Poi>.Empty)
-            .SortByDescending(x => x.Priority)
-            .ThenBy(x => x.Name)
-            .Limit(20)
-            .ToListAsync(cancellationToken);
-
-        var existingKeys = await _context.PoiLocalizations.Find(FilterDefinition<PoiLocalization>.Empty)
-            .Project(x => x.PoiId + ":" + x.Lang)
-            .ToListAsync(cancellationToken);
-
-        var localizations = new List<PoiLocalization>();
+        var pois = await GetOrderedPoisAsync(cancellationToken);
         foreach (var (poi, index) in pois.Select((poi, index) => (poi, index)))
         {
-            var key = poi.Id + ":en";
-            if (existingKeys.Contains(key, StringComparer.Ordinal))
+            var existingEnglish = await _context.PoiLocalizations
+                .Find(x => x.PoiId == poi.Id && x.Lang == "en")
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (existingEnglish is not null)
             {
-                var existingLocalization = await _context.PoiLocalizations
-                    .Find(x => x.PoiId == poi.Id && x.Lang == "en")
-                    .FirstOrDefaultAsync(cancellationToken);
-
-                if (existingLocalization is null)
-                {
-                    continue;
-                }
-
                 var shouldUpdate = false;
-                if (string.IsNullOrWhiteSpace(existingLocalization.Description))
+                if (string.IsNullOrWhiteSpace(existingEnglish.Description))
                 {
-                    existingLocalization.Description = BuildEnglishDescription(poi, index);
+                    existingEnglish.Description = BuildEnglishDescription(poi, index);
                     shouldUpdate = true;
                 }
 
-                if (string.IsNullOrWhiteSpace(existingLocalization.TtsScript))
+                if (string.IsNullOrWhiteSpace(existingEnglish.TtsScript))
                 {
-                    existingLocalization.TtsScript = BuildEnglishNarrationScript(poi.Name);
+                    existingEnglish.TtsScript = BuildEnglishNarrationScript(poi.Name);
                     shouldUpdate = true;
                 }
 
                 if (shouldUpdate)
                 {
-                    existingLocalization.UpdatedAt = DateTime.UtcNow;
+                    existingEnglish.UpdatedAt = DateTime.UtcNow;
                     await _context.PoiLocalizations.ReplaceOneAsync(
-                        x => x.Id == existingLocalization.Id,
-                        existingLocalization,
+                        x => x.Id == existingEnglish.Id,
+                        existingEnglish,
                         cancellationToken: cancellationToken);
                 }
-
-                continue;
             }
-
-            localizations.Add(new PoiLocalization
+            else
             {
-                PoiId = poi.Id,
-                Lang = "en",
-                Name = poi.Name,
-                Description = BuildEnglishDescription(poi, index),
-                AudioUrl = SampleAudioUrls[index % SampleAudioUrls.Length],
-                TtsScript = BuildEnglishNarrationScript(poi.Name),
-                IsFallback = false,
-                CreatedAt = DateTime.UtcNow.AddDays(-(index + 2)),
-                UpdatedAt = DateTime.UtcNow.AddDays(-(index % 3))
-            });
-        }
-
-        if (localizations.Count > 0)
-        {
-            await _context.PoiLocalizations.InsertManyAsync(localizations, cancellationToken: cancellationToken);
+                await _context.PoiLocalizations.InsertOneAsync(
+                    new PoiLocalization
+                    {
+                        PoiId = poi.Id,
+                        Lang = "en",
+                        Name = poi.Name,
+                        Description = BuildEnglishDescription(poi, index),
+                        TtsScript = BuildEnglishNarrationScript(poi.Name),
+                        IsFallback = false,
+                        CreatedAt = DateTime.UtcNow.AddDays(-(index + 2)),
+                        UpdatedAt = DateTime.UtcNow.AddDays(-(index % 3))
+                    },
+                    cancellationToken: cancellationToken);
+            }
         }
     }
 
@@ -262,11 +251,7 @@ public class DbSeeder
 
     private async Task SeedPoiAudiosAsync(CancellationToken cancellationToken)
     {
-        var pois = await _context.Pois.Find(FilterDefinition<Poi>.Empty)
-            .SortByDescending(x => x.Priority)
-            .ThenBy(x => x.Name)
-            .Limit(20)
-            .ToListAsync(cancellationToken);
+        var pois = await GetOrderedPoisAsync(cancellationToken);
         if (pois.Count > 0)
         {
             var poiIds = pois.Select(static poi => poi.Id).ToList();
@@ -284,11 +269,7 @@ public class DbSeeder
 
     private async Task SeedAudioTasksAsync(CancellationToken cancellationToken)
     {
-        var pois = await _context.Pois.Find(FilterDefinition<Poi>.Empty)
-            .SortByDescending(x => x.Priority)
-            .ThenBy(x => x.Name)
-            .Limit(20)
-            .ToListAsync(cancellationToken);
+        var pois = await GetOrderedPoisAsync(cancellationToken);
 
         var existingTaskIds = await _context.AudioTasks.Find(FilterDefinition<AudioTask>.Empty)
             .Project(x => x.TaskId)
@@ -309,7 +290,7 @@ public class DbSeeder
                 TaskId = taskId,
                 PoiId = poi.Id,
                 Status = status,
-                Languages = ["vi", "en"],
+                Languages = [.. SharedConstants.SupportedLanguages],
                 ProgressPercent = status switch
                 {
                     SharedConstants.AudioTaskDone => 100,
@@ -389,21 +370,23 @@ public class DbSeeder
         var users = await _context.Users.Find(x => DemoUsers.Select(seed => seed.Email).Contains(x.Email))
             .SortBy(x => x.Email)
             .ToListAsync(cancellationToken);
-        var pois = await _context.Pois.Find(FilterDefinition<Poi>.Empty)
-            .SortByDescending(x => x.Priority)
-            .ThenBy(x => x.Name)
-            .Limit(20)
-            .ToListAsync(cancellationToken);
+        var pois = await GetOrderedPoisAsync(cancellationToken);
         var categories = await _context.Categories.Find(FilterDefinition<Category>.Empty)
             .SortBy(x => x.SortOrder)
             .ToListAsync(cancellationToken);
+
+        if (users.Count == 0 || categories.Count == 0 || pois.Count == 0)
+        {
+            return;
+        }
 
         var existingKeys = await _context.OwnerSubmissions.Find(FilterDefinition<OwnerSubmission>.Empty)
             .Project(x => x.OwnerId + "|" + x.PoiName)
             .ToListAsync(cancellationToken);
 
         var submissions = new List<OwnerSubmission>();
-        for (var index = 0; index < 20; index++)
+        var submissionCount = Math.Max(20, Math.Min(32, pois.Count));
+        for (var index = 0; index < submissionCount; index++)
         {
             var user = users[index % users.Count];
             var category = categories[index % categories.Count];
@@ -475,11 +458,7 @@ public class DbSeeder
 
     private async Task SeedMediaFilesAsync(CancellationToken cancellationToken)
     {
-        var pois = await _context.Pois.Find(FilterDefinition<Poi>.Empty)
-            .SortByDescending(x => x.Priority)
-            .ThenBy(x => x.Name)
-            .Limit(20)
-            .ToListAsync(cancellationToken);
+        var pois = await GetOrderedPoisAsync(cancellationToken);
 
         var existingFiles = await _context.MediaFiles.Find(FilterDefinition<MediaFile>.Empty)
             .Project(x => x.FileName)
@@ -519,11 +498,7 @@ public class DbSeeder
 
     private async Task SeedAnalyticsEventsAsync(CancellationToken cancellationToken)
     {
-        var pois = await _context.Pois.Find(FilterDefinition<Poi>.Empty)
-            .SortByDescending(x => x.Priority)
-            .ThenBy(x => x.Name)
-            .Limit(20)
-            .ToListAsync(cancellationToken);
+        var pois = await GetOrderedPoisAsync(cancellationToken);
 
         var existingPageViewIds = await _context.AnalyticsEvents.Find(FilterDefinition<AnalyticsEvent>.Empty)
             .Project(x => x.PageViewId)
@@ -532,33 +507,37 @@ public class DbSeeder
         var events = new List<AnalyticsEvent>();
         foreach (var (poi, index) in pois.Select((poi, index) => (poi, index)))
         {
-            var pageViewId = $"seed-pageview-{index + 1:00}";
-            if (existingPageViewIds.Contains(pageViewId, StringComparer.Ordinal))
+            for (var scenarioIndex = 0; scenarioIndex < 4; scenarioIndex++)
             {
-                continue;
-            }
+                var pageViewId = $"seed-pageview-{index + 1:00}-{scenarioIndex + 1:00}";
+                if (existingPageViewIds.Contains(pageViewId, StringComparer.Ordinal))
+                {
+                    continue;
+                }
 
-            var eventName = SharedConstants.AnalyticsEvents[index % SharedConstants.AnalyticsEvents.Length];
-            events.Add(new AnalyticsEvent
-            {
-                AnonymousId = $"seed-guest-{index + 1:00}",
-                SessionId = $"seed-session-{index / 2 + 1:00}",
-                PageViewId = pageViewId,
-                EventName = eventName,
-                PoiId = eventName is "search_executed" or "nearby_requested" ? null : poi.Id,
-                Lang = index % 2 == 0 ? "vi" : "en",
-                Latitude = poi.Location.Coordinates.Latitude,
-                Longitude = poi.Location.Coordinates.Longitude,
-                AccuracyMeters = 8 + index,
-                ListenDurationSeconds = eventName is "audio_played" or "narration_completed" ? 28 + index * 2 : null,
-                IsBackground = eventName is "location_sample" or "geofence_triggered" ? index % 2 == 0 : null,
-                TrackingSource = eventName.Contains("location", StringComparison.Ordinal) || eventName.Contains("geofence", StringComparison.Ordinal)
-                    ? "background-service"
-                    : "web-user",
-                ContentType = eventName.Contains("audio", StringComparison.Ordinal) ? "audio" : "poi",
-                Metadata = BuildAnalyticsMetadata(eventName, index),
-                CreatedAt = DateTime.UtcNow.AddMinutes(-(index * 18 + 6))
-            });
+                var analyticsIndex = index * 4 + scenarioIndex;
+                var eventName = SharedConstants.AnalyticsEvents[analyticsIndex % SharedConstants.AnalyticsEvents.Length];
+                events.Add(new AnalyticsEvent
+                {
+                    AnonymousId = $"seed-guest-{index + 1:00}",
+                    SessionId = $"seed-session-{index / 2 + 1:00}",
+                    PageViewId = pageViewId,
+                    EventName = eventName,
+                    PoiId = eventName is "search_executed" or "nearby_requested" ? null : poi.Id,
+                    Lang = analyticsIndex % 2 == 0 ? "vi" : "en",
+                    Latitude = poi.Location.Coordinates.Latitude,
+                    Longitude = poi.Location.Coordinates.Longitude,
+                    AccuracyMeters = 8 + analyticsIndex,
+                    ListenDurationSeconds = eventName is "audio_played" or "narration_completed" ? 28 + analyticsIndex * 2 : null,
+                    IsBackground = eventName is "location_sample" or "geofence_triggered" ? analyticsIndex % 2 == 0 : null,
+                    TrackingSource = eventName.Contains("location", StringComparison.Ordinal) || eventName.Contains("geofence", StringComparison.Ordinal)
+                        ? "background-service"
+                        : "web-user",
+                    ContentType = eventName.Contains("audio", StringComparison.Ordinal) ? "audio" : "poi",
+                    Metadata = BuildAnalyticsMetadata(eventName, analyticsIndex),
+                    CreatedAt = DateTime.UtcNow.AddMinutes(-(analyticsIndex * 11 + 6))
+                });
+            }
         }
 
         if (events.Count > 0)
@@ -569,18 +548,15 @@ public class DbSeeder
 
     private async Task SeedToursAsync(CancellationToken cancellationToken)
     {
-        var pois = await _context.Pois.Find(FilterDefinition<Poi>.Empty)
-            .SortByDescending(x => x.Priority)
-            .ThenBy(x => x.Name)
-            .Limit(20)
-            .ToListAsync(cancellationToken);
+        var pois = await GetOrderedPoisAsync(cancellationToken);
 
         var existingTitles = await _context.Tours.Find(FilterDefinition<Tour>.Empty)
             .Project(x => x.Title + "|" + x.Lang)
             .ToListAsync(cancellationToken);
 
         var tours = new List<Tour>();
-        for (var index = 0; index < 20 && pois.Count >= 3; index++)
+        var tourCount = Math.Max(20, Math.Min(32, pois.Count));
+        for (var index = 0; index < tourCount && pois.Count >= 3; index++)
         {
             var lang = index % 2 == 0 ? "vi" : "en";
             var title = lang == "vi"
@@ -629,18 +605,14 @@ public class DbSeeder
 
     private async Task SeedQrActivationsAsync(CancellationToken cancellationToken)
     {
-        var pois = await _context.Pois.Find(FilterDefinition<Poi>.Empty)
-            .SortByDescending(x => x.Priority)
-            .ThenBy(x => x.Name)
-            .Limit(20)
-            .ToListAsync(cancellationToken);
+        var pois = await GetOrderedPoisAsync(cancellationToken);
 
         var existingCodes = await _context.QrActivations.Find(FilterDefinition<QrActivation>.Empty)
             .Project(x => x.Code)
             .ToListAsync(cancellationToken);
 
         var activations = new List<QrActivation>();
-        foreach (var (poi, index) in pois.Select((poi, index) => (poi, index)))
+        foreach (var (poi, index) in pois.Take(QrCodes.Length).Select((poi, index) => (poi, index)))
         {
             var code = QrCodes[index];
             if (existingCodes.Contains(code, StringComparer.OrdinalIgnoreCase))
@@ -952,7 +924,19 @@ public class DbSeeder
         "VINHHOI-02",
         "PHUONG3-01",
         "PHUONG13-01",
-        "Q4FOOD-20"
+        "Q4FOOD-20",
+        "TONTHATTHUYET-01",
+        "KHANHHOI-03",
+        "TONDAN-03",
+        "NGUYENKHOAI-02",
+        "XOMCHIEU-03",
+        "HOANGDIEU-03",
+        "VINHKHANH-04",
+        "BENVANDON-03",
+        "NGUYENTATTHANH-01",
+        "DOANNHUHAI-01",
+        "XOMCHIEU-04",
+        "VINHHOI-03"
     ];
 
     private static readonly string[] QrTitles =
@@ -976,7 +960,19 @@ public class DbSeeder
         "Trạm Vĩnh Hội hướng chợ",
         "Phường 3 - cổng chợ",
         "Phường 13 - khu ăn đêm",
-        "Điểm giới thiệu ẩm thực Quận 4"
+        "Điểm giới thiệu ẩm thực Quận 4",
+        "Điểm dừng Tôn Thất Thuyết",
+        "Trạm Khánh Hội mở rộng",
+        "Điểm ăn vặt Tôn Đản",
+        "Nguyễn Khoái - khu món nước",
+        "Chợ Xóm Chiếu mở rộng",
+        "Hoàng Diệu - cơm tối",
+        "Vĩnh Khánh - hải sản nướng",
+        "Bến Vân Đồn - món Việt",
+        "Nguyễn Tất Thành - quầy đồ uống",
+        "Đoàn Như Hài - bữa sáng",
+        "Xóm Chiếu - hàng rong chiều",
+        "Vĩnh Hội - lẩu đêm"
     ];
 
     private static readonly string[] QrZones =
@@ -1000,7 +996,19 @@ public class DbSeeder
         "Vĩnh Hội",
         "Phường 3",
         "Phường 13",
-        "Trung tâm Quận 4"
+        "Trung tâm Quận 4",
+        "Tôn Thất Thuyết",
+        "Khánh Hội",
+        "Tôn Đản",
+        "Nguyễn Khoái",
+        "Xóm Chiếu",
+        "Hoàng Diệu",
+        "Vĩnh Khánh",
+        "Bến Vân Đồn",
+        "Nguyễn Tất Thành",
+        "Đoàn Như Hài",
+        "Xóm Chiếu",
+        "Vĩnh Hội"
     ];
 
     private static readonly string[] QrAddresses =
@@ -1024,7 +1032,19 @@ public class DbSeeder
         "Trạm Vĩnh Hội gần chung cư",
         "Phường 3 - khu dân cư",
         "Phường 13 - khu hàng quán",
-        "Điểm tổng hợp thông tin du lịch"
+        "Điểm tổng hợp thông tin du lịch",
+        "Tôn Thất Thuyết gần cầu Tân Thuận",
+        "Khánh Hội đoạn dân cư đông",
+        "Tôn Đản gần trường học",
+        "Nguyễn Khoái khu món nước",
+        "Cổng phụ chợ Xóm Chiếu",
+        "Hoàng Diệu gần khu cơm tối",
+        "Vĩnh Khánh đoạn hải sản nướng",
+        "Bến Vân Đồn hướng chung cư",
+        "Nguyễn Tất Thành sát bờ kênh",
+        "Đoàn Như Hài đầu hẻm ăn sáng",
+        "Xóm Chiếu khu hàng rong",
+        "Vĩnh Hội khu lẩu tối"
     ];
 
     private static readonly DemoUserSeed[] DemoUsers =
@@ -1096,7 +1116,19 @@ public class DbSeeder
         new(16, "Trà trái cây Cầu Calmette", "Xe trà trái cây và nước ép mát lạnh gần khu bờ kênh, hợp khách đi bộ.", "drink", "28 Bến Vân Đồn", "Phường 12", 10.7622, 106.7034, "$", 4.0, 120, 4, "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=1200&q=85", "Ly trà trái cây với cam, dâu và bạc hà.", ["trà trái cây", "nước ép", "giải khát"]),
         new(17, "Bún mắm Cầu Ông Lãnh", "Bún mắm đậm vị miền Tây, topping hải sản và heo quay đầy tô.", "regional", "16 Nguyễn Khoái", "Phường 1", 10.7589, 106.7089, "$$", 4.2, 174, 3, "https://images.unsplash.com/photo-1526318896980-cf78c088247c?auto=format&fit=crop&w=1200&q=85", "Tô bún mắm đầy rau sống và hải sản.", ["bún mắm", "miền tây", "đậm vị"]),
         new(18, "Bánh xèo Tôm Nhảy 46", "Bánh xèo đổ giòn, nhân tôm thịt và rau sống ăn kèm phong phú.", "vietnamese_food", "46 Khánh Hội", "Phường 6", 10.7599, 106.7075, "$$", 4.3, 230, 2, "https://images.unsplash.com/photo-1625944524160-6cf6b4d5ad28?auto=format&fit=crop&w=1200&q=85", "Bánh xèo vàng giòn cuốn rau sống.", ["bánh xèo", "tôm nhảy", "món việt"]),
-        new(19, "Tiệm chay An Nhiên", "Quán chay nhỏ yên tĩnh với cơm phần, bún và món xào thanh đạm.", "vegetarian", "11 Hoàng Diệu", "Phường 10", 10.7512, 106.7067, "$$", 4.1, 98, 1, "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1200&q=85", "Mâm cơm chay nhiều rau và đậu hũ.", ["ăn chay", "thanh đạm", "gia đình"])
+        new(19, "Tiệm chay An Nhiên", "Quán chay nhỏ yên tĩnh với cơm phần, bún và món xào thanh đạm.", "vegetarian", "11 Hoàng Diệu", "Phường 10", 10.7512, 106.7067, "$$", 4.1, 98, 1, "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1200&q=85", "Mâm cơm chay nhiều rau và đậu hũ.", ["ăn chay", "thanh đạm", "gia đình"]),
+        new(20, "Bánh mì nướng muối ớt Cô Tư", "Ổ bánh mì nướng giòn phủ sa tế, sốt bơ và ruốc, rất hợp khách dạo phố tối.", "bakery", "29 Tôn Thất Thuyết", "Phường 18", 10.7583, 106.7009, "$", 4.2, 154, 0, "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=1200&q=85", "Ổ bánh mì nướng đỏ giòn phủ muối ớt.", ["bánh mì nướng", "ăn vặt", "buổi tối"]),
+        new(21, "Cháo hàu Khánh Hội", "Cháo hàu nấu nóng, vị ngọt thanh và thường đông khách vào cuối chiều.", "porridge_soup", "64 Khánh Hội", "Phường 5", 10.7607, 106.7071, "$$", 4.3, 212, -1, "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=1200&q=85", "Tô cháo hàu nóng rắc tiêu và hành lá.", ["cháo hàu", "ấm bụng", "chiều tối"]),
+        new(22, "Bò lá lốt Tôn Đản", "Bò lá lốt nướng than thơm, ăn kèm rau sống và mắm nêm đậm vị.", "street_food", "87 Tôn Đản", "Phường 13", 10.7549, 106.7033, "$", 4.2, 267, -2, "https://images.unsplash.com/photo-1559847844-d721426d6edc?auto=format&fit=crop&w=1200&q=85", "Phần bò lá lốt nướng với bánh tráng và rau sống.", ["bò lá lốt", "nướng", "đậm vị"]),
+        new(23, "Mì vịt tiềm Hẻm 36", "Mì vịt tiềm nước dùng thuốc bắc nhẹ, vịt mềm và mì dai vừa phải.", "noodles", "36/12 Nguyễn Khoái", "Phường 1", 10.7576, 106.7093, "$$", 4.4, 301, -3, "https://images.unsplash.com/photo-1617093727343-374698b1b08d?auto=format&fit=crop&w=1200&q=85", "Tô mì vịt tiềm với cải xanh và nấm.", ["mì vịt tiềm", "món nước", "buổi tối"]),
+        new(24, "Sữa chua nếp cẩm Cô Hạnh", "Ly sữa chua nếp cẩm mát lạnh, dễ ăn và hợp khách trẻ sau bữa tối.", "dessert", "52 Xóm Chiếu", "Phường 16", 10.7538, 106.7064, "$", 4.1, 143, -4, "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=1200&q=85", "Ly sữa chua nếp cẩm với topping dừa sấy.", ["sữa chua", "tráng miệng", "giải nhiệt"]),
+        new(25, "Cơm gà xối mỡ 79", "Cơm gà da giòn, phần ăn đầy đặn và giá dễ tiếp cận cho khách công sở.", "rice", "79 Hoàng Diệu", "Phường 9", 10.7524, 106.7050, "$$", 4.3, 411, -5, "https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=1200&q=85", "Đĩa cơm gà xối mỡ với dưa chua và nước mắm gừng.", ["cơm gà", "ăn trưa", "da giòn"]),
+        new(26, "Hải sản nướng Vĩnh Khánh 79", "Quán hải sản nướng than với tôm, sò và mực, hợp nhóm bạn ăn tối.", "seafood", "79 Vĩnh Khánh", "Phường 8", 10.7590, 106.7042, "$$$", 4.5, 522, -6, "https://images.unsplash.com/photo-1559737558-2f5a35f4523b?auto=format&fit=crop&w=1200&q=85", "Mẹt hải sản nướng than với sò, mực và tôm.", ["hải sản nướng", "nhóm bạn", "vĩnh khánh"]),
+        new(27, "Bánh hỏi thịt nướng Bến Vân Đồn", "Bánh hỏi sợi mảnh ăn cùng thịt nướng và mỡ hành, phù hợp bữa trưa nhẹ.", "vietnamese_food", "136 Bến Vân Đồn", "Phường 1", 10.7612, 106.7091, "$$", 4.2, 189, -7, "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?auto=format&fit=crop&w=1200&q=85", "Phần bánh hỏi thịt nướng kèm rau thơm.", ["bánh hỏi", "thịt nướng", "món việt"]),
+        new(28, "Trà đào cam sả Cầu Ông Lãnh", "Quầy đồ uống mang đi với trà đào cam sả và nước trái cây cho khách đi bộ.", "drink", "7 Nguyễn Tất Thành", "Phường 12", 10.7600, 106.7019, "$", 4.0, 96, -8, "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=1200&q=85", "Ly trà đào cam sả với lát cam tươi và bạc hà.", ["trà đào", "mang đi", "giải khát"]),
+        new(29, "Bánh cuốn nóng Phường 2", "Bánh cuốn tráng mỏng, nhân thịt mộc nhĩ và chả lụa ăn kèm nước mắm chua ngọt.", "vietnamese_food", "18 Đoàn Như Hài", "Phường 2", 10.7581, 106.7101, "$", 4.1, 173, -9, "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=85", "Đĩa bánh cuốn nóng phủ hành phi và chả lụa.", ["bánh cuốn", "bữa sáng", "món việt"]),
+        new(30, "Cá viên chiên Cổng chợ Xóm Chiếu", "Xe cá viên chiên đủ loại với tương ớt, sốt me và giá mềm cho học sinh sinh viên.", "street_food", "5 Xóm Chiếu", "Phường 15", 10.7551, 106.7078, "$", 4.0, 208, -10, "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?auto=format&fit=crop&w=1200&q=85", "Xiên cá viên chiên và xúc xích nóng hổi.", ["cá viên", "hàng rong", "ăn vặt"]),
+        new(31, "Lẩu gà lá é Vĩnh Hội", "Nồi lẩu gà lá é thơm dịu, hợp nhóm khách muốn ăn tối lâu và trò chuyện.", "hotpot_bbq", "24 Vĩnh Hội", "Phường 4", 10.7568, 106.7087, "$$$", 4.4, 245, -11, "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=85", "Nồi lẩu gà lá é bốc khói với rau và bún tươi.", ["lẩu gà", "nhóm bạn", "buổi tối"])
     ];
 
     private sealed record DemoUserSeed(

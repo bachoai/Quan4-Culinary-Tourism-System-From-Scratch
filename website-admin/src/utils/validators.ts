@@ -35,6 +35,9 @@ export const poiSchema = z.object({
   ownerId: z.string().optional(),
   isActive: z.boolean(),
   activationRequested: z.boolean(),
+  autoTranslateAudioContent: z.boolean(),
+  overwriteAutoTranslations: z.boolean(),
+  autoTranslateLanguages: z.array(z.string()).default([]),
 });
 
 export const localizationSchema = z.object({

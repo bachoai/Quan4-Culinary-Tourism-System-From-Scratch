@@ -26,4 +26,7 @@ public class PoiLocalizationRepository
 
     public async Task DeleteAsync(string poiId, string lang, CancellationToken cancellationToken = default) =>
         await _context.PoiLocalizations.DeleteOneAsync(x => x.PoiId == poiId && x.Lang == lang, cancellationToken);
+
+    public async Task DeleteByPoiIdAsync(string poiId, CancellationToken cancellationToken = default) =>
+        await _context.PoiLocalizations.DeleteManyAsync(x => x.PoiId == poiId, cancellationToken);
 }

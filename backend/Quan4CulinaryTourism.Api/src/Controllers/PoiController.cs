@@ -11,18 +11,28 @@ namespace Quan4CulinaryTourism.Api.Controllers;
 public class PoiController : BaseApiController
 {
     private readonly PoiService _poiService;
+
     public PoiController(PoiService poiService) => _poiService = poiService;
 
     [HttpGet("load-all")]
-    public Task<IActionResult> LoadAll([FromQuery] PoiSearchRequest request) => ExecuteAsync(() => _poiService.LoadAllAsync(request), "Lấy POI thành công");
+    public Task<IActionResult> LoadAll([FromQuery] PoiSearchRequest request) =>
+        ExecuteAsync(() => _poiService.LoadAllAsync(request), "Lay POI thanh cong");
 
     [HttpGet("{id}")]
-    public Task<IActionResult> GetById(string id, [FromQuery] string? lang) => ExecuteAsync(() => _poiService.GetByIdAsync(id, lang), "Lấy chi tiết POI thành công");
+    public Task<IActionResult> GetById(string id, [FromQuery] string? lang, [FromQuery] string? audioLang) =>
+        ExecuteAsync(() => _poiService.GetByIdAsync(id, lang, audioLang), "Lay chi tiet POI thanh cong");
 
     [HttpGet("nearby")]
-    public Task<IActionResult> Nearby([FromQuery] double lat, [FromQuery] double lng, [FromQuery] int radius = 3000, [FromQuery] int limit = 20, [FromQuery] string? lang = null)
-        => ExecuteAsync(() => _poiService.NearbyAsync(lat, lng, radius, limit, lang), "Lấy POI gần đây thành công");
+    public Task<IActionResult> Nearby(
+        [FromQuery] double lat,
+        [FromQuery] double lng,
+        [FromQuery] int radius = 3000,
+        [FromQuery] int limit = 20,
+        [FromQuery] string? lang = null,
+        [FromQuery] string? audioLang = null) =>
+        ExecuteAsync(() => _poiService.NearbyAsync(lat, lng, radius, limit, lang, audioLang), "Lay POI gan day thanh cong");
 
     [HttpGet("search")]
-    public Task<IActionResult> Search([FromQuery] PoiSearchRequest request) => ExecuteAsync(() => _poiService.SearchAsync(request), "Tìm kiếm POI thành công");
+    public Task<IActionResult> Search([FromQuery] PoiSearchRequest request) =>
+        ExecuteAsync(() => _poiService.SearchAsync(request), "Tim kiem POI thanh cong");
 }

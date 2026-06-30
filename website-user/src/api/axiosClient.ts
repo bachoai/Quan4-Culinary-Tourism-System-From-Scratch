@@ -24,10 +24,40 @@ client.interceptors.request.use((config) => {
 
 function unwrap<T>(payload: ApiResponse<T>): T {
   if (!payload.success) {
-    throw new Error(payload.message || 'Không thể xử lý yêu cầu');
+    throw new Error(payload.message || 'Khong the xu ly yeu cau');
   }
 
   return payload.data;
+}
+
+function tryReadValidationMessage(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const record = payload as {
+    title?: unknown;
+    detail?: unknown;
+    errors?: Record<string, unknown>;
+  };
+
+  const messages = Object.values(record.errors ?? {})
+    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
+
+  if (messages.length > 0) {
+    return messages.join(' ');
+  }
+
+  if (typeof record.detail === 'string' && record.detail.trim()) {
+    return record.detail;
+  }
+
+  if (typeof record.title === 'string' && record.title.trim()) {
+    return record.title;
+  }
+
+  return null;
 }
 
 function toError(error: unknown): Error {
@@ -45,7 +75,11 @@ function toError(error: unknown): Error {
     if (typeof window !== 'undefined') {
       const currentHashRoute = window.location.hash.replace(/^#/, '') || '/';
       if (currentHashRoute.startsWith('/login')) {
-        return new Error(axiosError.response?.data?.message || axiosError.message || 'Phiên đăng nhập đã hết hạn.');
+        return new Error(
+          axiosError.response?.data?.message ||
+          axiosError.message ||
+          'Phien dang nhap da het han.',
+        );
       }
 
       const next = currentHashRoute;
@@ -54,10 +88,12 @@ function toError(error: unknown): Error {
     }
   }
 
+  const validationMessage = tryReadValidationMessage(axiosError.response?.data);
   const message =
     axiosError.response?.data?.message ||
+    validationMessage ||
     axiosError.message ||
-    'Không thể kết nối đến máy chủ';
+    'Khong the ket noi den may chu';
 
   return new Error(message);
 }

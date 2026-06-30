@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { App, Button, Card, Descriptions, Image, Modal, Space, Table, Typography, Upload } from 'antd';
+import { App, Button, Card, Descriptions, Image, Modal, Select, Space, Table, Typography, Upload } from 'antd';
 import { Clock3, Globe, MapPin, Music4, Phone, UploadCloud } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -14,6 +14,8 @@ import { LoadingScreen } from '../components/common/LoadingScreen';
 import { useI18n } from '../i18n/provider';
 import { PageContainer } from '../components/layout/PageContainer';
 import type { CreateLocalizationRequest, UpdatePoiRequest } from '../types/requests';
+import type { PoiLocalizationResponse } from '../types/responses';
+import { SUPPORTED_LANGUAGES } from '../utils/constants';
 import { getMediaUrlOrPlaceholder, normalizeMediaUrl } from '../utils/media';
 
 function normalizePriceRange(priceRange: string): '$' | '$$' | '$$$' {
@@ -28,9 +30,15 @@ export function PoiDetailPage() {
   const navigate = useNavigate();
   const [audioModalOpen, setAudioModalOpen] = useState(false);
   const [localizationModalOpen, setLocalizationModalOpen] = useState(false);
+  const [activeAudioLang, setActiveAudioLang] = useState('vi');
+  const [editingLocalization, setEditingLocalization] = useState<PoiLocalizationResponse | null>(null);
 
   const poiQuery = useQuery({ queryKey: ['poi', id], queryFn: () => poiApi.getById(id), enabled: Boolean(id) });
-  const audioQuery = useQuery({ queryKey: ['poi-audio', id], queryFn: () => audioApi.getPoiAudio(id), enabled: Boolean(id) });
+  const audioQuery = useQuery({
+    queryKey: ['poi-audio', id, activeAudioLang],
+    queryFn: () => audioApi.getPoiAudio(id, activeAudioLang),
+    enabled: Boolean(id),
+  });
   const localizationsQuery = useQuery({ queryKey: ['poi-localizations', id], queryFn: () => localizationApi.getByPoi(id), enabled: Boolean(id) });
 
   const updatePoiMutation = useMutation({
@@ -64,10 +72,26 @@ export function PoiDetailPage() {
   });
 
   const localizationMutation = useMutation({
-    mutationFn: ({ poiId, payload }: { poiId: string; payload: CreateLocalizationRequest }) => localizationApi.create(poiId, payload),
+    mutationFn: ({ poiId, payload }: { poiId: string; payload: CreateLocalizationRequest }) =>
+      editingLocalization
+        ? localizationApi.update(poiId, editingLocalization.lang, payload)
+        : localizationApi.create(poiId, payload),
     onSuccess: () => {
-      notification.success({ message: t('localization_created') });
+      notification.success({ message: editingLocalization ? 'Localization saved' : t('localization_created') });
       setLocalizationModalOpen(false);
+      setEditingLocalization(null);
+      queryClient.invalidateQueries({ queryKey: ['poi-localizations', id] });
+    },
+  });
+  const translateLocalizationMutation = useMutation({
+    mutationFn: (lang: string) =>
+      localizationApi.translate(id, {
+        lang,
+        sourceLang: 'vi',
+        overwriteExisting: true,
+      }),
+    onSuccess: (_, lang) => {
+      notification.success({ message: `Localization ${lang.toUpperCase()} translated` });
       queryClient.invalidateQueries({ queryKey: ['poi-localizations', id] });
     },
   });
@@ -83,6 +107,9 @@ export function PoiDetailPage() {
     mapUrl: poiQuery.data.mapUrl ?? undefined,
     ttsScript: poiQuery.data.ttsScript ?? undefined,
     activationRequested: false,
+    autoTranslateAudioContent: true,
+    overwriteAutoTranslations: false,
+    autoTranslateLanguages: SUPPORTED_LANGUAGES.filter((lang) => lang !== 'vi'),
   };
 
   return (
@@ -93,7 +120,10 @@ export function PoiDetailPage() {
         <Space wrap className="page-toolbar">
           <Button onClick={() => navigate(`/admin/pois/${id}/edit`)}>{t('edit')}</Button>
           <Button onClick={() => setAudioModalOpen(true)}>{t('upload_audio')}</Button>
-          <Button onClick={() => setLocalizationModalOpen(true)}>{t('add_localization')}</Button>
+          <Button onClick={() => {
+            setEditingLocalization(null);
+            setLocalizationModalOpen(true);
+          }}>{t('add_localization')}</Button>
         </Space>
       }
     >
@@ -145,6 +175,14 @@ export function PoiDetailPage() {
             </Descriptions>
           </Card>
           <Card className="glass-card" title={<Space><Music4 size={16} />{t('audio_title')}</Space>}>
+            <div style={{ marginBottom: 12 }}>
+              <Select
+                value={activeAudioLang}
+                onChange={setActiveAudioLang}
+                style={{ width: '100%' }}
+                options={SUPPORTED_LANGUAGES.map((value) => ({ value, label: value.toUpperCase() }))}
+              />
+            </div>
             {audioQuery.data?.audioUrl ? (
               <audio controls src={normalizeMediaUrl(audioQuery.data.audioUrl)} className="detail-audio-player" />
             ) : (
@@ -204,6 +242,29 @@ export function PoiDetailPage() {
                 { title: t('description'), dataIndex: 'description' },
                 { title: t('tts_script'), dataIndex: 'ttsScript' },
                 { title: t('fallback'), render: (_, record) => <StatusBadge value={record.isFallback ? 'active' : 'inactive'} trueLabel={t('yes')} falseLabel={t('no')} /> },
+                {
+                  title: 'Actions',
+                  render: (_, record) => (
+                    <Space wrap>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          setEditingLocalization(record);
+                          setLocalizationModalOpen(true);
+                        }}
+                      >
+                        {t('edit')}
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={() => translateLocalizationMutation.mutate(record.lang)}
+                        loading={translateLocalizationMutation.isPending}
+                      >
+                        Retranslate
+                      </Button>
+                    </Space>
+                  ),
+                },
               ]}
           pagination={false}
         />
@@ -211,8 +272,29 @@ export function PoiDetailPage() {
       <Modal open={audioModalOpen} onCancel={() => setAudioModalOpen(false)} footer={null} title={t('upload_audio')} destroyOnClose>
         <AudioForm loading={uploadAudioMutation.isPending} onSubmit={async (payload, file) => uploadAudioMutation.mutateAsync({ payload, file })} />
       </Modal>
-      <Modal open={localizationModalOpen} onCancel={() => setLocalizationModalOpen(false)} footer={null} title={t('add_localization')} destroyOnClose>
-        <LocalizationForm loading={localizationMutation.isPending} onSubmit={async (payload) => localizationMutation.mutateAsync({ poiId: id, payload })} />
+      <Modal
+        open={localizationModalOpen}
+        onCancel={() => {
+          setLocalizationModalOpen(false);
+          setEditingLocalization(null);
+        }}
+        footer={null}
+        title={editingLocalization ? 'Edit localization' : t('add_localization')}
+        destroyOnClose
+      >
+        <LocalizationForm
+          initialValues={editingLocalization ? {
+            lang: editingLocalization.lang,
+            name: editingLocalization.name,
+            description: editingLocalization.description,
+            audioUrl: editingLocalization.audioUrl ?? undefined,
+            ttsScript: editingLocalization.ttsScript ?? undefined,
+            isFallback: editingLocalization.isFallback,
+          } : undefined}
+          disableLanguage={Boolean(editingLocalization)}
+          loading={localizationMutation.isPending}
+          onSubmit={async (payload) => localizationMutation.mutateAsync({ poiId: id, payload })}
+        />
       </Modal>
     </PageContainer>
   );

@@ -13,7 +13,23 @@ import type {
 import type { Lang, OwnerManagedPoi } from '../../types/responses';
 import { normalizeMediaUrl } from '../../utils/media';
 
-const SUPPORTED_LANGUAGES: Lang[] = ['vi', 'en', 'zh', 'ja', 'ko'];
+const SUPPORTED_LANGUAGES: Lang[] = ['vi', 'en', 'zh', 'ja', 'ko', 'fr', 'de', 'es', 'th', 'ru'];
+
+function validateLocalizationDraft(draft: CreatePoiLocalizationRequest, lang: Lang): string | null {
+  if (lang === 'vi') {
+    return null;
+  }
+
+  if (!draft.name.trim()) {
+    return 'Ten hien thi khong duoc de trong.';
+  }
+
+  if (!draft.description.trim()) {
+    return 'Mo ta localization khong duoc de trong. Hay tu nhap noi dung hoac bam "Tu dong dich tu tieng Viet".';
+  }
+
+  return null;
+}
 
 function buildLocalizationDraft(
   poi: OwnerManagedPoi,
@@ -66,6 +82,7 @@ type OwnerPoiStudioProps = {
 export function OwnerPoiStudio({ pois, selectedPoiId }: OwnerPoiStudioProps) {
   const queryClient = useQueryClient();
   const audioFileInputRef = useRef<HTMLInputElement>(null);
+  const lastAutoTranslateKeyRef = useRef('');
   const [poiId, setPoiId] = useState('');
   const [lang, setLang] = useState<Lang>('vi');
   const [draft, setDraft] = useState<CreatePoiLocalizationRequest | null>(null);
@@ -149,6 +166,11 @@ export function OwnerPoiStudio({ pois, selectedPoiId }: OwnerPoiStudioProps) {
         throw new Error('Noi dung tieng Viet van di theo luong de xuat cap nhat.');
       }
 
+      const validationMessage = validateLocalizationDraft(draft, lang);
+      if (validationMessage) {
+        throw new Error(validationMessage);
+      }
+
       return ownerApi.savePoiLocalization(poiId, lang, {
         ...draft,
         lang,
@@ -184,6 +206,33 @@ export function OwnerPoiStudio({ pois, selectedPoiId }: OwnerPoiStudioProps) {
     },
   });
 
+  useEffect(() => {
+    if (!poiId || !selectedPoi || lang === 'vi') {
+      return;
+    }
+
+    if (selectedLocalization || localizationsQuery.isLoading || localizationsQuery.isFetching || translateMutation.isPending) {
+      return;
+    }
+
+    const autoTranslateKey = `${poiId}:${lang}`;
+    if (lastAutoTranslateKeyRef.current === autoTranslateKey) {
+      return;
+    }
+
+    lastAutoTranslateKeyRef.current = autoTranslateKey;
+    setNotice('');
+    translateMutation.mutate();
+  }, [
+    poiId,
+    selectedPoi,
+    lang,
+    selectedLocalization,
+    localizationsQuery.isLoading,
+    localizationsQuery.isFetching,
+    translateMutation.isPending,
+  ]);
+
   const generateAudioMutation = useMutation({
     mutationFn: async () => {
       if (!poiId) {
@@ -193,6 +242,11 @@ export function OwnerPoiStudio({ pois, selectedPoiId }: OwnerPoiStudioProps) {
       if (lang !== 'vi') {
         if (!draft) {
           throw new Error('Chua co noi dung localization de tao audio.');
+        }
+
+        const validationMessage = validateLocalizationDraft(draft, lang);
+        if (validationMessage) {
+          throw new Error(validationMessage);
         }
 
         await ownerApi.savePoiLocalization(poiId, lang, {

@@ -4,7 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { useI18n } from '../../i18n/provider';
 import type { CategoryResponse } from '../../types/responses';
 import type { UpdatePoiRequest } from '../../types/requests';
-import { PRICE_RANGES } from '../../utils/constants';
+import { PRICE_RANGES, SUPPORTED_LANGUAGES } from '../../utils/constants';
 import { poiSchema } from '../../utils/validators';
 
 type PoiFormValues = {
@@ -27,7 +27,14 @@ type PoiFormValues = {
   ownerId?: string;
   isActive: boolean;
   activationRequested: boolean;
+  autoTranslateAudioContent: boolean;
+  overwriteAutoTranslations: boolean;
+  autoTranslateLanguages?: string[];
 };
+
+const AUDIO_TRANSLATION_OPTIONS = SUPPORTED_LANGUAGES
+  .filter((value) => value !== 'vi')
+  .map((value) => ({ value, label: value.toUpperCase() }));
 
 interface PoiFormProps {
   categories: CategoryResponse[];
@@ -57,6 +64,11 @@ function toFormValues(values?: UpdatePoiRequest): PoiFormValues {
     ownerId: values?.ownerId ?? '',
     isActive: values?.isActive ?? true,
     activationRequested: values?.activationRequested ?? false,
+    autoTranslateAudioContent: values?.autoTranslateAudioContent ?? true,
+    overwriteAutoTranslations: values?.overwriteAutoTranslations ?? false,
+    autoTranslateLanguages: values?.autoTranslateLanguages?.length
+      ? values.autoTranslateLanguages
+      : SUPPORTED_LANGUAGES.filter((value) => value !== 'vi'),
   };
 }
 
@@ -92,9 +104,12 @@ export function PoiForm({ categories, initialValues, loading, onSubmit }: PoiFor
         openingHours: initialValues?.openingHours ?? [],
         contactInfo: initialValues?.contactInfo ?? null,
         ownerId: values.ownerId || null,
-        tags: values.tagsText?.split(',').map((item) => item.trim()).filter(Boolean) ?? [],
+        tags: values.tagsText?.split(',').map((item: string) => item.trim()).filter(Boolean) ?? [],
         isActive: values.isActive,
         activationRequested: values.activationRequested,
+        autoTranslateAudioContent: values.autoTranslateAudioContent,
+        overwriteAutoTranslations: values.overwriteAutoTranslations,
+        autoTranslateLanguages: values.autoTranslateLanguages ?? [],
       };
       await onSubmit(payload);
     })}>
@@ -154,6 +169,50 @@ export function PoiForm({ categories, initialValues, loading, onSubmit }: PoiFor
               render={({ field }) => (
                 <Form.Item label={t('tts_script')} extra={t('tts_script_hint')}>
                   <Input.TextArea rows={4} {...field} />
+                </Form.Item>
+              )}
+            />
+          </Col>
+          <Col xs={24} md={12}>
+            <Controller
+              name="autoTranslateAudioContent"
+              control={control}
+              render={({ field }) => (
+                <Form.Item label="Auto-translate audio localizations">
+                  <Switch checked={field.value} onChange={field.onChange} />
+                </Form.Item>
+              )}
+            />
+          </Col>
+          <Col xs={24} md={12}>
+            <Controller
+              name="overwriteAutoTranslations"
+              control={control}
+              render={({ field }) => (
+                <Form.Item
+                  label="Retranslate existing localizations"
+                  extra="Bat de sinh lai localization da co tu noi dung tieng Viet moi."
+                >
+                  <Switch checked={field.value} onChange={field.onChange} />
+                </Form.Item>
+              )}
+            />
+          </Col>
+          <Col span={24}>
+            <Controller
+              name="autoTranslateLanguages"
+              control={control}
+              render={({ field }) => (
+                <Form.Item
+                  label="Audio languages"
+                  extra="Nhung ngon ngu nay se duoc dich tu dong tu noi dung tieng Viet sau khi luu POI."
+                >
+                  <Select
+                    mode="multiple"
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={AUDIO_TRANSLATION_OPTIONS}
+                  />
                 </Form.Item>
               )}
             />

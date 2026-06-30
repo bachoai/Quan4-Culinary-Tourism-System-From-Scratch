@@ -24,7 +24,13 @@ export function PoiEditPage() {
     mutationFn: (payload: Parameters<typeof poiApi.update>[1]) => poiApi.update(id, payload),
     onSuccess: () => {
       notification.success({ message: t('pois_updated') });
-      navigate('/admin/pois');
+      navigate(`/admin/pois/${id}`);
+    },
+    onError: (error: Error) => {
+      notification.error({
+        message: 'Cap nhat POI that bai',
+        description: error.message,
+      });
     },
   });
 
@@ -39,6 +45,9 @@ export function PoiEditPage() {
           mapUrl: poiQuery.data.mapUrl ?? undefined,
           ttsScript: poiQuery.data.ttsScript ?? undefined,
           activationRequested: false,
+          autoTranslateAudioContent: true,
+          overwriteAutoTranslations: false,
+          autoTranslateLanguages: ['en', 'zh', 'ja', 'ko', 'fr', 'de', 'es', 'th', 'ru'],
         }
       : undefined;
 

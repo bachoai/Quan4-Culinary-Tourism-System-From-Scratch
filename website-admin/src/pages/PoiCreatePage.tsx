@@ -15,9 +15,15 @@ export function PoiCreatePage() {
   const categoriesQuery = useQuery({ queryKey: ['categories'], queryFn: categoryApi.getAll });
   const createMutation = useMutation({
     mutationFn: poiApi.create,
-    onSuccess: () => {
+    onSuccess: (poi) => {
       notification.success({ message: t('pois_created') });
-      navigate('/admin/pois');
+      navigate(`/admin/pois/${poi.id}`);
+    },
+    onError: (error: Error) => {
+      notification.error({
+        message: 'Tao POI that bai',
+        description: error.message,
+      });
     },
   });
 

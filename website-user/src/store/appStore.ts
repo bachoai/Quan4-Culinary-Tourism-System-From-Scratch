@@ -41,7 +41,18 @@ function readStoredUser(): CurrentUser | undefined {
 }
 
 function isSupportedAudioLanguage(value: string | null | undefined): value is Lang {
-  return value === 'vi' || value === 'en' || value === 'zh' || value === 'ja' || value === 'ko';
+  return (
+    value === 'vi' ||
+    value === 'en' ||
+    value === 'zh' ||
+    value === 'ja' ||
+    value === 'ko' ||
+    value === 'fr' ||
+    value === 'de' ||
+    value === 'es' ||
+    value === 'th' ||
+    value === 'ru'
+  );
 }
 
 const initialTheme = (localStorage.getItem(THEME_KEY) as 'light' | 'dark') || 'light';
@@ -74,13 +85,19 @@ export const useAppStore = create<State>((set, get) => ({
   },
   setLang: (lang) => {
     const previousLanguage = get().lang;
+    const previousAudioLanguage = get().audioLang;
     if (lang === previousLanguage) {
       return;
     }
 
     localStorage.setItem(LANG_KEY, lang);
-    set({ lang });
-    track('language_changed', lang, undefined, { previousLanguage });
+    localStorage.setItem(AUDIO_LANG_KEY, lang);
+    set({ lang, audioLang: lang });
+    track('language_changed', lang, undefined, {
+      previousLanguage,
+      previousAudioLanguage,
+      syncedAudioLanguage: lang,
+    });
   },
   setAudioLang: (lang) => {
     const previousLanguage = get().audioLang;
