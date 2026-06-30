@@ -21,6 +21,14 @@ public class UploadSettings
     public int MaxAudioSizeMb { get; set; } = 20;
 }
 
+public class CloudinarySettings
+{
+    public string CloudName { get; set; } = string.Empty;
+    public string ApiKey { get; set; } = string.Empty;
+    public string ApiSecret { get; set; } = string.Empty;
+    public string RootFolder { get; set; } = "quan4-culinary-tourism";
+}
+
 public class DefaultAdminSettings
 {
     public string Email { get; set; } = "admin@quan4tourism.local";
@@ -46,4 +54,14 @@ public class TextToSpeechSettings
 public class PublicSiteSettings
 {
     public string BaseUrl { get; set; } = "http://localhost:5174";
+}
+
+public class AiSettings
+{
+    public bool Enabled { get; set; }
+    public string Provider { get; set; } = "OpenAICompatible";
+    public string BaseUrl { get; set; } = "https://api.openai.com/v1";
+    public string ApiKey { get; set; } = string.Empty;
+    public string Model { get; set; } = "gpt-4o-mini";
+    public int TimeoutSeconds { get; set; } = 30;
 }

@@ -18,5 +18,7 @@ export const audioApi = {
   },
   generatePoiAudio: (id: string, payload: GeneratePoiAudioRequest) =>
     axiosClient.post<never, PoiAudioResponse>(`/api/v1/admin/pois/${id}/audio/generate`, payload),
+  deletePoiAudio: (id: string, lang: string) =>
+    axiosClient.delete<never, null>(`/api/v1/admin/pois/${id}/audio`, { params: { lang } }),
   getPackManifest: () => axiosClient.get<never, AudioPackManifestResponse>('/api/v1/audio/pack-manifest'),
 };

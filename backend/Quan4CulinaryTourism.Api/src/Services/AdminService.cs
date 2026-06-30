@@ -15,9 +15,8 @@ public class AdminService
     private readonly OwnerSubmissionRepository _ownerSubmissionRepository;
     private readonly PoiRepository _poiRepository;
     private readonly AnalyticsRepository _analyticsRepository;
-    private readonly AuditLogRepository _auditLogRepository;
 
-    public AdminService(AuthService authService, UserRepository userRepository, OwnerRegistrationRepository ownerRegistrationRepository, OwnerSubmissionRepository ownerSubmissionRepository, PoiRepository poiRepository, AnalyticsRepository analyticsRepository, AuditLogRepository auditLogRepository)
+    public AdminService(AuthService authService, UserRepository userRepository, OwnerRegistrationRepository ownerRegistrationRepository, OwnerSubmissionRepository ownerSubmissionRepository, PoiRepository poiRepository, AnalyticsRepository analyticsRepository)
     {
         _authService = authService;
         _userRepository = userRepository;
@@ -25,7 +24,6 @@ public class AdminService
         _ownerSubmissionRepository = ownerSubmissionRepository;
         _poiRepository = poiRepository;
         _analyticsRepository = analyticsRepository;
-        _auditLogRepository = auditLogRepository;
     }
 
     public async Task<AuthResponse> LoginAdminAsync(LoginRequest request, CancellationToken cancellationToken = default)
@@ -72,7 +70,6 @@ public class AdminService
             AvatarUrl = user.AvatarUrl,
             Roles = user.Roles,
             IsActive = user.IsActive,
-            EmailVerified = user.EmailVerified,
             OwnerStatus = user.OwnerStatus,
             LastLoginAt = user.LastLoginAt,
             CreatedAt = user.CreatedAt
@@ -92,11 +89,10 @@ public class AdminService
             ?? throw new ApiException("Không tìm thấy user.", StatusCodes.Status404NotFound);
         user.Roles = request.Roles.Distinct().ToList();
         await _userRepository.UpdateAsync(user, cancellationToken);
-        await WriteAuditAsync(user.Id, "update_user_role", "user", user.Id, new Dictionary<string, object> { ["roles"] = user.Roles }, cancellationToken);
     }
 
-    public async Task<List<OwnerRegistrationResponse>> GetOwnerRegistrationsAsync(string? status, CancellationToken cancellationToken = default)
-        => (await _ownerRegistrationRepository.GetByStatusAsync(status, cancellationToken)).Select(entity => new OwnerRegistrationResponse
+    public async Task<List<OwnerRegistrationAdminResponse>> GetOwnerRegistrationsAsync(string? status, CancellationToken cancellationToken = default)
+        => (await _ownerRegistrationRepository.GetByStatusAsync(status, cancellationToken)).Select(entity => new OwnerRegistrationAdminResponse
         {
             Id = entity.Id,
             UserId = entity.UserId,
@@ -106,6 +102,8 @@ public class AdminService
             Description = entity.Description,
             Status = entity.Status,
             AdminNote = entity.AdminNote,
+            ReviewedBy = entity.ReviewedBy,
+            ReviewedAt = entity.ReviewedAt,
             CreatedAt = entity.CreatedAt
         }).ToList();
 
@@ -132,7 +130,6 @@ public class AdminService
 
         await _ownerRegistrationRepository.UpdateAsync(registration, cancellationToken);
         await _userRepository.UpdateAsync(user, cancellationToken);
-        await WriteAuditAsync(adminUserId, "approve_owner", "owner_registration", registration.Id, new Dictionary<string, object> { ["userId"] = user.Id }, cancellationToken);
     }
 
     public async Task RejectOwnerAsync(string adminUserId, string id, RejectOwnerRegistrationRequest request, CancellationToken cancellationToken = default)
@@ -152,7 +149,6 @@ public class AdminService
         user.OwnerStatus = SharedConstants.OwnerRejected;
         await _ownerRegistrationRepository.UpdateAsync(registration, cancellationToken);
         await _userRepository.UpdateAsync(user, cancellationToken);
-        await WriteAuditAsync(adminUserId, "reject_owner", "owner_registration", registration.Id, new Dictionary<string, object> { ["reason"] = request.AdminNote }, cancellationToken);
     }
 
     public async Task DisableOwnerAsync(string adminUserId, string id, CancellationToken cancellationToken = default)
@@ -175,7 +171,6 @@ public class AdminService
 
         await _userRepository.UpdateAsync(user, cancellationToken);
         await _ownerRegistrationRepository.DeleteAsync(registration.Id, cancellationToken);
-        await WriteAuditAsync(adminUserId, "disable_owner", "owner_registration", registration.Id, new Dictionary<string, object> { ["userId"] = user.Id }, cancellationToken);
     }
 
     public async Task<List<OwnerSubmissionResponse>> GetSubmissionsAsync(string? status, CancellationToken cancellationToken = default)
@@ -290,7 +285,6 @@ public class AdminService
         submission.ReviewedAt = DateTime.UtcNow;
         submission.ReviewedBy = adminUserId;
         await _ownerSubmissionRepository.UpdateAsync(submission, cancellationToken);
-        await WriteAuditAsync(adminUserId, "approve_submission", "owner_submission", submission.Id, new Dictionary<string, object> { ["poiId"] = submission.PoiId ?? string.Empty }, cancellationToken);
     }
 
     public async Task RejectSubmissionAsync(string adminUserId, string id, RejectSubmissionRequest request, CancellationToken cancellationToken = default)
@@ -306,18 +300,5 @@ public class AdminService
         submission.ReviewedAt = DateTime.UtcNow;
         submission.ReviewedBy = adminUserId;
         await _ownerSubmissionRepository.UpdateAsync(submission, cancellationToken);
-        await WriteAuditAsync(adminUserId, "reject_submission", "owner_submission", submission.Id, new Dictionary<string, object> { ["reason"] = request.AdminNote }, cancellationToken);
-    }
-
-    private async Task WriteAuditAsync(string? userId, string action, string resourceType, string resourceId, Dictionary<string, object> details, CancellationToken cancellationToken)
-    {
-        await _auditLogRepository.CreateAsync(new AuditLog
-        {
-            UserId = userId,
-            Action = action,
-            ResourceType = resourceType,
-            ResourceId = resourceId,
-            Details = details
-        }, cancellationToken);
     }
 }

@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
+    <PackageReference Include="CloudinaryDotNet" Version="1.29.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
     <PackageReference Include="MongoDB.Driver" Version="3.9.0" />
@@ -20,6 +21,12 @@
     <None Include="tools\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="artifacts\**\*.cs" />
+    <EmbeddedResource Remove="artifacts\**\*" />
+    <None Remove="artifacts\**\*" />
   </ItemGroup>
 
 </Project>

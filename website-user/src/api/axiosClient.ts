@@ -80,6 +80,17 @@ export async function postData<T>(url: string, body: object): Promise<T> {
   }
 }
 
+export async function postFormData<T>(url: string, formData: FormData): Promise<T> {
+  try {
+    const { data } = await client.post<ApiResponse<T>>(url, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return unwrap(data);
+  } catch (error) {
+    throw toError(error);
+  }
+}
+
 export async function putData<T>(url: string, body: object): Promise<T> {
   try {
     const { data } = await client.put<ApiResponse<T>>(url, body);

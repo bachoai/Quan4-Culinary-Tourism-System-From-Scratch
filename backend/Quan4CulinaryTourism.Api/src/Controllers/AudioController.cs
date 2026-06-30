@@ -17,10 +17,12 @@ public class AudioController : BaseApiController
     }
 
     [HttpGet($"{AppConstants.ApiVersionPrefix}/audio/languages")]
-    public Task<IActionResult> GetLanguages() => ExecuteAsync(() => _audioService.GetLanguagesAsync(), "Lấy ngôn ngữ audio thành công");
+    public Task<IActionResult> GetLanguages() =>
+        ExecuteAsync(() => _audioService.GetLanguagesAsync(), "Lấy ngôn ngữ audio thành công");
 
     [HttpGet($"{AppConstants.ApiVersionPrefix}/poi/{{id}}/audio")]
-    public Task<IActionResult> GetPoiAudio(string id, [FromQuery] string? lang) => ExecuteAsync(() => _audioService.GetPoiAudioAsync(id, lang), "Lấy audio thành công");
+    public Task<IActionResult> GetPoiAudio(string id, [FromQuery] string? lang) =>
+        ExecuteAsync(() => _audioService.GetPoiAudioAsync(id, lang), "Lấy audio thành công");
 
     [Authorize(Roles = SharedConstants.UserRoles.Admin)]
     [HttpPost($"{AppConstants.ApiVersionPrefix}/admin/pois/{{id}}/audio")]
@@ -32,6 +34,12 @@ public class AudioController : BaseApiController
     public Task<IActionResult> GeneratePoiAudio(string id, [FromBody] GeneratePoiAudioRequest request) =>
         ExecuteAsync(() => _audioService.GeneratePoiAudioAsync(id, request), "Tạo audio từ nội dung lời nói thành công");
 
+    [Authorize(Roles = SharedConstants.UserRoles.Admin)]
+    [HttpDelete($"{AppConstants.ApiVersionPrefix}/admin/pois/{{id}}/audio")]
+    public Task<IActionResult> DeletePoiAudio(string id, [FromQuery] string? lang) =>
+        ExecuteAsync(() => _audioService.DeletePoiAudioAsync(id, lang), "Xóa audio thành công");
+
     [HttpGet($"{AppConstants.ApiVersionPrefix}/audio/pack-manifest")]
-    public Task<IActionResult> GetPackManifest() => ExecuteAsync(() => _audioService.GetPackManifestAsync(), "Lấy audio manifest thành công");
+    public Task<IActionResult> GetPackManifest() =>
+        ExecuteAsync(() => _audioService.GetPackManifestAsync(), "Lấy audio manifest thành công");
 }

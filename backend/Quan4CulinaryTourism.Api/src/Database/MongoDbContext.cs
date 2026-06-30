@@ -11,7 +11,6 @@ public class MongoDbContext
         var mongoClient = new MongoClient(settings.Value.ConnectionString);
         Database = mongoClient.GetDatabase(settings.Value.DatabaseName);
         Users = Database.GetCollection<User>("users");
-        Roles = Database.GetCollection<Role>("roles");
         Categories = Database.GetCollection<Category>("categories");
         Pois = Database.GetCollection<Poi>("pois");
         PoiLocalizations = Database.GetCollection<PoiLocalization>("poi_localizations");
@@ -20,7 +19,6 @@ public class MongoDbContext
         OwnerRegistrations = Database.GetCollection<OwnerRegistration>("owner_registrations");
         OwnerSubmissions = Database.GetCollection<OwnerSubmission>("owner_submissions");
         AnalyticsEvents = Database.GetCollection<AnalyticsEvent>("analytics_events");
-        AuditLogs = Database.GetCollection<AuditLog>("audit_logs");
         MediaFiles = Database.GetCollection<MediaFile>("media_files");
         MapPacks = Database.GetCollection<MapPack>("map_packs");
         Tours = Database.GetCollection<Tour>("tours");
@@ -29,7 +27,6 @@ public class MongoDbContext
 
     public IMongoDatabase Database { get; }
     public IMongoCollection<User> Users { get; }
-    public IMongoCollection<Role> Roles { get; }
     public IMongoCollection<Category> Categories { get; }
     public IMongoCollection<Poi> Pois { get; }
     public IMongoCollection<PoiLocalization> PoiLocalizations { get; }
@@ -38,7 +35,6 @@ public class MongoDbContext
     public IMongoCollection<OwnerRegistration> OwnerRegistrations { get; }
     public IMongoCollection<OwnerSubmission> OwnerSubmissions { get; }
     public IMongoCollection<AnalyticsEvent> AnalyticsEvents { get; }
-    public IMongoCollection<AuditLog> AuditLogs { get; }
     public IMongoCollection<MediaFile> MediaFiles { get; }
     public IMongoCollection<MapPack> MapPacks { get; }
     public IMongoCollection<Tour> Tours { get; }

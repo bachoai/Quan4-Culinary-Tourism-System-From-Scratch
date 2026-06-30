@@ -41,7 +41,7 @@ public class PythonTextToSpeechService
             return null;
         }
 
-        var (fullPath, publicUrl) = _fileUploadHelper.CreateManagedFilePath("audio", ".mp3");
+        var tempFilePath = _fileUploadHelper.CreateTemporaryFilePath(".mp3");
         var resolvedVoice = string.IsNullOrWhiteSpace(voiceHint) ? _settings.DefaultVoice : voiceHint.Trim();
         var process = new Process
         {
@@ -60,7 +60,7 @@ public class PythonTextToSpeechService
         process.StartInfo.ArgumentList.Add("--text");
         process.StartInfo.ArgumentList.Add(text);
         process.StartInfo.ArgumentList.Add("--output");
-        process.StartInfo.ArgumentList.Add(fullPath);
+        process.StartInfo.ArgumentList.Add(tempFilePath);
         process.StartInfo.ArgumentList.Add("--voice");
         process.StartInfo.ArgumentList.Add(resolvedVoice);
         process.StartInfo.ArgumentList.Add("--rate");
@@ -80,9 +80,9 @@ public class PythonTextToSpeechService
             var standardOutput = await standardOutputTask;
             var standardError = await standardErrorTask;
 
-            if (process.ExitCode != 0 || !File.Exists(fullPath))
+            if (process.ExitCode != 0 || !File.Exists(tempFilePath))
             {
-                TryDelete(fullPath);
+                TryDelete(tempFilePath);
                 _logger.LogError(
                     "Python TTS failed with exit code {ExitCode}. stdout: {StdOut}. stderr: {StdErr}",
                     process.ExitCode,
@@ -91,23 +91,34 @@ public class PythonTextToSpeechService
                 return null;
             }
 
-            var fileInfo = new FileInfo(fullPath);
-            return new GeneratedAudioResult(publicUrl, resolvedVoice, fileInfo.Length);
+            var storedFile = await _fileUploadHelper.UploadLocalFileAsync(
+                tempFilePath,
+                "audio",
+                "audio/mpeg",
+                cancellationToken);
+            return new GeneratedAudioResult(
+                storedFile.Url,
+                resolvedVoice,
+                storedFile.SizeBytes,
+                storedFile.StorageProvider,
+                storedFile.ObjectKey,
+                storedFile.ResourceType);
         }
         catch (OperationCanceledException)
         {
-            TryDelete(fullPath);
+            TryDelete(tempFilePath);
             _logger.LogError("Python TTS timed out after {TimeoutSeconds}s", _settings.TimeoutSeconds);
             return null;
         }
         catch (Exception exception)
         {
-            TryDelete(fullPath);
+            TryDelete(tempFilePath);
             _logger.LogError(exception, "Python TTS execution failed");
             return null;
         }
         finally
         {
+            TryDelete(tempFilePath);
             process.Dispose();
         }
     }
@@ -121,4 +132,10 @@ public class PythonTextToSpeechService
     }
 }
 
-public sealed record GeneratedAudioResult(string PublicUrl, string VoiceName, long FileSizeBytes);
+public sealed record GeneratedAudioResult(
+    string PublicUrl,
+    string VoiceName,
+    long FileSizeBytes,
+    string StorageProvider,
+    string ObjectKey,
+    string ResourceType);

@@ -6,19 +6,22 @@ import { categoryApi } from '../api/categoryApi';
 import { ownerApi } from '../api/ownerApi';
 import { ErrorBox } from '../components/common/ErrorBox';
 import { Field, TextArea, TextInput } from '../components/common/FormControls';
+import { OwnerPoiStudio } from '../components/owner/OwnerPoiStudio';
 import { Spinner } from '../components/common/Spinner';
 import { StatusPill } from '../components/common/StatusPill';
 import { useAppStore } from '../store/appStore';
 import type { CreateOwnerSubmissionRequest } from '../types/requests';
-import type { OwnerManagedPoi, OwnerSubmissionResponse } from '../types/responses';
-import { poiImage } from '../utils/media';
+import type { OwnerManagedPoi, OwnerSubmissionResponse, PoiImage } from '../types/responses';
+import { normalizeMediaUrl, poiImage } from '../utils/media';
 
 function OwnerPoiCard({
   poi,
   onCreateUpdate,
+  onManageAudio,
 }: {
   poi: OwnerManagedPoi;
   onCreateUpdate: () => void;
+  onManageAudio: () => void;
 }) {
   const mapUrl = `https://www.google.com/maps/dir/?api=1&destination=${poi.latitude},${poi.longitude}`;
 
@@ -78,6 +81,9 @@ function OwnerPoiCard({
             <Navigation size={16} />
             Chỉ đường
           </a>
+          <button type="button" className="btn-secondary !px-4 !py-2" onClick={onManageAudio}>
+            Quan ly audio va ban dich
+          </button>
           <button className="btn-primary !px-4 !py-2" onClick={onCreateUpdate}>
             Gửi yêu cầu cập nhật <ArrowRight size={16} />
           </button>
@@ -183,11 +189,35 @@ function mapPoiToForm(poi: OwnerManagedPoi): CreateOwnerSubmissionRequest {
   };
 }
 
+function normalizeSubmissionImages(images: PoiImage[]): PoiImage[] {
+  if (!images.length) {
+    return [];
+  }
+
+  const thumbnailIndex = images.findIndex((image) => image.isThumbnail);
+  const resolvedThumbnailIndex = thumbnailIndex >= 0 ? thumbnailIndex : 0;
+
+  return images.map((image, index) => ({
+    ...image,
+    caption: image.caption || '',
+    isThumbnail: index === resolvedThumbnailIndex,
+  }));
+}
+
+function appendSubmissionImage(images: PoiImage[], image: PoiImage): PoiImage[] {
+  return normalizeSubmissionImages([...images, image]);
+}
+
 export default function OwnerPage() {
   const queryClient = useQueryClient();
   const { lang } = useAppStore();
   const submissionFormRef = useRef<HTMLDivElement>(null);
+  const studioRef = useRef<HTMLDivElement>(null);
+  const submissionImageInputRef = useRef<HTMLInputElement>(null);
   const [editingSubmissionId, setEditingSubmissionId] = useState<string | null>(null);
+  const [managedPoiId, setManagedPoiId] = useState<string | null>(null);
+  const [manualImageUrl, setManualImageUrl] = useState('');
+  const [manualImageCaption, setManualImageCaption] = useState('');
 
   const createEmptySubmissionForm = (): CreateOwnerSubmissionRequest => ({
     submissionType: 'create',
@@ -248,6 +278,22 @@ export default function OwnerPage() {
       setSubmissionNotice('');
     },
   });
+  const uploadSubmissionImageMutation = useMutation({
+    mutationFn: ownerApi.uploadImage,
+    onSuccess: (file) => {
+      setSubmissionForm((current) => ({
+        ...current,
+        images: appendSubmissionImage(current.images, {
+          url: file.url,
+          caption: manualImageCaption.trim() || file.originalFileName,
+          isThumbnail: current.images.length === 0,
+        }),
+      }));
+      setManualImageUrl('');
+      setManualImageCaption('');
+      setSubmissionNotice('');
+    },
+  });
 
   const ownerPois = ownerPoisQuery.data || [];
   const submissions = submissionsQuery.data || [];
@@ -260,6 +306,8 @@ export default function OwnerPage() {
     setEditingSubmissionId(null);
     setSubmissionForm(createEmptySubmissionForm());
     setSubmissionNotice('');
+    setManualImageUrl('');
+    setManualImageCaption('');
   };
 
   const beginUpdateSubmissionFromPoi = (poi: OwnerManagedPoi) => {
@@ -292,6 +340,26 @@ export default function OwnerPage() {
     }
 
     setSubmissionForm(mapPoiToForm(poi));
+  };
+
+  const addManualSubmissionImage = () => {
+    const trimmedUrl = manualImageUrl.trim();
+    if (!trimmedUrl) {
+      setSubmissionNotice('Vui long nhap URL anh truoc khi them.');
+      return;
+    }
+
+    setSubmissionNotice('');
+    setSubmissionForm((current) => ({
+      ...current,
+      images: appendSubmissionImage(current.images, {
+        url: trimmedUrl,
+        caption: manualImageCaption.trim(),
+        isThumbnail: current.images.length === 0,
+      }),
+    }));
+    setManualImageUrl('');
+    setManualImageCaption('');
   };
 
   return (
@@ -358,7 +426,15 @@ export default function OwnerPage() {
         ) : ownerPois.length ? (
           <div className="mt-6 grid gap-5 lg:grid-cols-2">
             {ownerPois.map((poi) => (
-              <OwnerPoiCard key={poi.id} poi={poi} onCreateUpdate={() => beginUpdateSubmissionFromPoi(poi)} />
+              <OwnerPoiCard
+                key={poi.id}
+                poi={poi}
+                onCreateUpdate={() => beginUpdateSubmissionFromPoi(poi)}
+                onManageAudio={() => {
+                  setManagedPoiId(poi.id);
+                  studioRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+              />
             ))}
           </div>
         ) : (
@@ -370,6 +446,12 @@ export default function OwnerPage() {
           </div>
         )}
       </div>
+
+      {ownerPois.length ? (
+        <div ref={studioRef}>
+          <OwnerPoiStudio pois={ownerPois} selectedPoiId={managedPoiId} />
+        </div>
+      ) : null}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.05fr_.95fr]">
         <div ref={submissionFormRef} className="rounded-[2rem] bg-white p-8 shadow-soft dark:bg-slate-900">
@@ -593,6 +675,7 @@ export default function OwnerPage() {
             </Field>
             <Field label="Thẻ (CSV)">
               <TextInput
+                placeholder="Vi du: hai san, mon nuong, mo khuya"
                 value={submissionForm.tags.join(', ')}
                 onChange={(event) =>
                   setSubmissionForm((current) => ({
@@ -604,6 +687,9 @@ export default function OwnerPage() {
                   }))
                 }
               />
+              <span className="text-xs font-normal text-slate-500">
+                Nhap moi the cach nhau bang dau phay. Vi du: hai san, check-in, quan 4
+              </span>
             </Field>
             <Field label="Mô tả">
               <TextArea
@@ -625,6 +711,130 @@ export default function OwnerPage() {
                 className="md:col-span-2"
               />
             </Field>
+            <div className="rounded-3xl border border-slate-200 p-5 md:col-span-2 dark:border-slate-700">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-bold">Anh de xuat</p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Tai file anh len hoac nhap URL anh de bo sung vao payload submission.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <input
+                    ref={submissionImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) {
+                        return;
+                      }
+
+                      setSubmissionNotice('');
+                      uploadSubmissionImageMutation.mutate(file);
+                      event.target.value = '';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn-secondary !px-4 !py-2"
+                    onClick={() => submissionImageInputRef.current?.click()}
+                    disabled={uploadSubmissionImageMutation.isPending}
+                  >
+                    {uploadSubmissionImageMutation.isPending ? 'Dang tai anh...' : 'Tai anh len'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-[1.2fr_.8fr_auto]">
+                <TextInput
+                  value={manualImageUrl}
+                  onChange={(event) => setManualImageUrl(event.target.value)}
+                  placeholder="Dan URL anh neu khong muon upload file"
+                />
+                <TextInput
+                  value={manualImageCaption}
+                  onChange={(event) => setManualImageCaption(event.target.value)}
+                  placeholder="Caption ngan"
+                />
+                <button type="button" className="btn-secondary !px-4 !py-2" onClick={addManualSubmissionImage}>
+                  Them URL anh
+                </button>
+              </div>
+
+              {uploadSubmissionImageMutation.error ? (
+                <div className="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  {(uploadSubmissionImageMutation.error as Error).message}
+                </div>
+              ) : null}
+
+              {submissionForm.images.length ? (
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  {submissionForm.images.map((image, index) => (
+                    <div key={`${image.url}-${index}`} className="rounded-2xl border border-slate-200 p-3 dark:border-slate-700">
+                      <img
+                        src={normalizeMediaUrl(image.url)}
+                        alt={image.caption || `Submission image ${index + 1}`}
+                        className="h-40 w-full rounded-2xl object-cover"
+                      />
+                      <div className="mt-3 grid gap-3">
+                        <TextInput
+                          value={image.caption || ''}
+                          onChange={(event) =>
+                            setSubmissionForm((current) => ({
+                              ...current,
+                              images: normalizeSubmissionImages(
+                                current.images.map((item, itemIndex) =>
+                                  itemIndex === index ? { ...item, caption: event.target.value } : item,
+                                ),
+                              ),
+                            }))
+                          }
+                          placeholder="Caption"
+                        />
+                        <p className="break-all text-xs text-slate-500">{image.url}</p>
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            type="button"
+                            className="btn-secondary !px-4 !py-2"
+                            onClick={() =>
+                              setSubmissionForm((current) => ({
+                                ...current,
+                                images: normalizeSubmissionImages(
+                                  current.images.map((item, itemIndex) => ({
+                                    ...item,
+                                    isThumbnail: itemIndex === index,
+                                  })),
+                                ),
+                              }))
+                            }
+                          >
+                            {image.isThumbnail ? 'Anh chinh' : 'Dat lam anh chinh'}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-secondary !px-4 !py-2"
+                            onClick={() =>
+                              setSubmissionForm((current) => ({
+                                ...current,
+                                images: normalizeSubmissionImages(
+                                  current.images.filter((_, itemIndex) => itemIndex !== index),
+                                ),
+                              }))
+                            }
+                          >
+                            Xoa anh
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-slate-500">Chua co anh nao trong submission nay.</p>
+              )}
+            </div>
             <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 md:col-span-2 dark:border-slate-700">
               <input
                 type="checkbox"

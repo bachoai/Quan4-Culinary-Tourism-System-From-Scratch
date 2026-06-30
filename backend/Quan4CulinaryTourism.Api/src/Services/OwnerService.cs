@@ -17,19 +17,28 @@ public class OwnerService
     private readonly PoiRepository _poiRepository;
     private readonly PoiLocalizationRepository _poiLocalizationRepository;
     private readonly AnalyticsRepository _analyticsRepository;
+    private readonly LocalizationService _localizationService;
+    private readonly AudioService _audioService;
+    private readonly MediaService _mediaService;
 
     public OwnerService(
         OwnerSubmissionRepository ownerSubmissionRepository,
         CategoryRepository categoryRepository,
         PoiRepository poiRepository,
         PoiLocalizationRepository poiLocalizationRepository,
-        AnalyticsRepository analyticsRepository)
+        AnalyticsRepository analyticsRepository,
+        LocalizationService localizationService,
+        AudioService audioService,
+        MediaService mediaService)
     {
         _ownerSubmissionRepository = ownerSubmissionRepository;
         _categoryRepository = categoryRepository;
         _poiRepository = poiRepository;
         _poiLocalizationRepository = poiLocalizationRepository;
         _analyticsRepository = analyticsRepository;
+        _localizationService = localizationService;
+        _audioService = audioService;
+        _mediaService = mediaService;
     }
 
     public async Task<OwnerDashboardResponse> GetDashboardAsync(
@@ -186,6 +195,82 @@ public class OwnerService
         return ToResponse(entity);
     }
 
+    public async Task<List<PoiLocalizationResponse>> GetMyPoiLocalizationsAsync(
+        string ownerId,
+        string poiId,
+        CancellationToken cancellationToken = default)
+    {
+        _ = await RequireOwnedPoiAsync(ownerId, poiId, cancellationToken);
+        return await _localizationService.GetPoiLocalizationsAsync(poiId, cancellationToken);
+    }
+
+    public async Task<PoiLocalizationResponse> UpsertMyPoiLocalizationAsync(
+        string ownerId,
+        string poiId,
+        CreatePoiLocalizationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _ = await RequireOwnedPoiAsync(ownerId, poiId, cancellationToken);
+        if (string.Equals(request.Lang, "vi", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ApiException("Owner khong duoc sua localization tieng Viet truc tiep.");
+        }
+
+        return await _localizationService.UpsertAsync(poiId, request, cancellationToken);
+    }
+
+    public async Task<PoiLocalizationResponse> TranslateMyPoiLocalizationAsync(
+        string ownerId,
+        string poiId,
+        TranslatePoiLocalizationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _ = await RequireOwnedPoiAsync(ownerId, poiId, cancellationToken);
+        if (string.Equals(request.Lang, "vi", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ApiException("Flow translate cua owner chi danh cho ngon ngu khac tieng Viet.");
+        }
+
+        return await _localizationService.TranslateAsync(poiId, request, cancellationToken);
+    }
+
+    public async Task<PoiAudioResponse> UploadOrSetMyPoiAudioAsync(
+        string ownerId,
+        string poiId,
+        UploadPoiAudioRequest request,
+        IFormFile? file,
+        CancellationToken cancellationToken = default)
+    {
+        _ = await RequireOwnedPoiAsync(ownerId, poiId, cancellationToken);
+        return await _audioService.UploadOrSetAudioAsync(poiId, request, file, cancellationToken);
+    }
+
+    public async Task<PoiAudioResponse> GenerateMyPoiAudioAsync(
+        string ownerId,
+        string poiId,
+        GeneratePoiAudioRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _ = await RequireOwnedPoiAsync(ownerId, poiId, cancellationToken);
+        return await _audioService.GeneratePoiAudioAsync(poiId, request, cancellationToken);
+    }
+
+    public async Task DeleteMyPoiAudioAsync(
+        string ownerId,
+        string poiId,
+        string? lang,
+        CancellationToken cancellationToken = default)
+    {
+        _ = await RequireOwnedPoiAsync(ownerId, poiId, cancellationToken);
+        await _audioService.DeletePoiAudioAsync(poiId, lang, cancellationToken);
+    }
+
+    public Task<MediaFileResponse> UploadMyImageAsync(
+        string ownerId,
+        IFormFile file,
+        CancellationToken cancellationToken = default) =>
+        _mediaService.UploadImageAsync(file, ownerId, cancellationToken);
+
     private async Task<OwnerManagedPoiResponse> MapManagedPoiAsync(
         Poi poi,
         OwnerPoiEngagementResponse? stats,
@@ -272,6 +357,21 @@ public class OwnerService
         }
 
         return string.IsNullOrWhiteSpace(localizedScript) ? null : localizedScript;
+    }
+
+    private async Task<Poi> RequireOwnedPoiAsync(
+        string ownerId,
+        string poiId,
+        CancellationToken cancellationToken)
+    {
+        var poi = await _poiRepository.GetByIdAsync(poiId, cancellationToken)
+            ?? throw new ApiException("Khong tim thay POI.", StatusCodes.Status404NotFound);
+        if (!string.Equals(poi.OwnerId, ownerId, StringComparison.Ordinal))
+        {
+            throw new ApiException("Ban khong duoc quan ly POI nay.", StatusCodes.Status403Forbidden);
+        }
+
+        return poi;
     }
 
     private async Task<CreateOwnerSubmissionRequest> NormalizeSubmissionRequestAsync(

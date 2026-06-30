@@ -46,3 +46,30 @@ export interface CreateOwnerSubmissionRequest {
   contactInfo?: ContactInfo | null;
   tags: string[];
 }
+
+export interface CreatePoiLocalizationRequest {
+  lang: string;
+  name: string;
+  description: string;
+  audioUrl?: string;
+  ttsScript?: string;
+  isFallback: boolean;
+}
+
+export interface TranslatePoiLocalizationRequest {
+  lang: string;
+  sourceLang?: string;
+  overwriteExisting?: boolean;
+}
+
+export interface UploadPoiAudioRequest {
+  lang: string;
+  audioUrl?: string;
+  voiceName?: string;
+  sourceType: string;
+}
+
+export interface GeneratePoiAudioRequest {
+  lang: string;
+  voiceName?: string;
+}

@@ -18,10 +18,30 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection(nameof(MongoDbSettings)));
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection(nameof(JwtSettings)));
 builder.Services.Configure<UploadSettings>(builder.Configuration.GetSection(nameof(UploadSettings)));
+builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection(nameof(CloudinarySettings)));
 builder.Services.Configure<DefaultAdminSettings>(builder.Configuration.GetSection("DefaultAdmin"));
 builder.Services.Configure<CorsSettings>(builder.Configuration.GetSection("Cors"));
 builder.Services.Configure<TextToSpeechSettings>(builder.Configuration.GetSection(nameof(TextToSpeechSettings)));
 builder.Services.Configure<PublicSiteSettings>(builder.Configuration.GetSection(nameof(PublicSiteSettings)));
+builder.Services.AddOptions<AiSettings>()
+    .Bind(builder.Configuration.GetSection("Ai"))
+    .PostConfigure(settings =>
+    {
+        ApplyEnvironmentOverride("AI_PROVIDER", value => settings.Provider = value);
+        ApplyEnvironmentOverride("AI_BASE_URL", value => settings.BaseUrl = value);
+        ApplyEnvironmentOverride("AI_API_KEY", value => settings.ApiKey = value);
+        ApplyEnvironmentOverride("AI_MODEL", value => settings.Model = value);
+
+        if (bool.TryParse(Environment.GetEnvironmentVariable("AI_ENABLED"), out var enabled))
+        {
+            settings.Enabled = enabled;
+        }
+
+        if (int.TryParse(Environment.GetEnvironmentVariable("AI_TIMEOUT_SECONDS"), out var timeoutSeconds))
+        {
+            settings.TimeoutSeconds = timeoutSeconds;
+        }
+    });
 
 var jwtSettings = builder.Configuration.GetSection(nameof(JwtSettings)).Get<JwtSettings>() ?? new JwtSettings();
 var defaultAdminSettings = builder.Configuration.GetSection("DefaultAdmin").Get<DefaultAdminSettings>() ?? new DefaultAdminSettings();
@@ -117,7 +137,6 @@ builder.Services.AddSingleton<DbSeeder>();
 builder.Services.AddScoped<IClaimsTransformation, UserRoleClaimsTransformation>();
 
 builder.Services.AddScoped<UserRepository>();
-builder.Services.AddScoped<RoleRepository>();
 builder.Services.AddScoped<CategoryRepository>();
 builder.Services.AddScoped<PoiRepository>();
 builder.Services.AddScoped<PoiLocalizationRepository>();
@@ -126,7 +145,6 @@ builder.Services.AddScoped<AudioTaskRepository>();
 builder.Services.AddScoped<OwnerRegistrationRepository>();
 builder.Services.AddScoped<OwnerSubmissionRepository>();
 builder.Services.AddScoped<AnalyticsRepository>();
-builder.Services.AddScoped<AuditLogRepository>();
 builder.Services.AddScoped<MediaFileRepository>();
 builder.Services.AddScoped<MapPackRepository>();
 builder.Services.AddScoped<TourRepository>();
@@ -146,6 +164,8 @@ builder.Services.AddScoped<MapsService>();
 builder.Services.AddScoped<HealthService>();
 builder.Services.AddScoped<TourService>();
 builder.Services.AddScoped<QrActivationService>();
+builder.Services.AddScoped<ChatService>();
+builder.Services.AddHttpClient<AiChatClient>();
 
 var app = builder.Build();
 
@@ -176,4 +196,13 @@ using (var scope = app.Services.CreateScope())
 app.MapControllers();
 
 app.Run();
+
+static void ApplyEnvironmentOverride(string key, Action<string> apply)
+{
+    var value = Environment.GetEnvironmentVariable(key);
+    if (!string.IsNullOrWhiteSpace(value))
+    {
+        apply(value.Trim());
+    }
+}
 

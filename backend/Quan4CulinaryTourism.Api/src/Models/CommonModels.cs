@@ -82,7 +82,7 @@ public static class SharedConstants
     public static readonly string[] SupportedLanguages = ["vi", "en", "zh", "ja", "ko"];
     public static readonly string[] SubmissionTypes = ["create", "update"];
     public static readonly string[] MediaTypes = ["image", "audio", "map"];
-    public static readonly string[] StorageProviders = ["local", "minio", "s3"];
+    public static readonly string[] StorageProviders = ["local", "cloudinary", "minio", "s3"];
     public static readonly string[] QrScanModes = ["prefer_audio", "audio", "tts"];
     public static readonly string[] AnalyticsEvents =
     [

@@ -79,6 +79,11 @@ export interface OwnerRegistrationResponse {
   createdAt: string;
 }
 
+export interface OwnerRegistrationAdminResponse extends OwnerRegistrationResponse {
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+}
+
 export interface OwnerSubmissionResponse {
   id: string;
   ownerId: string;

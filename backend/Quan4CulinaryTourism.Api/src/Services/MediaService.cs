@@ -19,28 +19,34 @@ public class MediaService
     public async Task<DTOs.MediaFileResponse> UploadImageAsync(IFormFile file, string? uploadedBy, CancellationToken cancellationToken = default)
     {
         _fileUploadHelper.ValidateImage(file);
-        var url = await _fileUploadHelper.SaveFileAsync(file, "images", cancellationToken);
-        return await CreateMediaRecordAsync(file, "image", url, uploadedBy, cancellationToken);
+        var storedFile = await _fileUploadHelper.SaveFileAsync(file, "images", cancellationToken);
+        return await CreateMediaRecordAsync(file, "image", storedFile, uploadedBy, cancellationToken);
     }
 
     public async Task<DTOs.MediaFileResponse> UploadAudioAsync(IFormFile file, string? uploadedBy, CancellationToken cancellationToken = default)
     {
         _fileUploadHelper.ValidateAudio(file);
-        var url = await _fileUploadHelper.SaveFileAsync(file, "audio", cancellationToken);
-        return await CreateMediaRecordAsync(file, "audio", url, uploadedBy, cancellationToken);
+        var storedFile = await _fileUploadHelper.SaveFileAsync(file, "audio", cancellationToken);
+        return await CreateMediaRecordAsync(file, "audio", storedFile, uploadedBy, cancellationToken);
     }
 
-    private async Task<DTOs.MediaFileResponse> CreateMediaRecordAsync(IFormFile file, string fileType, string url, string? uploadedBy, CancellationToken cancellationToken)
+    private async Task<DTOs.MediaFileResponse> CreateMediaRecordAsync(
+        IFormFile file,
+        string fileType,
+        StoredFileResult storedFile,
+        string? uploadedBy,
+        CancellationToken cancellationToken)
     {
         var entity = new MediaFile
         {
-            FileName = Path.GetFileName(url),
+            FileName = storedFile.FileName,
             OriginalFileName = file.FileName,
-            Url = url,
+            Url = storedFile.Url,
             ContentType = file.ContentType,
             FileType = fileType,
-            SizeBytes = file.Length,
-            StorageProvider = "local",
+            SizeBytes = storedFile.SizeBytes,
+            StorageProvider = storedFile.StorageProvider,
+            ObjectKey = storedFile.ObjectKey,
             UploadedBy = uploadedBy
         };
         await _mediaFileRepository.CreateAsync(entity, cancellationToken);

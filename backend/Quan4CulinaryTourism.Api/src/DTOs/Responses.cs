@@ -15,7 +15,6 @@ public class CurrentUserResponse
     public string? AvatarUrl { get; set; }
     public List<string> Roles { get; set; } = [];
     public bool IsActive { get; set; }
-    public bool EmailVerified { get; set; }
     public string OwnerStatus { get; set; } = string.Empty;
 }
 
@@ -82,6 +81,50 @@ public class NearbyPoiResponse : PoiResponse
     public double DistanceMeters { get; set; }
 }
 
+public class ChatSuggestResponse
+{
+    public string Reply { get; set; } = string.Empty;
+    public List<ChatPoiSuggestionResponse> Suggestions { get; set; } = [];
+}
+
+public class ChatPoiSuggestionResponse
+{
+    public string PoiId { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Address { get; set; }
+    public string? Ward { get; set; }
+    public string? ImageUrl { get; set; }
+    public string? Reason { get; set; }
+    public double? DistanceMeters { get; set; }
+    public string? DetailUrl { get; set; }
+    public string? MapUrl { get; set; }
+}
+
+public class AiPoiCandidate
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? CategoryName { get; set; }
+    public string? Address { get; set; }
+    public string? Ward { get; set; }
+    public List<string> Tags { get; set; } = [];
+    public string? Description { get; set; }
+    public double? DistanceMeters { get; set; }
+    public string? PriceHint { get; set; }
+}
+
+internal class AiChatSuggestionPayload
+{
+    public string Reply { get; set; } = string.Empty;
+    public List<AiChatSuggestionItem> Suggestions { get; set; } = [];
+}
+
+internal class AiChatSuggestionItem
+{
+    public string PoiId { get; set; } = string.Empty;
+    public string? Reason { get; set; }
+}
+
 public class OwnerRegistrationResponse
 {
     public string Id { get; set; } = string.Empty;
@@ -91,8 +134,14 @@ public class OwnerRegistrationResponse
     public string PhoneNumber { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string Status { get; set; } = string.Empty;
-    public string? AdminNote { get; set; }
     public DateTime CreatedAt { get; set; }
+}
+
+public class OwnerRegistrationAdminResponse : OwnerRegistrationResponse
+{
+    public string? AdminNote { get; set; }
+    public string? ReviewedBy { get; set; }
+    public DateTime? ReviewedAt { get; set; }
 }
 
 public class OwnerSubmissionResponse

@@ -74,7 +74,21 @@ export interface PoiAudio {
   lang: string;
   audioUrl: string;
   voiceName?: string | null;
+  sourceType?: string;
+  status?: string;
   durationSeconds?: number;
+  fileSizeBytes?: number;
+}
+
+export interface PoiLocalizationResponse {
+  id: string;
+  poiId: string;
+  lang: string;
+  name: string;
+  description: string;
+  audioUrl?: string | null;
+  ttsScript?: string | null;
+  isFallback: boolean;
 }
 
 export interface AudioLanguageResponse {
@@ -197,6 +211,16 @@ export interface OwnerManagedPoi {
   audioPlayCount: number;
   uniqueAudioListenerCount: number;
   qrScanCount: number;
+}
+
+export interface MediaFileResponse {
+  id: string;
+  fileName: string;
+  originalFileName: string;
+  url: string;
+  contentType: string;
+  fileType: string;
+  sizeBytes: number;
 }
 
 export interface TourStopResponse {

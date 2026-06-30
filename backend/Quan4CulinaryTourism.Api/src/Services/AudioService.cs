@@ -54,7 +54,22 @@ public class AudioService
             : await _poiLocalizationRepository.GetByPoiAndLangAsync(poiId, normalizedLang, cancellationToken);
         var narrationText = ResolveNarrationText(normalizedLang, poi, localization);
         var narrationSignature = ComputeNarrationSignature(normalizedLang, narrationText);
-        var audio = await _poiAudioRepository.GetByPoiAndLangAsync(poiId, normalizedLang, cancellationToken);
+        var audio = await _poiAudioRepository.GetByPoiAndLangAsync(
+            poiId,
+            normalizedLang,
+            cancellationToken,
+            includeDeleted: true);
+
+        if (audio?.IsDeleted == true)
+        {
+            if (string.IsNullOrWhiteSpace(lang))
+            {
+                var fallbackAudio = (await _poiAudioRepository.GetByPoiIdAsync(poiId, cancellationToken)).FirstOrDefault();
+                return fallbackAudio is null ? null : ToResponse(fallbackAudio);
+            }
+
+            return null;
+        }
 
         if (ShouldRegenerateGeneratedAudio(audio, narrationSignature))
         {
@@ -99,11 +114,18 @@ public class AudioService
 
         string audioUrl;
         long fileSize = 0;
+        string storageProvider = "external";
+        string? objectKey = null;
+        string? resourceType = null;
         if (file is not null)
         {
             _fileUploadHelper.ValidateAudio(file);
-            audioUrl = await _fileUploadHelper.SaveFileAsync(file, "audio", cancellationToken);
-            fileSize = file.Length;
+            var storedFile = await _fileUploadHelper.SaveFileAsync(file, "audio", cancellationToken);
+            audioUrl = storedFile.Url;
+            fileSize = storedFile.SizeBytes;
+            storageProvider = storedFile.StorageProvider;
+            objectKey = storedFile.ObjectKey;
+            resourceType = storedFile.ResourceType;
         }
         else if (!string.IsNullOrWhiteSpace(request.AudioUrl))
         {
@@ -118,7 +140,11 @@ public class AudioService
         {
             PoiId = poi.Id,
             Lang = request.Lang,
+            IsDeleted = false,
             AudioUrl = audioUrl,
+            StorageProvider = storageProvider,
+            ObjectKey = objectKey,
+            ResourceType = resourceType,
             VoiceName = request.VoiceName,
             SourceType = request.SourceType,
             Status = SharedConstants.AudioDone,
@@ -167,6 +193,34 @@ public class AudioService
             narrationSignature,
             generated,
             cancellationToken);
+    }
+
+    public async Task DeletePoiAudioAsync(string poiId, string? lang, CancellationToken cancellationToken = default)
+    {
+        var normalizedLang = NormalizeLanguage(lang);
+        var poi = await _poiRepository.GetByIdAsync(poiId, cancellationToken)
+            ?? throw new ApiException("KhĂ´ng tĂ¬m tháº¥y POI.", StatusCodes.Status404NotFound);
+        var audio = await _poiAudioRepository.GetByPoiAndLangAsync(poiId, normalizedLang, cancellationToken)
+            ?? throw new ApiException("KhĂ´ng tĂ¬m tháº¥y audio cho ngĂ´n ngá»¯ Ä‘Ă£ chá»n.", StatusCodes.Status404NotFound);
+
+        await _fileUploadHelper.DeleteManagedFileAsync(
+            audio.AudioUrl,
+            audio.StorageProvider,
+            audio.ObjectKey,
+            audio.ResourceType,
+            cancellationToken);
+        audio.IsDeleted = true;
+        audio.AudioUrl = string.Empty;
+        audio.StorageProvider = "external";
+        audio.ObjectKey = null;
+        audio.ResourceType = null;
+        audio.FileSizeBytes = 0;
+        audio.DurationSeconds = 0;
+        audio.VoiceName = null;
+        audio.NarrationSignature = null;
+        audio.Status = SharedConstants.AudioPending;
+        await _poiAudioRepository.UpsertAsync(audio, cancellationToken);
+        await SyncPoiAudioStatusAsync(poi, cancellationToken);
     }
 
     public async Task<object> GetPackManifestAsync(CancellationToken cancellationToken = default)
@@ -250,7 +304,11 @@ public class AudioService
         {
             PoiId = poi.Id,
             Lang = lang,
+            IsDeleted = false,
             AudioUrl = generated.PublicUrl,
+            StorageProvider = generated.StorageProvider,
+            ObjectKey = generated.ObjectKey,
+            ResourceType = generated.ResourceType,
             VoiceName = generated.VoiceName,
             SourceType = "python_tts",
             NarrationSignature = narrationSignature,
@@ -259,9 +317,17 @@ public class AudioService
         };
 
         await _poiAudioRepository.UpsertAsync(audio, cancellationToken);
-        poi.AudioStatus = SharedConstants.AudioDone;
-        await _poiRepository.UpdateAsync(poi, cancellationToken);
+        await SyncPoiAudioStatusAsync(poi, cancellationToken);
         return ToResponse(audio);
+    }
+
+    private async Task SyncPoiAudioStatusAsync(Poi poi, CancellationToken cancellationToken)
+    {
+        var remainingAudios = await _poiAudioRepository.GetByPoiIdAsync(poi.Id, cancellationToken);
+        poi.AudioStatus = remainingAudios.Count > 0
+            ? SharedConstants.AudioDone
+            : SharedConstants.AudioPending;
+        await _poiRepository.UpdateAsync(poi, cancellationToken);
     }
 
     private static string NormalizeLanguage(string? lang)
@@ -292,7 +358,7 @@ public class AudioService
 
     private static bool ShouldRegenerateGeneratedAudio(PoiAudio? audio, string? narrationSignature)
     {
-        if (audio is null || !string.Equals(audio.SourceType, "python_tts", StringComparison.Ordinal))
+        if (audio is null || audio.IsDeleted || !string.Equals(audio.SourceType, "python_tts", StringComparison.Ordinal))
         {
             return false;
         }

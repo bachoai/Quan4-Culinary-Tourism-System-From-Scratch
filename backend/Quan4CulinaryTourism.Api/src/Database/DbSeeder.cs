@@ -20,7 +20,6 @@ public class DbSeeder
 
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        await SeedRolesAsync(cancellationToken);
         await SeedAdminAsync(cancellationToken);
         await SeedCategoriesAsync(cancellationToken);
         await SeedUsersAsync(cancellationToken);
@@ -32,29 +31,9 @@ public class DbSeeder
         await SeedOwnerSubmissionsAsync(cancellationToken);
         await SeedMediaFilesAsync(cancellationToken);
         await SeedAnalyticsEventsAsync(cancellationToken);
-        await SeedAuditLogsAsync(cancellationToken);
         await SeedToursAsync(cancellationToken);
         await SeedQrActivationsAsync(cancellationToken);
         await SeedMapPacksAsync(cancellationToken);
-    }
-
-    private async Task SeedRolesAsync(CancellationToken cancellationToken)
-    {
-        var roles = new[]
-        {
-            new Role { Name = SharedConstants.UserRoles.Admin, Description = "System administrator" },
-            new Role { Name = SharedConstants.UserRoles.Owner, Description = "Business owner" },
-            new Role { Name = SharedConstants.UserRoles.User, Description = "End user" }
-        };
-
-        foreach (var role in roles)
-        {
-            var exists = await _context.Roles.Find(x => x.Name == role.Name).AnyAsync(cancellationToken);
-            if (!exists)
-            {
-                await _context.Roles.InsertOneAsync(role, cancellationToken: cancellationToken);
-            }
-        }
     }
 
     private async Task SeedAdminAsync(CancellationToken cancellationToken)
@@ -77,7 +56,6 @@ public class DbSeeder
             PasswordHash = _passwordHasher.HashPassword(_defaultAdmin.Password),
             Roles = [SharedConstants.UserRoles.Admin, SharedConstants.UserRoles.User],
             OwnerStatus = SharedConstants.OwnerApproved,
-            EmailVerified = true,
             IsActive = true
         };
 
@@ -127,7 +105,6 @@ public class DbSeeder
                     ? [SharedConstants.UserRoles.Owner, SharedConstants.UserRoles.User]
                     : [SharedConstants.UserRoles.User],
                 IsActive = true,
-                EmailVerified = true,
                 OwnerStatus = seed.OwnerStatus,
                 LastLoginAt = DateTime.UtcNow.AddDays(-(seed.Index % 10)),
                 CreatedAt = DateTime.UtcNow.AddDays(-(seed.Index + 15)),
@@ -590,55 +567,6 @@ public class DbSeeder
         }
     }
 
-    private async Task SeedAuditLogsAsync(CancellationToken cancellationToken)
-    {
-        var admin = await GetAdminUserAsync(cancellationToken);
-        var pois = await _context.Pois.Find(FilterDefinition<Poi>.Empty)
-            .SortByDescending(x => x.Priority)
-            .ThenBy(x => x.Name)
-            .Limit(20)
-            .ToListAsync(cancellationToken);
-
-        var existingKeys = await _context.AuditLogs.Find(FilterDefinition<AuditLog>.Empty)
-            .Project(x => x.Action + "|" + x.ResourceType + "|" + x.ResourceId)
-            .ToListAsync(cancellationToken);
-
-        var logs = new List<AuditLog>();
-        foreach (var (poi, index) in pois.Select((poi, index) => (poi, index)))
-        {
-            var action = AuditActions[index % AuditActions.Length];
-            var resourceType = index % 3 == 0 ? "poi" : index % 3 == 1 ? "audio" : "tour";
-            var resourceId = resourceType == "tour" ? $"tour-seed-{index + 1:00}" : poi.Id;
-            var key = action + "|" + resourceType + "|" + resourceId;
-            if (existingKeys.Contains(key, StringComparer.Ordinal))
-            {
-                continue;
-            }
-
-            logs.Add(new AuditLog
-            {
-                UserId = admin?.Id,
-                Action = action,
-                ResourceType = resourceType,
-                ResourceId = resourceId,
-                IpAddress = $"10.0.0.{index + 10}",
-                UserAgent = $"SeederBot/1.0 ({resourceType})",
-                Details = new Dictionary<string, object>
-                {
-                    ["resourceName"] = poi.Name,
-                    ["status"] = index % 2 == 0 ? "ok" : "reviewed",
-                    ["channel"] = index % 2 == 0 ? "admin-web" : "mobile"
-                },
-                CreatedAt = DateTime.UtcNow.AddMinutes(-(index * 11 + 3))
-            });
-        }
-
-        if (logs.Count > 0)
-        {
-            await _context.AuditLogs.InsertManyAsync(logs, cancellationToken: cancellationToken);
-        }
-    }
-
     private async Task SeedToursAsync(CancellationToken cancellationToken)
     {
         var pois = await _context.Pois.Find(FilterDefinition<Poi>.Empty)
@@ -949,15 +877,6 @@ public class DbSeeder
         SharedConstants.SubmissionPending,
         SharedConstants.SubmissionRejected,
         SharedConstants.SubmissionApproved
-    ];
-
-    private static readonly string[] AuditActions =
-    [
-        "poi_created",
-        "poi_updated",
-        "audio_uploaded",
-        "tour_published",
-        "qr_activation_updated"
     ];
 
     private static readonly string[] SearchKeywords =

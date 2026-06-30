@@ -29,6 +29,47 @@ public class OwnerController : BaseApiController
     public Task<IActionResult> GetPois([FromQuery] string? lang) =>
         ExecuteAsync(() => _ownerService.GetMyPoisAsync(_claimsHelper.GetUserId(User), lang), "Lấy danh sách POI của owner thành công");
 
+    [HttpGet("pois/{id}/localizations")]
+    public Task<IActionResult> GetPoiLocalizations(string id) =>
+        ExecuteAsync(() => _ownerService.GetMyPoiLocalizationsAsync(_claimsHelper.GetUserId(User), id), "Lấy localizations của owner thành công");
+
+    [HttpPut("pois/{id}/localizations/{lang}")]
+    public Task<IActionResult> UpsertPoiLocalization(string id, string lang, [FromBody] UpdatePoiLocalizationRequest request)
+    {
+        request.Lang = lang;
+        return ExecuteAsync(
+            () => _ownerService.UpsertMyPoiLocalizationAsync(_claimsHelper.GetUserId(User), id, request),
+            "Luu localization cua owner thanh cong");
+    }
+
+    [HttpPost("pois/{id}/localizations/translate")]
+    public Task<IActionResult> TranslatePoiLocalization(string id, [FromBody] TranslatePoiLocalizationRequest request) =>
+        ExecuteAsync(
+            () => _ownerService.TranslateMyPoiLocalizationAsync(_claimsHelper.GetUserId(User), id, request),
+            "Dich localization cua owner thanh cong");
+
+    [HttpPost("pois/{id}/audio")]
+    public Task<IActionResult> UploadPoiAudio(string id, [FromForm] UploadPoiAudioRequest request, IFormFile? file) =>
+        ExecuteAsync(
+            () => _ownerService.UploadOrSetMyPoiAudioAsync(_claimsHelper.GetUserId(User), id, request, file),
+            "Cap nhat audio cua owner thanh cong");
+
+    [HttpPost("pois/{id}/audio/generate")]
+    public Task<IActionResult> GeneratePoiAudio(string id, [FromBody] GeneratePoiAudioRequest request) =>
+        ExecuteAsync(
+            () => _ownerService.GenerateMyPoiAudioAsync(_claimsHelper.GetUserId(User), id, request),
+            "Tao audio cua owner thanh cong");
+
+    [HttpDelete("pois/{id}/audio")]
+    public Task<IActionResult> DeletePoiAudio(string id, [FromQuery] string? lang) =>
+        ExecuteAsync(
+            () => _ownerService.DeleteMyPoiAudioAsync(_claimsHelper.GetUserId(User), id, lang),
+            "Xoa audio cua owner thanh cong");
+
+    [HttpPost("media/upload-image")]
+    public Task<IActionResult> UploadImage(IFormFile file) =>
+        ExecuteAsync(() => _ownerService.UploadMyImageAsync(_claimsHelper.GetUserId(User), file), "Upload anh cua owner thanh cong");
+
     [HttpPost("submissions")]
     public Task<IActionResult> CreateSubmission([FromBody] CreateOwnerSubmissionRequest request) =>
         ExecuteAsync(() => _ownerService.CreateSubmissionAsync(_claimsHelper.GetUserId(User), request), "Tạo submission thành công");

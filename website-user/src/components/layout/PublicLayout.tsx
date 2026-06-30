@@ -12,9 +12,10 @@ import {
   X,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { audioApi } from '../../api/audioApi';
 import { healthApi } from '../../api/healthApi';
+import { ChatWidget } from '../ChatWidget';
 import { LANGUAGE_OPTIONS } from '../../constants/languages';
 import { getCopy } from '../../i18n/copy';
 import { useAppStore } from '../../store/appStore';
@@ -33,6 +34,7 @@ export function PublicLayout() {
   } = useAppStore();
   const ui = getCopy(lang);
   const [open, setOpen] = useState(false);
+  const location = useLocation();
   const audioLanguagesQuery = useQuery({
     queryKey: ['audio-languages'],
     queryFn: audioApi.getLanguages,
@@ -65,6 +67,12 @@ export function PublicLayout() {
   const languageOptions = LANGUAGE_OPTIONS.filter((option) => supportedLanguageCodes.has(option.value));
 
   const healthOk = healthQuery.data?.mongoConnected && healthQuery.data.status === 'Healthy';
+  const showChatWidget =
+    isAuthenticated &&
+    (location.pathname === '/' ||
+      location.pathname === '/explore' ||
+      location.pathname === '/nearby' ||
+      location.pathname.startsWith('/poi/'));
 
   return (
     <div className="min-h-screen">
@@ -196,6 +204,8 @@ export function PublicLayout() {
       <main>
         <Outlet />
       </main>
+
+      {showChatWidget ? <ChatWidget /> : null}
 
       <footer className="mt-20 bg-ink py-12 text-slate-300">
         <div className="shell flex flex-col justify-between gap-8 md:flex-row">

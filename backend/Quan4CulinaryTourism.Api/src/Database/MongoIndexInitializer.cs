@@ -21,10 +21,6 @@ public class MongoIndexInitializer
             new CreateIndexModel<User>(Builders<User>.IndexKeys.Ascending(x => x.IsActive))
         ], cancellationToken);
 
-        await _context.Roles.Indexes.CreateOneAsync(
-            new CreateIndexModel<Role>(Builders<Role>.IndexKeys.Ascending(x => x.Name), new CreateIndexOptions { Unique = true }),
-            cancellationToken: cancellationToken);
-
         await _context.Categories.Indexes.CreateManyAsync(
         [
             new CreateIndexModel<Category>(Builders<Category>.IndexKeys.Ascending(x => x.Code), new CreateIndexOptions { Unique = true }),
@@ -92,15 +88,6 @@ public class MongoIndexInitializer
             new CreateIndexModel<AnalyticsEvent>(Builders<AnalyticsEvent>.IndexKeys.Ascending(x => x.AnonymousId).Ascending(x => x.SessionId)),
             new CreateIndexModel<AnalyticsEvent>(Builders<AnalyticsEvent>.IndexKeys.Ascending(x => x.EventName).Ascending(x => x.CreatedAt)),
             new CreateIndexModel<AnalyticsEvent>(Builders<AnalyticsEvent>.IndexKeys.Ascending(x => x.SessionId).Ascending(x => x.CreatedAt))
-        ], cancellationToken);
-
-        await _context.AuditLogs.Indexes.CreateManyAsync(
-        [
-            new CreateIndexModel<AuditLog>(Builders<AuditLog>.IndexKeys.Ascending(x => x.UserId)),
-            new CreateIndexModel<AuditLog>(Builders<AuditLog>.IndexKeys.Ascending(x => x.Action)),
-            new CreateIndexModel<AuditLog>(Builders<AuditLog>.IndexKeys.Ascending(x => x.ResourceType)),
-            new CreateIndexModel<AuditLog>(Builders<AuditLog>.IndexKeys.Ascending(x => x.ResourceId)),
-            new CreateIndexModel<AuditLog>(Builders<AuditLog>.IndexKeys.Ascending(x => x.CreatedAt))
         ], cancellationToken);
 
         await _context.MediaFiles.Indexes.CreateManyAsync(

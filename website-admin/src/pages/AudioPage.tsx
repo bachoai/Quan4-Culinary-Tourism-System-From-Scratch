@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { audioApi } from '../api/audioApi';
 import { localizationApi } from '../api/localizationApi';
 import { poiApi } from '../api/poiApi';
+import { ConfirmDeleteButton } from '../components/common/ConfirmDeleteButton';
 import { EmptyState } from '../components/common/EmptyState';
 import { AudioForm } from '../components/forms/AudioForm';
 import { useI18n } from '../i18n/provider';
@@ -91,6 +92,7 @@ export function AudioPage() {
       queryClient.invalidateQueries({ queryKey: ['poi-localizations', selectedPoiId] }),
       queryClient.invalidateQueries({ queryKey: ['poi-audio', selectedPoiId, selectedLang] }),
       queryClient.invalidateQueries({ queryKey: ['poi-audio', selectedPoiId] }),
+      queryClient.invalidateQueries({ queryKey: ['audio-manifest'] }),
     ]);
   };
 
@@ -165,6 +167,30 @@ export function AudioPage() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!poiId) {
+        throw new Error(t('no_poi_selected_desc'));
+      }
+
+      return audioApi.deletePoiAudio(poiId, lang);
+    },
+    onSuccess: async () => {
+      if (!poiId) {
+        return;
+      }
+
+      notification.success({ message: t('audio_deleted') });
+      await refreshWorkspace(poiId, lang);
+    },
+    onError: (error: Error) => {
+      notification.error({
+        message: t('audio_delete_failed'),
+        description: error.message,
+      });
+    },
+  });
+
   const scriptEditorDisabled =
     !poiId ||
     poiQuery.isFetching ||
@@ -227,7 +253,11 @@ export function AudioPage() {
                   </Button>
                 </Form>
               </Card>
-              <Card type="inner" title={t('audio_preview_title')}>
+              <Card
+                type="inner"
+                title={t('audio_preview_title')}
+                extra={audioQuery.data?.audioUrl ? <ConfirmDeleteButton onConfirm={() => deleteMutation.mutate()} loading={deleteMutation.isPending} /> : null}
+              >
                 {audioQuery.data?.audioUrl ? (
                   <audio controls src={normalizeMediaUrl(audioQuery.data.audioUrl)} style={{ width: '100%' }} />
                 ) : (

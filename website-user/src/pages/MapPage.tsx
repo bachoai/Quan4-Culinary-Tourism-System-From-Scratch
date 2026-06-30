@@ -327,7 +327,7 @@ export default function MapPage() {
               {navigationMode && arrivalDistanceMeters !== null ? (
                 <div className="mt-3 flex flex-wrap gap-2 text-sm">
                   <span className={`pill ${hasArrived ? 'border-coral text-coral' : 'border-teal text-teal'}`}>
-                    {hasArrived ? 'Da den noi' : `Con ${distance(arrivalDistanceMeters)}`}
+                    {hasArrived ? 'Da den noi' : `GPS ${distance(arrivalDistanceMeters)}`}
                   </span>
                   <span className="pill">Ban kinh den noi {distance(arrivalRadiusMeters)}</span>
                 </div>
@@ -335,7 +335,7 @@ export default function MapPage() {
 
               {routeQuery.data ? (
                 <div className="mt-3 flex flex-wrap gap-2 text-sm">
-                  <span className="pill border-teal text-teal">{distance(routeQuery.data.distanceMeters)}</span>
+                  <span className="pill border-teal text-teal">Duong di {distance(routeQuery.data.distanceMeters)}</span>
                   <span className="pill">{durationText}</span>
                 </div>
               ) : routeQuery.isLoading ? (
@@ -388,7 +388,7 @@ export default function MapPage() {
             {hasArrived
               ? 'Trang web se tu phat audio gioi thieu cho diem den nay.'
               : arrivalDistanceMeters !== null
-                ? `Con ${distance(arrivalDistanceMeters)} de toi diem den. Cac POI khac dang duoc an de ban tap trung theo duong di.`
+                ? `GPS con cach ${distance(arrivalDistanceMeters)} den diem den. Quang duong tren duong pho xem o pill "Duong di". Cac POI khac dang duoc an de ban tap trung theo duong di.`
                 : 'Can GPS thoi gian thuc de theo doi qua trinh di chuyen den diem den.'}
           </p>
 
@@ -442,9 +442,9 @@ export default function MapPage() {
               {arrivalDistanceMeters !== null ? (
                 <div className="mt-3 flex flex-wrap gap-2 text-sm">
                   <span className={`pill ${hasArrived ? 'border-coral text-coral' : 'border-teal text-teal'}`}>
-                    {hasArrived ? 'Da den noi' : `Con ${distance(arrivalDistanceMeters)}`}
+                    {hasArrived ? 'Da den noi' : `GPS ${distance(arrivalDistanceMeters)}`}
                   </span>
-                  {routeQuery.data ? <span className="pill">{distance(routeQuery.data.distanceMeters)}</span> : null}
+                  {routeQuery.data ? <span className="pill">Duong di {distance(routeQuery.data.distanceMeters)}</span> : null}
                   {durationText ? <span className="pill">{durationText}</span> : null}
                 </div>
               ) : null}
@@ -452,7 +452,7 @@ export default function MapPage() {
               <p className="mt-4 text-sm text-slate-500">
                 {hasArrived
                   ? 'Audio gioi thieu dang san sang tren khung thong bao ben trai.'
-                  : 'Ban do chi hien user, diem den va duong di. Cac dia diem khac tam an trong khi dan duong.'}
+                  : 'GPS la khoang cach thang den diem. "Duong di" la do dai tuyen tren duong pho. Ban do chi hien user, diem den va duong di.'}
               </p>
 
               <div className="mt-4 flex flex-wrap gap-2">

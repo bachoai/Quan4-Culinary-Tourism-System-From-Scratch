@@ -123,7 +123,6 @@ public class AuthService
             PhoneNumber = registration.PhoneNumber,
             Description = registration.Description,
             Status = registration.Status,
-            AdminNote = registration.AdminNote,
             CreatedAt = registration.CreatedAt
         };
     }
@@ -137,7 +136,6 @@ public class AuthService
         AvatarUrl = user.AvatarUrl,
         Roles = user.Roles,
         IsActive = user.IsActive,
-        EmailVerified = user.EmailVerified,
         OwnerStatus = user.OwnerStatus
     };
 }

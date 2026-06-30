@@ -1,11 +1,13 @@
 # Quan4CulinaryTourism.Api
 
-Backend ASP.NET Core Web API cho dự án du lịch ẩm thực Quận 4, dùng MongoDB, JWT Bearer và upload file local.
+Backend ASP.NET Core Web API cho dự án du lịch ẩm thực Quận 4, dùng MongoDB, JWT Bearer, media lưu trên Cloudinary, và TTS Python cho audio thuyết minh.
 
 ## Yêu cầu
 
 - .NET SDK 10
 - MongoDB tại `mongodb://localhost:27017`
+- Python nếu muốn dùng TTS tự động
+- Tài khoản Cloudinary nếu muốn upload ảnh/audio
 
 Nếu chưa có MongoDB local, từ repo root chạy:
 
@@ -46,17 +48,62 @@ Nguồn cấu hình chính:
 Tóm tắt:
 
 - `dotnet run` không tự đọc file `.env.example`
-- `backend/Quan4CulinaryTourism.Api/.env.example` chỉ là template để import vào shell, IDE, hoặc container
-- nếu chạy API trong Docker, copy `.env.example` ở repo root thành `.env`
+- backend có `EnvFileLoader`, nên nếu tạo file `.env` thật trong `backend/Quan4CulinaryTourism.Api` thì API sẽ tự nạp
+- `backend/Quan4CulinaryTourism.Api/.env.example` chỉ là template để copy thành `.env` hoặc import vào shell/IDE/server
 
 Section quan trọng:
 
 - `MongoDbSettings`
 - `JwtSettings`
 - `UploadSettings`
+- `CloudinarySettings`
 - `TextToSpeechSettings`
+- `Ai`
 - `DefaultAdmin`
 - `Cors.AllowedOrigins`
+
+### Cloudinary
+
+Media upload tay và audio TTS đều đi qua Cloudinary.
+
+Cần cấu hình tối thiểu:
+
+- `CloudinarySettings:CloudName`
+- `CloudinarySettings:ApiKey`
+- `CloudinarySettings:ApiSecret`
+
+Tuỳ chọn:
+
+- `CloudinarySettings:RootFolder`
+
+Ví dụ biến môi trường:
+
+```env
+CloudinarySettings__CloudName=your-cloud-name
+CloudinarySettings__ApiKey=your-api-key
+CloudinarySettings__ApiSecret=your-api-secret
+CloudinarySettings__RootFolder=quan4-culinary-tourism
+```
+
+Nếu thiếu cấu hình Cloudinary, các request upload ảnh/audio sẽ fail với lỗi cấu hình rõ ràng.
+
+## Chatbot AI + Database
+
+Chatbot gợi ý địa điểm ăn uống đi theo luồng:
+
+- nhận message từ frontend
+- lấy POI public từ MongoDB
+- chấm điểm candidate ở backend
+- chỉ đưa candidate list đó cho AI để viết câu trả lời
+- fallback rule-based nếu AI lỗi hoặc thiếu cấu hình
+
+Thiết lập AI:
+
+- section `Ai` trong `appsettings.json`
+- biến môi trường `AI_ENABLED`, `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`, `AI_TIMEOUT_SECONDS`
+- API key thật chỉ nên đặt ở backend qua biến môi trường hoặc file `.env` local
+
+Nếu `AI_ENABLED=false` hoặc thiếu `AI_API_KEY`, endpoint chat vẫn trả kết quả bằng fallback rule-based.
 
 ## Audio tiếng Việt từ Python
 
@@ -65,8 +112,9 @@ Backend có script Python `tools/tts_generate.py` dùng `gTTS` để tạo MP3 t
 Luồng hiện tại:
 
 - FE gọi `GET /api/v1/poi/{id}/audio?lang=vi`
-- nếu Mongo chưa có `PoiAudio` tiếng Việt, backend sẽ tự sinh file MP3 vào `wwwroot/uploads/audio`
-- file tạo xong sẽ được lưu lại trong `poi_audios` để lần sau phát trực tiếp
+- nếu Mongo chưa có `PoiAudio` phù hợp, backend sẽ sinh file MP3 tạm
+- file tạm được upload lên Cloudinary
+- URL Cloudinary và metadata storage được lưu vào `poi_audios`
 
 Thiết lập chính:
 
@@ -95,7 +143,7 @@ Thiết lập chính:
 2. `POST /api/v1/auth/login` bằng tài khoản admin local
 3. `GET /api/v1/categories`
 4. `GET /api/v1/poi/load-all`
-5. `GET /api/v1/poi/nearby`
+5. upload thử ảnh hoặc audio sau khi đã cấu hình Cloudinary
 
 ## Build
 

@@ -107,6 +107,14 @@ public class PoiSearchRequest : PaginationParams
     public string? PriceRange { get; set; }
 }
 
+public class ChatSuggestRequest
+{
+    public string Message { get; set; } = string.Empty;
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public string? ConversationId { get; set; }
+}
+
 public class CreateOwnerRegistrationRequest
 {
     [Required]
@@ -202,6 +210,16 @@ public class CreatePoiLocalizationRequest
 }
 
 public class UpdatePoiLocalizationRequest : CreatePoiLocalizationRequest;
+
+public class TranslatePoiLocalizationRequest
+{
+    [Required]
+    public string Lang { get; set; } = "en";
+
+    public string SourceLang { get; set; } = "vi";
+
+    public bool OverwriteExisting { get; set; } = true;
+}
 
 public class UploadPoiAudioRequest
 {
