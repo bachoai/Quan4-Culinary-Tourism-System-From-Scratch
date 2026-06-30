@@ -15,7 +15,9 @@ public class TourRepository
 
     public Task<List<Tour>> GetActiveAsync(string? lang = null, CancellationToken cancellationToken = default)
     {
-        var filter = Builders<Tour>.Filter.Eq(x => x.IsActive, true);
+        var filter =
+            Builders<Tour>.Filter.Eq(x => x.IsActive, true) &
+            Builders<Tour>.Filter.Eq(x => x.CreatedByUserId, null);
         if (!string.IsNullOrWhiteSpace(lang))
         {
             filter &= Builders<Tour>.Filter.Eq(x => x.Lang, lang);
@@ -23,6 +25,9 @@ public class TourRepository
 
         return _context.Tours.Find(filter).SortBy(x => x.Title).ToListAsync(cancellationToken);
     }
+
+    public Task<List<Tour>> GetByCreatedByUserIdAsync(string userId, CancellationToken cancellationToken = default) =>
+        _context.Tours.Find(x => x.CreatedByUserId == userId).SortByDescending(x => x.UpdatedAt).ToListAsync(cancellationToken);
 
     public async Task<Tour?> GetByIdAsync(string id, CancellationToken cancellationToken = default) =>
         await _context.Tours.Find(x => x.Id == id).FirstOrDefaultAsync(cancellationToken);

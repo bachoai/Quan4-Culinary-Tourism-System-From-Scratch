@@ -168,7 +168,7 @@ public class LocalizationService
         CancellationToken cancellationToken = default)
     {
         var normalizedLang = NormalizeLanguage(lang);
-        if (string.Equals(normalizedLang, SharedConstants.DefaultAudioLanguage, StringComparison.Ordinal))
+        if (string.Equals(normalizedLang, SharedConstants.Languages.DefaultAudio, StringComparison.Ordinal))
         {
             return null;
         }
@@ -191,7 +191,7 @@ public class LocalizationService
                 new TranslatePoiLocalizationRequest
                 {
                     Lang = normalizedLang,
-                    SourceLang = SharedConstants.DefaultAudioLanguage,
+                    SourceLang = SharedConstants.Languages.DefaultAudio,
                     OverwriteExisting = false
                 },
                 cancellationToken);
@@ -252,10 +252,11 @@ public class LocalizationService
 
     private static string NormalizeLanguage(string lang)
     {
-        var normalized = string.IsNullOrWhiteSpace(lang) ? SharedConstants.DefaultAudioLanguage : lang.Trim().ToLowerInvariant();
-        return SharedConstants.SupportedLanguages.Contains(normalized) ? normalized : SharedConstants.DefaultAudioLanguage;
+        var normalized = string.IsNullOrWhiteSpace(lang) ? SharedConstants.Languages.DefaultAudio : lang.Trim().ToLowerInvariant();
+        return SharedConstants.Languages.Supported.Contains(normalized) ? normalized : SharedConstants.Languages.DefaultAudio;
     }
 
     private static string? FirstNonEmpty(params string?[] values) =>
         values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim();
 }
+

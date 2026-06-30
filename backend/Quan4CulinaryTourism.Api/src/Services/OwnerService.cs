@@ -56,9 +56,9 @@ public class OwnerService
         {
             TotalPois = ownerPois.Count,
             TotalSubmissions = submissions.Count,
-            PendingSubmissions = submissions.Count(x => x.Status == SharedConstants.SubmissionPending),
-            ApprovedSubmissions = submissions.Count(x => x.Status == SharedConstants.SubmissionApproved),
-            RejectedSubmissions = submissions.Count(x => x.Status == SharedConstants.SubmissionRejected),
+            PendingSubmissions = submissions.Count(x => x.Status == SharedConstants.SubmissionStatuses.Pending),
+            ApprovedSubmissions = submissions.Count(x => x.Status == SharedConstants.SubmissionStatuses.Approved),
+            RejectedSubmissions = submissions.Count(x => x.Status == SharedConstants.SubmissionStatuses.Rejected),
             TotalViews = engagement.ViewCount,
             UniqueVisitors = engagement.UniqueVisitorCount,
             TotalAudioPlays = engagement.AudioPlayCount,
@@ -140,11 +140,11 @@ public class OwnerService
         CancellationToken cancellationToken = default)
     {
         var entity = await _ownerSubmissionRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new ApiException("Không tìm thấy submission.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("Không t?m th?y submission.", StatusCodes.Status404NotFound);
 
         if (entity.OwnerId != ownerId)
         {
-            throw new ApiException("Không có quyền truy cập.", StatusCodes.Status403Forbidden);
+            throw new ApiException("Không có quy?n truy c?p.", StatusCodes.Status403Forbidden);
         }
 
         return ToResponse(entity);
@@ -157,16 +157,16 @@ public class OwnerService
         CancellationToken cancellationToken = default)
     {
         var entity = await _ownerSubmissionRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new ApiException("Không tìm thấy submission.", StatusCodes.Status404NotFound);
+            ?? throw new ApiException("Không t?m th?y submission.", StatusCodes.Status404NotFound);
 
         if (entity.OwnerId != ownerId)
         {
-            throw new ApiException("Không có quyền truy cập.", StatusCodes.Status403Forbidden);
+            throw new ApiException("Không có quy?n truy c?p.", StatusCodes.Status403Forbidden);
         }
 
-        if (entity.Status != SharedConstants.SubmissionPending)
+        if (entity.Status != SharedConstants.SubmissionStatuses.Pending)
         {
-            throw new ApiException("Chỉ được sửa đề xuất đang chờ duyệt.");
+            throw new ApiException("Ch? đư?c s?a đ? xu?t đang ch? duy?t.");
         }
 
         var normalizedRequest = await NormalizeSubmissionRequestAsync(ownerId, request, cancellationToken);
@@ -380,35 +380,35 @@ public class OwnerService
         CancellationToken cancellationToken)
     {
         var submissionType = request.SubmissionType.Trim().ToLowerInvariant();
-        if (!SharedConstants.SubmissionTypes.Contains(submissionType))
+        if (!SharedConstants.SubmissionTypes.Values.Contains(submissionType))
         {
-            throw new ApiException("Loại đề xuất không hợp lệ. Chỉ hỗ trợ create hoặc update.");
+            throw new ApiException("Lo?i đ? xu?t không h?p l?. Ch? h? tr? create ho?c update.");
         }
 
         if (request.GeofenceRadiusMeters < MinSubmissionGeofenceRadiusMeters || request.GeofenceRadiusMeters > MaxSubmissionGeofenceRadiusMeters)
         {
-            throw new ApiException($"Bán kính geofence phải trong khoảng {MinSubmissionGeofenceRadiusMeters}-{MaxSubmissionGeofenceRadiusMeters} mét.");
+            throw new ApiException($"Bán kính geofence ph?i trong kho?ng {MinSubmissionGeofenceRadiusMeters}-{MaxSubmissionGeofenceRadiusMeters} mét.");
         }
 
         var category = await _categoryRepository.GetByIdAsync(request.CategoryId.Trim(), cancellationToken);
         if (category is null)
         {
-            throw new ApiException("Danh mục không tồn tại.", StatusCodes.Status404NotFound);
+            throw new ApiException("Danh m?c không t?n t?i.", StatusCodes.Status404NotFound);
         }
 
         string? poiId = string.IsNullOrWhiteSpace(request.PoiId) ? null : request.PoiId.Trim();
-        if (submissionType == "update")
+        if (submissionType == SharedConstants.SubmissionTypes.Update)
         {
             if (poiId is null)
             {
-                throw new ApiException("Đề xuất cập nhật bắt buộc phải có POI.");
+                throw new ApiException("Đ? xu?t c?p nh?t b?t bu?c ph?i có POI.");
             }
 
             var poi = await _poiRepository.GetByIdAsync(poiId, cancellationToken)
-                ?? throw new ApiException("POI cần cập nhật không tồn tại.", StatusCodes.Status404NotFound);
+                ?? throw new ApiException("POI c?n c?p nh?t không t?n t?i.", StatusCodes.Status404NotFound);
             if (!string.Equals(poi.OwnerId, ownerId, StringComparison.Ordinal))
             {
-                throw new ApiException("Bạn không thể cập nhật POI không thuộc quyền quản lý của mình.", StatusCodes.Status403Forbidden);
+                throw new ApiException("B?n không th? c?p nh?t POI không thu?c quy?n qu?n l? c?a m?nh.", StatusCodes.Status403Forbidden);
             }
         }
         else
@@ -448,4 +448,3 @@ public class OwnerService
     private static string? TrimOrNull(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
-

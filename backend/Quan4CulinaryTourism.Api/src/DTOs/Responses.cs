@@ -1,3 +1,5 @@
+using Quan4CulinaryTourism.Api.Common;
+
 namespace Quan4CulinaryTourism.Api.DTOs;
 
 public class AuthResponse
@@ -360,6 +362,7 @@ public class TourResponse
     public string Description { get; set; } = string.Empty;
     public string Lang { get; set; } = string.Empty;
     public string? CoverImageUrl { get; set; }
+    public string? CreatedByUserId { get; set; }
     public int EstimatedDurationMinutes { get; set; }
     public bool IsActive { get; set; }
     public List<TourStopResponse> Stops { get; set; } = [];
@@ -379,7 +382,7 @@ public class QrActivationResponse
     public string? StopAddress { get; set; }
     public int SortOrder { get; set; }
     public string? Description { get; set; }
-    public string ScanMode { get; set; } = "prefer_audio";
+    public string ScanMode { get; set; } = SharedConstants.QrScanModes.PreferAudio;
     public string DeepLink { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public DateTime UpdatedAt { get; set; }

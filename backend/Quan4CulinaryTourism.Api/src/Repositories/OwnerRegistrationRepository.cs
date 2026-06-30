@@ -42,5 +42,6 @@ public class OwnerRegistrationRepository
         _context.OwnerRegistrations.DeleteOneAsync(x => x.Id == id, cancellationToken);
 
     public Task<long> CountPendingAsync(CancellationToken cancellationToken = default) =>
-        _context.OwnerRegistrations.CountDocumentsAsync(x => x.Status == SharedConstants.OwnerPending, cancellationToken: cancellationToken);
+        _context.OwnerRegistrations.CountDocumentsAsync(x => x.Status == SharedConstants.OwnerStatuses.Pending, cancellationToken: cancellationToken);
 }
+

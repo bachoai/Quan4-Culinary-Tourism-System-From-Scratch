@@ -17,7 +17,7 @@ export function OwnerRegistrationPage() {
 
   const query = useQuery({ queryKey: ['owner-registrations', status], queryFn: () => ownerApi.getOwnerRegistrations(status) });
   const approveMutation = useMutation({
-    mutationFn: (id: string) => ownerApi.approveOwner(id, {}),
+    mutationFn: (id: string) => ownerApi.approveOwner(id),
     onSuccess: () => {
       notification.success({ message: t('owner_approved') });
       queryClient.invalidateQueries({ queryKey: ['owner-registrations'] });

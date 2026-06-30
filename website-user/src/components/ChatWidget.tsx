@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { LoaderCircle, MapPin, MessageCircle, Navigation, Send, Sparkles, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { LoaderCircle, Lock, MapPin, MessageCircle, Navigation, Send, Sparkles, X } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { suggestChat, type ChatPoiSuggestion } from '../api/chatApi';
 import { useAppStore } from '../store/appStore';
 import { distance } from '../utils/analytics';
@@ -26,7 +26,8 @@ const INITIAL_MESSAGES: ChatMessage[] = [
 ];
 
 export function ChatWidget() {
-  const { location, setLocation } = useAppStore();
+  const { location, setLocation, isAuthenticated } = useAppStore();
+  const routeLocation = useLocation();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
@@ -39,6 +40,7 @@ export function ChatWidget() {
   const mutation = useMutation({
     mutationFn: suggestChat,
   });
+  const loginTarget = `/login?next=${encodeURIComponent(`${routeLocation.pathname}${routeLocation.search}`)}`;
 
   useEffect(() => {
     if (!open) {
@@ -56,6 +58,10 @@ export function ChatWidget() {
   };
 
   const sendMessage = async (rawMessage: string) => {
+    if (!isAuthenticated) {
+      return;
+    }
+
     const message = rawMessage.trim();
     if (!message || mutation.isPending) {
       return;
@@ -129,7 +135,7 @@ export function ChatWidget() {
             <button
               type="button"
               onClick={() => void sendMessage('Gợi ý quán gần tôi')}
-              disabled={mutation.isPending}
+              disabled={!isAuthenticated || mutation.isPending}
               className="pill inline-flex items-center gap-2 border-teal/30 bg-teal/10 text-teal disabled:opacity-60"
             >
               <Navigation size={14} />
@@ -146,6 +152,24 @@ export function ChatWidget() {
           </div>
 
           <div ref={listRef} className="flex-1 space-y-4 overflow-y-auto bg-slate-50/80 px-4 py-4 dark:bg-slate-950">
+            {!isAuthenticated ? (
+              <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                <div className="flex items-start gap-3">
+                  <span className="rounded-full bg-amber-100 p-2 text-amber-700">
+                    <Lock size={16} />
+                  </span>
+                  <div>
+                    <p className="font-bold">Hay dang nhap de dung chatbot.</p>
+                    <p className="mt-1 leading-6">
+                      Widget van hien o trang cong khai, nhung goi y AI chi hoat dong sau khi ban dang nhap.
+                    </p>
+                    <Link to={loginTarget} className="btn-primary mt-3 inline-flex !px-4 !py-2 text-sm">
+                      Dang nhap de su dung
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ) : null}
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[88%] ${message.role === 'user' ? 'items-end' : 'items-start'} flex flex-col gap-2`}>
@@ -200,18 +224,28 @@ export function ChatWidget() {
               <input
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
+                disabled={!isAuthenticated}
                 placeholder="Ví dụ: Gợi ý quán ốc gần tôi"
                 maxLength={500}
                 className="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-coral focus:bg-white dark:border-slate-700 dark:bg-slate-900"
               />
-              <button
+              {isAuthenticated ? (
+                <button
                 type="submit"
                 disabled={mutation.isPending || !draft.trim()}
                 className="btn-primary h-12 w-12 shrink-0 rounded-full !px-0 !py-0 disabled:cursor-not-allowed disabled:opacity-60"
                 aria-label="Gửi tin nhắn"
               >
                 <Send size={18} />
-              </button>
+                </button>
+              ) : (
+                <Link
+                  to={loginTarget}
+                  className="btn-primary h-12 shrink-0 rounded-full !px-4 !py-0 text-sm"
+                >
+                  Dang nhap
+                </Link>
+              )}
             </div>
           </form>
         </div>

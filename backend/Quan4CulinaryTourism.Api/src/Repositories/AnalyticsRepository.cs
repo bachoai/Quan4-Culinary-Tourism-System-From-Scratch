@@ -9,9 +9,9 @@ namespace Quan4CulinaryTourism.Api.Repositories;
 
 public class AnalyticsRepository
 {
-    private static readonly string[] AudioEventNames = ["audio_played", "tts_played"];
-    private static readonly string[] OwnerTrackedEventNames = ["poi_viewed", "audio_played", "tts_played", "qr_scanned"];
-    private const string PresencePingEventName = "presence_ping";
+    private static readonly string[] AudioEventNames = [SharedConstants.AnalyticsEvents.AudioPlayed, SharedConstants.AnalyticsEvents.TtsPlayed];
+    private static readonly string[] OwnerTrackedEventNames = [SharedConstants.AnalyticsEvents.PoiViewed, SharedConstants.AnalyticsEvents.AudioPlayed, SharedConstants.AnalyticsEvents.TtsPlayed, SharedConstants.AnalyticsEvents.QrScanned];
+    private const string PresencePingEventName = SharedConstants.AnalyticsEvents.PresencePing;
 
     private readonly MongoDbContext _context;
     public AnalyticsRepository(MongoDbContext context) => _context = context;
@@ -69,11 +69,11 @@ public class AnalyticsRepository
             .Group(new BsonDocument
             {
                 { "_id", "$PoiId" },
-                { "viewPageViewKeys", CreateTrackedPageViewSetExpression(CreateEventEqualsExpression("poi_viewed")) },
-                { "visitorKeys", CreateTrackedUserSetExpression(CreateEventEqualsExpression("poi_viewed")) },
+                { "viewPageViewKeys", CreateTrackedPageViewSetExpression(CreateEventEqualsExpression(SharedConstants.AnalyticsEvents.PoiViewed)) },
+                { "visitorKeys", CreateTrackedUserSetExpression(CreateEventEqualsExpression(SharedConstants.AnalyticsEvents.PoiViewed)) },
                 { "audioPlayCount", CreateConditionalCountExpression(CreateEventInExpression(AudioEventNames)) },
                 { "audioListenerKeys", CreateTrackedUserSetExpression(CreateEventInExpression(AudioEventNames)) },
-                { "qrScanCount", CreateConditionalCountExpression(CreateEventEqualsExpression("qr_scanned")) }
+                { "qrScanCount", CreateConditionalCountExpression(CreateEventEqualsExpression(SharedConstants.AnalyticsEvents.QrScanned)) }
             })
             .Project(new BsonDocument
             {
@@ -123,11 +123,11 @@ public class AnalyticsRepository
             .Group(new BsonDocument
             {
                 { "_id", BsonNull.Value },
-                { "viewPageViewKeys", CreateTrackedPageViewSetExpression(CreateEventEqualsExpression("poi_viewed")) },
-                { "visitorKeys", CreateTrackedUserSetExpression(CreateEventEqualsExpression("poi_viewed")) },
+                { "viewPageViewKeys", CreateTrackedPageViewSetExpression(CreateEventEqualsExpression(SharedConstants.AnalyticsEvents.PoiViewed)) },
+                { "visitorKeys", CreateTrackedUserSetExpression(CreateEventEqualsExpression(SharedConstants.AnalyticsEvents.PoiViewed)) },
                 { "audioPlayCount", CreateConditionalCountExpression(CreateEventInExpression(AudioEventNames)) },
                 { "audioListenerKeys", CreateTrackedUserSetExpression(CreateEventInExpression(AudioEventNames)) },
-                { "qrScanCount", CreateConditionalCountExpression(CreateEventEqualsExpression("qr_scanned")) }
+                { "qrScanCount", CreateConditionalCountExpression(CreateEventEqualsExpression(SharedConstants.AnalyticsEvents.QrScanned)) }
             })
             .Project(new BsonDocument
             {
@@ -160,7 +160,7 @@ public class AnalyticsRepository
         var results = await _context.AnalyticsEvents.Aggregate()
             .Match(new BsonDocument
             {
-                { "EventName", "poi_viewed" },
+                { "EventName", SharedConstants.AnalyticsEvents.PoiViewed },
                 { "PoiId", new BsonDocument("$ne", BsonNull.Value) }
             })
             .Group(new BsonDocument
@@ -200,7 +200,7 @@ public class AnalyticsRepository
 
     public async Task<List<AnalyticsHeatmapPointResponse>> GetHeatmapPointsAsync(int maxPoints = 80, CancellationToken cancellationToken = default)
     {
-        var items = await _context.AnalyticsEvents.Find(x => x.EventName == "location_sample" && x.Latitude != null && x.Longitude != null)
+        var items = await _context.AnalyticsEvents.Find(x => x.EventName == SharedConstants.AnalyticsEvents.LocationSample && x.Latitude != null && x.Longitude != null)
             .SortByDescending(x => x.CreatedAt)
             .Limit(2000)
             .ToListAsync(cancellationToken);
@@ -228,7 +228,7 @@ public class AnalyticsRepository
     public async Task<List<AnalyticsRouteTraceResponse>> GetRecentRouteTracesAsync(int maxRoutes = 6, int maxPointsPerRoute = 25, CancellationToken cancellationToken = default)
     {
         var items = await _context.AnalyticsEvents.Find(x =>
-                x.EventName == "location_sample"
+                x.EventName == SharedConstants.AnalyticsEvents.LocationSample
                 && x.Latitude != null
                 && x.Longitude != null
                 && x.AnonymousId != null)

@@ -2,8 +2,12 @@ using MongoDB.Driver.GeoJsonObjectModel;
 
 namespace Quan4CulinaryTourism.Api.Models;
 
-public class Poi : BaseDocument
+public class Poi
 {
+    [MongoDB.Bson.Serialization.Attributes.BsonIdAttribute]
+    [MongoDB.Bson.Serialization.Attributes.BsonRepresentationAttribute(MongoDB.Bson.BsonType.ObjectId)]
+    public string Id { get; set; } = string.Empty;
+
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string CategoryId { get; set; } = string.Empty;
@@ -26,8 +30,9 @@ public class Poi : BaseDocument
     public string? OwnerId { get; set; }
     public bool IsActive { get; set; } = true;
     public bool ActivationRequested { get; set; }
-    public string AudioStatus { get; set; } = SharedConstants.AudioPending;
+    public string AudioStatus { get; set; } = SharedConstants.AudioStatuses.Pending;
     public List<string> Tags { get; set; } = [];
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
+

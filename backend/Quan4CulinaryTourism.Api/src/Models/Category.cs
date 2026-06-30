@@ -1,7 +1,11 @@
 namespace Quan4CulinaryTourism.Api.Models;
 
-public class Category : BaseDocument
+public class Category
 {
+    [MongoDB.Bson.Serialization.Attributes.BsonIdAttribute]
+    [MongoDB.Bson.Serialization.Attributes.BsonRepresentationAttribute(MongoDB.Bson.BsonType.ObjectId)]
+    public string Id { get; set; } = string.Empty;
+
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }

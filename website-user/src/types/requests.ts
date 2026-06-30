@@ -73,3 +73,20 @@ export interface GeneratePoiAudioRequest {
   lang: string;
   voiceName?: string;
 }
+
+export interface TourStopRequest {
+  poiId: string;
+  title?: string;
+  order: number;
+  estimatedStayMinutes: number;
+}
+
+export interface CreateTourRequest {
+  title: string;
+  description: string;
+  lang: string;
+  coverImageUrl?: string;
+  estimatedDurationMinutes: number;
+  isActive: boolean;
+  stops: TourStopRequest[];
+}

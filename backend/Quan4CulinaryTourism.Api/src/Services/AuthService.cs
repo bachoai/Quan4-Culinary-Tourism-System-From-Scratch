@@ -38,7 +38,7 @@ public class AuthService
             PasswordHash = _passwordHasher.HashPassword(request.Password),
             PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim(),
             Roles = [SharedConstants.UserRoles.User],
-            OwnerStatus = SharedConstants.OwnerNone,
+            OwnerStatus = SharedConstants.OwnerStatuses.None,
             LastLoginAt = DateTime.UtcNow
         };
 
@@ -87,14 +87,14 @@ public class AuthService
         var user = await _userRepository.GetByIdAsync(userId, cancellationToken)
             ?? throw new ApiException("Không tìm thấy người dùng.", StatusCodes.Status404NotFound);
 
-        if (user.Roles.Contains(SharedConstants.UserRoles.Owner) || user.OwnerStatus == SharedConstants.OwnerApproved)
+        if (user.Roles.Contains(SharedConstants.UserRoles.Owner) || user.OwnerStatus == SharedConstants.OwnerStatuses.Approved)
         {
             throw new ApiException("Tài khoản này đã là đối tác.");
         }
 
         var pendingRegistration = await _ownerRegistrationRepository.GetLatestByUserIdAndStatusAsync(
             user.Id,
-            SharedConstants.OwnerPending,
+            SharedConstants.OwnerStatuses.Pending,
             cancellationToken);
         if (pendingRegistration is not null)
         {
@@ -108,11 +108,11 @@ public class AuthService
             BusinessAddress = request.BusinessAddress.Trim(),
             PhoneNumber = request.PhoneNumber.Trim(),
             Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
-            Status = SharedConstants.OwnerPending
+            Status = SharedConstants.OwnerStatuses.Pending
         };
 
         await _ownerRegistrationRepository.CreateAsync(registration, cancellationToken);
-        user.OwnerStatus = SharedConstants.OwnerPending;
+        user.OwnerStatus = SharedConstants.OwnerStatuses.Pending;
         await _userRepository.UpdateAsync(user, cancellationToken);
         return new OwnerRegistrationResponse
         {
@@ -139,3 +139,4 @@ public class AuthService
         OwnerStatus = user.OwnerStatus
     };
 }
+

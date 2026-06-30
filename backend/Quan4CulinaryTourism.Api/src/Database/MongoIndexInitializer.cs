@@ -106,6 +106,7 @@ public class MongoIndexInitializer
         await _context.Tours.Indexes.CreateManyAsync(
         [
             new CreateIndexModel<Tour>(Builders<Tour>.IndexKeys.Ascending(x => x.IsActive)),
+            new CreateIndexModel<Tour>(Builders<Tour>.IndexKeys.Ascending(x => x.CreatedByUserId)),
             new CreateIndexModel<Tour>(Builders<Tour>.IndexKeys.Ascending(x => x.Lang)),
             new CreateIndexModel<Tour>(Builders<Tour>.IndexKeys.Ascending(x => x.UpdatedAt)),
             new CreateIndexModel<Tour>(Builders<Tour>.IndexKeys.Text(x => x.Title).Text(x => x.Description))

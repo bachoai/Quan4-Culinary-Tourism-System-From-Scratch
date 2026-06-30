@@ -1,7 +1,11 @@
 namespace Quan4CulinaryTourism.Api.Models;
 
-public class MediaFile : BaseDocument
+public class MediaFile
 {
+    [MongoDB.Bson.Serialization.Attributes.BsonIdAttribute]
+    [MongoDB.Bson.Serialization.Attributes.BsonRepresentationAttribute(MongoDB.Bson.BsonType.ObjectId)]
+    public string Id { get; set; } = string.Empty;
+
     public string FileName { get; set; } = string.Empty;
     public string OriginalFileName { get; set; } = string.Empty;
     public string Url { get; set; } = string.Empty;

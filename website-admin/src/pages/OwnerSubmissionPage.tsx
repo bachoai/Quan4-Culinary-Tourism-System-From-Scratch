@@ -18,7 +18,7 @@ export function OwnerSubmissionPage() {
 
   const query = useQuery({ queryKey: ['submissions', status], queryFn: () => ownerApi.getSubmissions(status) });
   const approveMutation = useMutation({
-    mutationFn: (id: string) => ownerApi.approveSubmission(id, {}),
+    mutationFn: (id: string) => ownerApi.approveSubmission(id),
     onError: (error: Error) => {
       message.error(error.message);
     },

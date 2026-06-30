@@ -41,16 +41,25 @@ public class AnalyticsService
     public async Task<AnalyticsSummaryResponse> GetSummaryAsync(CancellationToken cancellationToken = default)
     {
         var realtimeSnapshot = await _analyticsRepository.GetRealtimeSnapshotAsync(cancellationToken: cancellationToken);
+        var poiViewedCount = await _analyticsRepository.CountDistinctPageViewsByEventNameAsync(SharedConstants.AnalyticsEvents.PoiViewed, cancellationToken);
+        var audioPlayedCount = await _analyticsRepository.CountByEventNamesAsync([SharedConstants.AnalyticsEvents.AudioPlayed, SharedConstants.AnalyticsEvents.TtsPlayed], cancellationToken);
+        var searchExecutedCount = await _analyticsRepository.CountByEventNameAsync(SharedConstants.AnalyticsEvents.SearchExecuted, cancellationToken);
+        var averageListenDurationSeconds = await _analyticsRepository.GetAverageListenDurationSecondsAsync(cancellationToken);
+        var topPoiViews = await _analyticsRepository.GetTopPoiViewsAsync(cancellationToken);
+        var topPoiAudioPlays = await _analyticsRepository.GetTopAudioPlaysAsync(cancellationToken);
+        var heatmapPoints = await _analyticsRepository.GetHeatmapPointsAsync(cancellationToken: cancellationToken);
+        var recentRouteTraces = await _analyticsRepository.GetRecentRouteTracesAsync(cancellationToken: cancellationToken);
+
         return new AnalyticsSummaryResponse
         {
-            PoiViewedCount = await _analyticsRepository.CountDistinctPageViewsByEventNameAsync("poi_viewed", cancellationToken),
-            AudioPlayedCount = await _analyticsRepository.CountByEventNamesAsync(["audio_played", "tts_played"], cancellationToken),
-            SearchExecutedCount = await _analyticsRepository.CountByEventNameAsync("search_executed", cancellationToken),
-            AverageListenDurationSeconds = await _analyticsRepository.GetAverageListenDurationSecondsAsync(cancellationToken),
-            TopPoiViews = await _analyticsRepository.GetTopPoiViewsAsync(cancellationToken),
-            TopPoiAudioPlays = await _analyticsRepository.GetTopAudioPlaysAsync(cancellationToken),
-            HeatmapPoints = await _analyticsRepository.GetHeatmapPointsAsync(cancellationToken: cancellationToken),
-            RecentRouteTraces = await _analyticsRepository.GetRecentRouteTracesAsync(cancellationToken: cancellationToken),
+            PoiViewedCount = poiViewedCount,
+            AudioPlayedCount = audioPlayedCount,
+            SearchExecutedCount = searchExecutedCount,
+            AverageListenDurationSeconds = averageListenDurationSeconds,
+            TopPoiViews = topPoiViews,
+            TopPoiAudioPlays = topPoiAudioPlays,
+            HeatmapPoints = heatmapPoints,
+            RecentRouteTraces = recentRouteTraces,
             RealtimeSnapshot = realtimeSnapshot
         };
     }

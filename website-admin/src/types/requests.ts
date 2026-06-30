@@ -111,10 +111,6 @@ export interface CreateQrActivationRequest {
 
 export interface UpdateQrActivationRequest extends CreateQrActivationRequest {}
 
-export interface ApproveRequest {
-  adminNote?: string;
-}
-
 export interface RejectRequest {
   adminNote: string;
 }

@@ -26,6 +26,12 @@ public class PoiRepository
         return await _context.Pois.Find(x => normalizedIds.Contains(x.Id)).ToListAsync(cancellationToken);
     }
 
+    public async Task<List<Poi>> GetPublicManyByIdsAsync(IEnumerable<string> ids, CancellationToken cancellationToken = default)
+    {
+        var normalizedIds = ids.Where(static id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
+        return await _context.Pois.Find(x => normalizedIds.Contains(x.Id) && x.IsActive).ToListAsync(cancellationToken);
+    }
+
     public async Task CreateAsync(Poi poi, CancellationToken cancellationToken = default) =>
         await _context.Pois.InsertOneAsync(poi, cancellationToken: cancellationToken);
 

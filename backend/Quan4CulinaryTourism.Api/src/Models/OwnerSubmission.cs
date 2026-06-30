@@ -2,11 +2,15 @@ using MongoDB.Driver.GeoJsonObjectModel;
 
 namespace Quan4CulinaryTourism.Api.Models;
 
-public class OwnerSubmission : BaseDocument
+public class OwnerSubmission
 {
+    [MongoDB.Bson.Serialization.Attributes.BsonIdAttribute]
+    [MongoDB.Bson.Serialization.Attributes.BsonRepresentationAttribute(MongoDB.Bson.BsonType.ObjectId)]
+    public string Id { get; set; } = string.Empty;
+
     public string OwnerId { get; set; } = string.Empty;
     public string? PoiId { get; set; }
-    public string SubmissionType { get; set; } = "create";
+    public string SubmissionType { get; set; } = SharedConstants.SubmissionTypes.Create;
     public string PoiName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string CategoryId { get; set; } = string.Empty;
@@ -25,10 +29,11 @@ public class OwnerSubmission : BaseDocument
     public List<OpeningHour> OpeningHours { get; set; } = [];
     public ContactInfo? ContactInfo { get; set; }
     public List<string> Tags { get; set; } = [];
-    public string Status { get; set; } = SharedConstants.SubmissionPending;
+    public string Status { get; set; } = SharedConstants.SubmissionStatuses.Pending;
     public string? AdminNote { get; set; }
     public string? ReviewedBy { get; set; }
     public DateTime? ReviewedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
+

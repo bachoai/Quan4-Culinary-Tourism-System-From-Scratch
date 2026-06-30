@@ -39,11 +39,11 @@ public class AudioService
 
     public Task<List<AudioLanguageResponse>> GetLanguagesAsync(CancellationToken cancellationToken = default)
     {
-        var languages = SharedConstants.SupportedLanguages
+        var languages = SharedConstants.Languages.Supported
             .Select(lang => new AudioLanguageResponse
             {
                 Code = lang,
-                Name = SharedConstants.SupportedLanguageNames.TryGetValue(lang, out var name) ? name : lang
+                Name = SharedConstants.Languages.Names.TryGetValue(lang, out var name) ? name : lang
             })
             .ToList();
         return Task.FromResult(languages);
@@ -59,7 +59,7 @@ public class AudioService
             return null;
         }
 
-        var localization = normalizedLang == SharedConstants.DefaultAudioLanguage
+        var localization = normalizedLang == SharedConstants.Languages.DefaultAudio
             ? null
             : await _localizationService.EnsureLocalizationAsync(poiId, normalizedLang, cancellationToken);
         var narrationText = ResolveNarrationText(normalizedLang, poi, localization);
@@ -119,7 +119,7 @@ public class AudioService
 
         string audioUrl;
         long fileSize = 0;
-        string storageProvider = "external";
+        string storageProvider = SharedConstants.StorageProviders.External;
         string? objectKey = null;
         string? resourceType = null;
         if (file is not null)
@@ -153,12 +153,12 @@ public class AudioService
             ResourceType = resourceType,
             VoiceName = request.VoiceName,
             SourceType = request.SourceType,
-            Status = SharedConstants.AudioDone,
+            Status = SharedConstants.AudioStatuses.Done,
             FileSizeBytes = fileSize
         };
 
         await _poiAudioRepository.UpsertAsync(audio, cancellationToken);
-        poi.AudioStatus = SharedConstants.AudioDone;
+        poi.AudioStatus = SharedConstants.AudioStatuses.Done;
         await _poiRepository.UpdateAsync(poi, cancellationToken);
         return ToResponse(audio);
     }
@@ -172,7 +172,7 @@ public class AudioService
         var poi = await _poiRepository.GetByIdAsync(poiId, cancellationToken)
             ?? throw new ApiException("Khong tim thay POI.", StatusCodes.Status404NotFound);
 
-        var localization = normalizedLang == SharedConstants.DefaultAudioLanguage
+        var localization = normalizedLang == SharedConstants.Languages.DefaultAudio
             ? null
             : await _localizationService.EnsureLocalizationAsync(poiId, normalizedLang, cancellationToken);
         var narrationText = ResolveNarrationText(normalizedLang, poi, localization);
@@ -217,14 +217,14 @@ public class AudioService
             cancellationToken);
         audio.IsDeleted = true;
         audio.AudioUrl = string.Empty;
-        audio.StorageProvider = "external";
+        audio.StorageProvider = SharedConstants.StorageProviders.External;
         audio.ObjectKey = null;
         audio.ResourceType = null;
         audio.FileSizeBytes = 0;
         audio.DurationSeconds = 0;
         audio.VoiceName = null;
         audio.NarrationSignature = null;
-        audio.Status = SharedConstants.AudioPending;
+        audio.Status = SharedConstants.AudioStatuses.Pending;
         await _poiAudioRepository.UpsertAsync(audio, cancellationToken);
         await SyncPoiAudioStatusAsync(poi, cancellationToken);
     }
@@ -319,9 +319,9 @@ public class AudioService
             ObjectKey = generated.ObjectKey,
             ResourceType = generated.ResourceType,
             VoiceName = generated.VoiceName,
-            SourceType = "python_tts",
+            SourceType = SharedConstants.AudioSourceTypes.PythonTts,
             NarrationSignature = narrationSignature,
-            Status = SharedConstants.AudioDone,
+            Status = SharedConstants.AudioStatuses.Done,
             FileSizeBytes = generated.FileSizeBytes
         };
 
@@ -334,15 +334,15 @@ public class AudioService
     {
         var remainingAudios = await _poiAudioRepository.GetByPoiIdAsync(poi.Id, cancellationToken);
         poi.AudioStatus = remainingAudios.Count > 0
-            ? SharedConstants.AudioDone
-            : SharedConstants.AudioPending;
+            ? SharedConstants.AudioStatuses.Done
+            : SharedConstants.AudioStatuses.Pending;
         await _poiRepository.UpdateAsync(poi, cancellationToken);
     }
 
     private static string NormalizeLanguage(string? lang)
     {
-        var normalized = string.IsNullOrWhiteSpace(lang) ? SharedConstants.DefaultAudioLanguage : lang.Trim().ToLowerInvariant();
-        return SharedConstants.SupportedLanguages.Contains(normalized) ? normalized : SharedConstants.DefaultAudioLanguage;
+        var normalized = string.IsNullOrWhiteSpace(lang) ? SharedConstants.Languages.DefaultAudio : lang.Trim().ToLowerInvariant();
+        return SharedConstants.Languages.Supported.Contains(normalized) ? normalized : SharedConstants.Languages.DefaultAudio;
     }
 
     private static string? FirstNonEmpty(params string?[] values) =>
@@ -350,7 +350,7 @@ public class AudioService
 
     private static string? ResolveNarrationText(string lang, Poi poi, PoiLocalization? localization)
     {
-        if (lang == SharedConstants.DefaultAudioLanguage)
+        if (lang == SharedConstants.Languages.DefaultAudio)
         {
             return FirstNonEmpty(
                 poi.TtsScript,
@@ -367,7 +367,7 @@ public class AudioService
 
     private static bool ShouldRegenerateGeneratedAudio(PoiAudio? audio, string? narrationSignature)
     {
-        if (audio is null || audio.IsDeleted || !string.Equals(audio.SourceType, "python_tts", StringComparison.Ordinal))
+        if (audio is null || audio.IsDeleted || !string.Equals(audio.SourceType, SharedConstants.AudioSourceTypes.PythonTts, StringComparison.Ordinal))
         {
             return false;
         }
@@ -388,3 +388,4 @@ public class AudioService
     }
 
 }
+

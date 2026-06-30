@@ -36,5 +36,6 @@ public class OwnerSubmissionRepository
         _context.OwnerSubmissions.CountDocumentsAsync(x => x.OwnerId == ownerId, cancellationToken: cancellationToken);
 
     public Task<long> CountPendingAsync(CancellationToken cancellationToken = default) =>
-        _context.OwnerSubmissions.CountDocumentsAsync(x => x.Status == SharedConstants.SubmissionPending, cancellationToken: cancellationToken);
+        _context.OwnerSubmissions.CountDocumentsAsync(x => x.Status == SharedConstants.SubmissionStatuses.Pending, cancellationToken: cancellationToken);
 }
+

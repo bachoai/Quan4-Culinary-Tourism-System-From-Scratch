@@ -2,8 +2,12 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace Quan4CulinaryTourism.Api.Models;
 
-public class AnalyticsEvent : BaseDocument
+public class AnalyticsEvent
 {
+    [MongoDB.Bson.Serialization.Attributes.BsonIdAttribute]
+    [MongoDB.Bson.Serialization.Attributes.BsonRepresentationAttribute(MongoDB.Bson.BsonType.ObjectId)]
+    public string Id { get; set; } = string.Empty;
+
     public string? AnonymousId { get; set; }
     public string? SessionId { get; set; }
     public string? PageViewId { get; set; }

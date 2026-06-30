@@ -56,11 +56,10 @@ export function PublicLayout() {
 
   const healthOk = healthQuery.data?.mongoConnected && healthQuery.data.status === 'Healthy';
   const showChatWidget =
-    isAuthenticated &&
-    (location.pathname === '/' ||
-      location.pathname === '/explore' ||
-      location.pathname === '/nearby' ||
-      location.pathname.startsWith('/poi/'));
+    location.pathname === '/' ||
+    location.pathname === '/explore' ||
+    location.pathname === '/nearby' ||
+    location.pathname.startsWith('/poi/');
 
   return (
     <div className="min-h-screen">

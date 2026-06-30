@@ -136,7 +136,7 @@ public class CreateOwnerRegistrationRequest
 public class CreateOwnerSubmissionRequest
 {
     [Required]
-    public string SubmissionType { get; set; } = "create";
+    public string SubmissionType { get; set; } = SharedConstants.SubmissionTypes.Create;
 
     public string? PoiId { get; set; }
 
@@ -175,20 +175,10 @@ public class CreateOwnerSubmissionRequest
     public List<string> Tags { get; set; } = [];
 }
 
-public class ApproveOwnerRegistrationRequest
-{
-    public string? AdminNote { get; set; }
-}
-
 public class RejectOwnerRegistrationRequest
 {
     [Required]
     public string AdminNote { get; set; } = string.Empty;
-}
-
-public class ApproveSubmissionRequest
-{
-    public string? AdminNote { get; set; }
 }
 
 public class RejectSubmissionRequest
@@ -232,7 +222,7 @@ public class UploadPoiAudioRequest
 
     public string? AudioUrl { get; set; }
     public string? VoiceName { get; set; }
-    public string SourceType { get; set; } = "uploaded";
+    public string SourceType { get; set; } = SharedConstants.AudioSourceTypes.Uploaded;
 }
 
 public class GeneratePoiAudioRequest
@@ -277,8 +267,8 @@ public class CreateQrActivationRequest
 
     public string? Description { get; set; }
 
-    [RegularExpression("^(prefer_audio|audio|tts)$")]
-    public string ScanMode { get; set; } = "prefer_audio";
+    [RegularExpression(SharedConstants.QrScanModes.ValidationPattern)]
+    public string ScanMode { get; set; } = SharedConstants.QrScanModes.PreferAudio;
 
     public bool IsActive { get; set; } = true;
 }

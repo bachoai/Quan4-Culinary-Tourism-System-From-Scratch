@@ -130,7 +130,7 @@ public class PoiService
         try
         {
             await SyncAutoTranslationsAsync(poi, request, cancellationToken);
-            return await MapDetailAsync(poi, SharedConstants.DefaultUiLanguage, SharedConstants.DefaultAudioLanguage, cancellationToken);
+            return await MapDetailAsync(poi, SharedConstants.Languages.DefaultUi, SharedConstants.Languages.DefaultAudio, cancellationToken);
         }
         catch
         {
@@ -149,7 +149,7 @@ public class PoiService
         poi.ActivationRequested = request.ActivationRequested;
         await _poiRepository.UpdateAsync(poi, cancellationToken);
         await SyncAutoTranslationsAsync(poi, request, cancellationToken);
-        return await MapDetailAsync(poi, SharedConstants.DefaultUiLanguage, SharedConstants.DefaultAudioLanguage, cancellationToken);
+        return await MapDetailAsync(poi, SharedConstants.Languages.DefaultUi, SharedConstants.Languages.DefaultAudio, cancellationToken);
     }
 
     public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
@@ -300,7 +300,7 @@ public class PoiService
                     new TranslatePoiLocalizationRequest
                     {
                         Lang = targetLanguage,
-                        SourceLang = SharedConstants.DefaultAudioLanguage,
+                        SourceLang = SharedConstants.Languages.DefaultAudio,
                         OverwriteExisting = request.OverwriteAutoTranslations
                     },
                     cancellationToken);
@@ -347,7 +347,7 @@ public class PoiService
     {
         var targetLanguages = request.AutoTranslateLanguages
             .Select(NormalizeAudioLanguage)
-            .Where(static lang => !string.Equals(lang, SharedConstants.DefaultAudioLanguage, StringComparison.Ordinal))
+            .Where(static lang => !string.Equals(lang, SharedConstants.Languages.DefaultAudio, StringComparison.Ordinal))
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
@@ -356,14 +356,14 @@ public class PoiService
             return targetLanguages;
         }
 
-        return SharedConstants.SupportedLanguages
-            .Where(static lang => !string.Equals(lang, SharedConstants.DefaultAudioLanguage, StringComparison.Ordinal))
+        return SharedConstants.Languages.Supported
+            .Where(static lang => !string.Equals(lang, SharedConstants.Languages.DefaultAudio, StringComparison.Ordinal))
             .ToList();
     }
 
     private async Task<PoiLocalization?> LoadLocalizationAsync(string poiId, string lang, CancellationToken cancellationToken)
     {
-        if (string.Equals(lang, SharedConstants.DefaultAudioLanguage, StringComparison.Ordinal))
+        if (string.Equals(lang, SharedConstants.Languages.DefaultAudio, StringComparison.Ordinal))
         {
             return null;
         }
@@ -383,7 +383,7 @@ public class PoiService
         PoiLocalization? requestedLocalization,
         CancellationToken cancellationToken)
     {
-        if (string.Equals(requestedAudioLang, SharedConstants.DefaultAudioLanguage, StringComparison.Ordinal))
+        if (string.Equals(requestedAudioLang, SharedConstants.Languages.DefaultAudio, StringComparison.Ordinal))
         {
             return FirstNonEmpty(poi.TtsScript, poi.Description);
         }
@@ -393,16 +393,17 @@ public class PoiService
 
     private static string NormalizeUiLanguage(string? lang)
     {
-        var normalized = string.IsNullOrWhiteSpace(lang) ? SharedConstants.DefaultUiLanguage : lang.Trim().ToLowerInvariant();
-        return SharedConstants.SupportedUiLanguages.Contains(normalized) ? normalized : SharedConstants.DefaultUiLanguage;
+        var normalized = string.IsNullOrWhiteSpace(lang) ? SharedConstants.Languages.DefaultUi : lang.Trim().ToLowerInvariant();
+        return SharedConstants.Languages.SupportedUi.Contains(normalized) ? normalized : SharedConstants.Languages.DefaultUi;
     }
 
     private static string NormalizeAudioLanguage(string? lang)
     {
-        var normalized = string.IsNullOrWhiteSpace(lang) ? SharedConstants.DefaultAudioLanguage : lang.Trim().ToLowerInvariant();
-        return SharedConstants.SupportedLanguages.Contains(normalized) ? normalized : SharedConstants.DefaultAudioLanguage;
+        var normalized = string.IsNullOrWhiteSpace(lang) ? SharedConstants.Languages.DefaultAudio : lang.Trim().ToLowerInvariant();
+        return SharedConstants.Languages.Supported.Contains(normalized) ? normalized : SharedConstants.Languages.DefaultAudio;
     }
 
     private static string? FirstNonEmpty(params string?[] values) =>
         values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim();
 }
+

@@ -47,8 +47,8 @@ public class AdminController : BaseApiController
 
     [Authorize(Roles = SharedConstants.UserRoles.Admin)]
     [HttpPut("owner-registrations/{id}/approve")]
-    public Task<IActionResult> ApproveOwner(string id, [FromBody] ApproveOwnerRegistrationRequest request) =>
-        ExecuteAsync(() => _adminService.ApproveOwnerAsync(_claimsHelper.GetUserId(User), id, request), "Duyệt owner thành công");
+    public Task<IActionResult> ApproveOwner(string id) =>
+        ExecuteAsync(() => _adminService.ApproveOwnerAsync(_claimsHelper.GetUserId(User), id), "Duyệt owner thành công");
 
     [Authorize(Roles = SharedConstants.UserRoles.Admin)]
     [HttpPut("owner-registrations/{id}/reject")]
@@ -66,8 +66,8 @@ public class AdminController : BaseApiController
 
     [Authorize(Roles = SharedConstants.UserRoles.Admin)]
     [HttpPut("submissions/{id}/approve")]
-    public Task<IActionResult> ApproveSubmission(string id, [FromBody] ApproveSubmissionRequest request) =>
-        ExecuteAsync(() => _adminService.ApproveSubmissionAsync(_claimsHelper.GetUserId(User), id, request), "Duyệt submission thành công");
+    public Task<IActionResult> ApproveSubmission(string id) =>
+        ExecuteAsync(() => _adminService.ApproveSubmissionAsync(_claimsHelper.GetUserId(User), id), "Duyệt submission thành công");
 
     [Authorize(Roles = SharedConstants.UserRoles.Admin)]
     [HttpPut("submissions/{id}/reject")]

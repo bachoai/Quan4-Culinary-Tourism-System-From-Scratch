@@ -44,6 +44,19 @@ function calculateDistanceMeters(from: { lat: number; lng: number }, to: { lat: 
   return 2 * EARTH_RADIUS_METERS * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function parseTourPoiIds(value: string | null) {
+  return (value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function formatRouteDuration(durationSeconds: number) {
+  return durationSeconds >= 3600
+    ? `${Math.floor(durationSeconds / 3600)}h ${Math.round((durationSeconds % 3600) / 60)}m`
+    : `${Math.max(1, Math.round(durationSeconds / 60))} phut`;
+}
+
 export default function MapPage() {
   const { lang, audioLang, setAudioLang, location, setLocation } = useAppStore();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -51,8 +64,11 @@ export default function MapPage() {
   const [isLocating, setIsLocating] = useState(false);
   const [categoryId, setCategoryId] = useState(searchParams.get('category') || '');
   const [priceRange, setPriceRange] = useState(searchParams.get('price') || '');
-  const selectedPoiId = searchParams.get('poi') || '';
-  const navigationMode = searchParams.get('nav') === '1' && Boolean(selectedPoiId);
+  const tourPoiIds = parseTourPoiIds(searchParams.get('tour'));
+  const tourMode = tourPoiIds.length > 0;
+  const tourTitle = searchParams.get('tourTitle') || '';
+  const selectedPoiId = searchParams.get('poi') || (tourMode ? tourPoiIds[0] || '' : '');
+  const navigationMode = !tourMode && searchParams.get('nav') === '1' && Boolean(selectedPoiId);
 
   const { data: pois = [], isLoading, isError, error } = useQuery({
     queryKey: ['map-pois', lang, audioLang],
@@ -90,8 +106,19 @@ export default function MapPage() {
     [categoryId, pois, priceRange],
   );
 
+  const tourPois = useMemo(() => {
+    const poiLookup = new Map(pois.map((poi) => [poi.id, poi]));
+    return tourPoiIds
+      .map((poiId) => poiLookup.get(poiId))
+      .filter((poi): poi is (typeof pois)[number] => Boolean(poi));
+  }, [pois, tourPoiIds]);
+
   const selectedPoi = pois.find((poi) => poi.id === selectedPoiId);
   const visiblePois = useMemo(() => {
+    if (tourMode) {
+      return tourPois;
+    }
+
     if (!selectedPoi) {
       return filteredPois;
     }
@@ -105,7 +132,7 @@ export default function MapPage() {
     }
 
     return [selectedPoi, ...filteredPois];
-  }, [filteredPois, navigationMode, selectedPoi]);
+  }, [filteredPois, navigationMode, selectedPoi, tourMode, tourPois]);
 
   const routeQuery = useQuery({
     queryKey: ['map-route', selectedPoiId, location?.lat, location?.lng],
@@ -114,7 +141,20 @@ export default function MapPage() {
         { lat: location!.lat, lng: location!.lng },
         { lat: selectedPoi!.latitude, lng: selectedPoi!.longitude },
       ),
-    enabled: Boolean(selectedPoi && location),
+    enabled: !tourMode && Boolean(selectedPoi && location),
+    staleTime: 30000,
+    retry: 1,
+  });
+  const tourRouteQuery = useQuery({
+    queryKey: ['map-tour-route', tourPoiIds.join('|')],
+    queryFn: () =>
+      routeApi.through(
+        tourPois.map((poi) => ({
+          lat: poi.latitude,
+          lng: poi.longitude,
+        })),
+      ),
+    enabled: tourMode && tourPois.length >= 2,
     staleTime: 30000,
     retry: 1,
   });
@@ -128,6 +168,7 @@ export default function MapPage() {
     audioLanguagesQuery.data?.map((item) => item.code) ?? LANGUAGE_OPTIONS.map((item) => item.value),
   );
   const audioLanguageOptions = LANGUAGE_OPTIONS.filter((option) => supportedAudioLanguageCodes.has(option.value));
+  const activeRoute = tourMode ? tourRouteQuery.data : routeQuery.data;
 
   const arrivalRadiusMeters = selectedPoi?.geofenceRadiusMeters && selectedPoi.geofenceRadiusMeters > 0
     ? selectedPoi.geofenceRadiusMeters
@@ -243,6 +284,8 @@ export default function MapPage() {
     const next = new URLSearchParams(searchParams);
     next.delete('poi');
     next.delete('nav');
+    next.delete('tour');
+    next.delete('tourTitle');
     setSearchParams(next, { replace: true });
   };
 
@@ -274,74 +317,107 @@ export default function MapPage() {
     );
   };
 
-  const durationText = routeQuery.data
-    ? routeQuery.data.durationSeconds >= 3600
-      ? `${Math.floor(routeQuery.data.durationSeconds / 3600)}h ${Math.round((routeQuery.data.durationSeconds % 3600) / 60)}m`
-      : `${Math.max(1, Math.round(routeQuery.data.durationSeconds / 60))} phut`
-    : null;
+  const durationText = activeRoute ? formatRouteDuration(activeRoute.durationSeconds) : null;
 
   return (
     <section className="shell py-12">
-      <p className="section-kicker">DINH VI HUONG VI</p>
-      <h1 className="mt-2 text-4xl font-bold">Ban do am thuc</h1>
-      <p className="mt-2 text-slate-500">Lay vi tri that cua ban, chon mot POI va xem duong di ngay tren ban do.</p>
+      <p className="section-kicker">{tourMode ? 'LO TRINH TOUR' : 'DINH VI HUONG VI'}</p>
+      <h1 className="mt-2 text-4xl font-bold">{tourMode ? (tourTitle || 'Lo trinh tour da chon') : 'Ban do am thuc'}</h1>
+      <p className="mt-2 text-slate-500">
+        {tourMode
+          ? 'Ban do dang hien cac diem dung cua tour theo dung thu tu ban da chon.'
+          : 'Lay vi tri that cua ban, chon mot POI va xem duong di ngay tren ban do.'}
+      </p>
 
-      <div className="mt-5 grid gap-3 rounded-[2rem] bg-white p-5 shadow-soft dark:bg-slate-900">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-coral">Bo loc ban do</p>
-            <p className="mt-1 text-sm text-slate-500">
-              {mapPackQuery.data
-                ? `Offline pack san sang: ${mapPackQuery.data.name} v${mapPackQuery.data.version}`
-                : 'Dang dung tile online cho local/demo. Co the cau hinh MapTiler bang VITE_MAPTILER_KEY.'}
-            </p>
+      {tourMode ? (
+        <div className="mt-5 grid gap-3 rounded-[2rem] bg-white p-5 shadow-soft dark:bg-slate-900">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-coral">Che do xem lo trinh</p>
+              <p className="mt-1 text-sm text-slate-500">
+                {tourPois.length} diem dang duoc hien tren ban do
+                {tourRouteQuery.data ? ` · ${distance(tourRouteQuery.data.distanceMeters)} · ${durationText}` : ''}.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link className="btn-secondary" to="/tours">
+                Quay ve tours
+              </Link>
+              <button type="button" className="btn-primary" onClick={clearFocusPoi}>
+                Thoat lo trinh
+              </button>
+            </div>
           </div>
+          {tourRouteQuery.isError ? (
+            <p className="text-sm text-rose-600">{(tourRouteQuery.error as Error).message}</p>
+          ) : tourPois.length < 2 ? (
+            <p className="text-sm text-slate-500">Tour nay chi co mot diem dung nen ban do chi hien marker cua diem do.</p>
+          ) : tourRouteQuery.isLoading ? (
+            <p className="text-sm text-slate-500">Dang tinh duong di qua cac diem dung cua tour...</p>
+          ) : null}
+        </div>
+      ) : (
+        <div className="mt-5 grid gap-3 rounded-[2rem] bg-white p-5 shadow-soft dark:bg-slate-900">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-coral">Bo loc ban do</p>
+              <p className="mt-1 text-sm text-slate-500">
+                {mapPackQuery.data
+                  ? `Offline pack san sang: ${mapPackQuery.data.name} v${mapPackQuery.data.version}`
+                  : 'Dang dung tile online cho local/demo. Co the cau hinh MapTiler bang VITE_MAPTILER_KEY.'}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="btn-primary" onClick={refreshLocation} disabled={isLocating}>
+                <Navigation size={17} />
+                {isLocating ? 'Dang lay GPS' : 'Tim quanh toi'}
+              </button>
+              <Link className="btn-secondary" to="/nearby">
+                <MapPin size={17} />
+                Mo Nearby
+              </Link>
+            </div>
+          </div>
+
+          <Categories selected={categoryId} onSelect={(id) => updateFilters(id || '', priceRange)} />
+
           <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn-primary" onClick={refreshLocation} disabled={isLocating}>
-              <Navigation size={17} />
-              {isLocating ? 'Dang lay GPS' : 'Tim quanh toi'}
-            </button>
-            <Link className="btn-secondary" to="/nearby">
-              <MapPin size={17} />
-              Mo Nearby
-            </Link>
+            {['$', '$$', '$$$'].map((price) => (
+              <button
+                type="button"
+                key={price}
+                onClick={() => updateFilters(categoryId, priceRange === price ? '' : price)}
+                className={`pill ${priceRange === price ? 'border-coral bg-orange-50 text-coral' : ''}`}
+              >
+                {price}
+              </button>
+            ))}
           </div>
         </div>
-
-        <Categories selected={categoryId} onSelect={(id) => updateFilters(id || '', priceRange)} />
-
-        <div className="flex flex-wrap gap-2">
-          {['$', '$$', '$$$'].map((price) => (
-            <button
-              type="button"
-              key={price}
-              onClick={() => updateFilters(categoryId, priceRange === price ? '' : price)}
-              className={`pill ${priceRange === price ? 'border-coral bg-orange-50 text-coral' : ''}`}
-            >
-              {price}
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
 
       <div className="mt-6 grid gap-4 rounded-[2rem] bg-white p-5 shadow-soft dark:bg-slate-900 md:grid-cols-[1.2fr_.8fr_auto] md:items-center">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-coral">GPS thoi gian thuc</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-coral">
+            {tourMode ? 'Tom tat lo trinh' : 'GPS thoi gian thuc'}
+          </p>
           <p className="mt-2 text-sm text-slate-500">
-            {location
+            {tourMode
+              ? `${tourPois.length} diem dung dang duoc chon${tourTitle ? ` cho tour "${tourTitle}"` : ''}.`
+              : location
               ? `Vi tri hien tai: ${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`
               : isLocating
                 ? 'Dang lay vi tri hien tai cua ban...'
                 : 'Chua lay duoc vi tri. Bam nut ben phai de bat dinh vi.'}
           </p>
-          {geoError ? <p className="mt-2 text-sm text-rose-600">{geoError}</p> : null}
+          {!tourMode && geoError ? <p className="mt-2 text-sm text-rose-600">{geoError}</p> : null}
         </div>
 
         <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800">
           {selectedPoi ? (
             <>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal">
-                {navigationMode ? 'Che do dan duong' : 'POI dang chon'}
+                {tourMode ? 'Diem dung dang chon' : navigationMode ? 'Che do dan duong' : 'POI dang chon'}
               </p>
               <p className="mt-2 text-lg font-bold">{selectedPoi.name}</p>
               <p className="mt-1 text-sm text-slate-500">{selectedPoi.address}</p>
@@ -355,11 +431,20 @@ export default function MapPage() {
                 </div>
               ) : null}
 
-              {routeQuery.data ? (
+              {tourMode && activeRoute ? (
+                <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                  <span className="pill border-teal text-teal">Lo trinh {distance(activeRoute.distanceMeters)}</span>
+                  <span className="pill">{durationText}</span>
+                </div>
+              ) : routeQuery.data ? (
                 <div className="mt-3 flex flex-wrap gap-2 text-sm">
                   <span className="pill border-teal text-teal">Duong di {distance(routeQuery.data.distanceMeters)}</span>
                   <span className="pill">{durationText}</span>
                 </div>
+              ) : tourMode && tourRouteQuery.isLoading ? (
+                <p className="mt-2 text-sm text-slate-500">Dang tinh lo trinh tour tren mang luoi duong pho...</p>
+              ) : tourMode && tourRouteQuery.isError ? (
+                <p className="mt-2 text-sm text-rose-600">{(tourRouteQuery.error as Error).message}</p>
               ) : routeQuery.isLoading ? (
                 <p className="mt-2 text-sm text-slate-500">Dang tim duong di tren mang luoi duong pho...</p>
               ) : routeQuery.isError ? (
@@ -372,17 +457,28 @@ export default function MapPage() {
             </>
           ) : (
             <>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal">Chua chon diem den</p>
-              <p className="mt-2 text-sm text-slate-500">Hay bam vao marker hoac mot dong trong danh sach de xem route va so km.</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal">
+                {tourMode ? 'Chua tim thay diem dung' : 'Chua chon diem den'}
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                {tourMode
+                  ? 'Mot vai POI trong tour nay co the khong con cong khai nen ban do khong tai duoc day du.'
+                  : 'Hay bam vao marker hoac mot dong trong danh sach de xem route va so km.'}
+              </p>
             </>
           )}
         </div>
 
         <div className="flex flex-wrap gap-2 md:justify-end">
-          {selectedPoi && !navigationMode ? (
+          {selectedPoi && !navigationMode && !tourMode ? (
             <button type="button" className="btn-primary" onClick={() => startNavigation(selectedPoi.id)}>
               <Navigation size={17} />
               Bat dau dan duong
+            </button>
+          ) : null}
+          {tourMode ? (
+            <button type="button" className="btn-secondary" onClick={clearFocusPoi}>
+              Thoat lo trinh
             </button>
           ) : null}
           {navigationMode ? (
@@ -390,7 +486,7 @@ export default function MapPage() {
               Thoat che do
             </button>
           ) : null}
-          {selectedPoi ? (
+          {selectedPoi && !tourMode ? (
             <button type="button" className="btn-secondary" onClick={clearFocusPoi}>
               Bo chon diem
             </button>
@@ -445,7 +541,7 @@ export default function MapPage() {
           pois={visiblePois}
           userLocation={location}
           selectedPoiId={selectedPoiId || undefined}
-          routeGeometry={routeQuery.data?.geometry}
+          routeGeometry={activeRoute?.geometry}
           onSelectPoi={focusPoi}
         />
 
@@ -499,6 +595,42 @@ export default function MapPage() {
             <Spinner />
           ) : isError ? (
             <ErrorBox text={(error as Error | undefined)?.message || 'Khong tai duoc du lieu ban do.'} />
+          ) : tourMode ? (
+            <>
+              {tourPois.map((poi, index) => (
+                <div
+                  key={poi.id}
+                  className={`rounded-2xl bg-white p-4 shadow-sm transition dark:bg-slate-900 ${selectedPoiId === poi.id ? 'ring-2 ring-teal' : 'hover:shadow-soft'}`}
+                >
+                  <button type="button" className="block w-full text-left" onClick={() => focusPoi(poi.id)}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="pill border-coral text-coral">Stop {index + 1}</span>
+                      <p className="font-bold">{poi.name}</p>
+                    </div>
+                    <p className="mt-1 flex items-center gap-1 text-sm text-slate-500">
+                      <MapPin size={14} />
+                      {poi.address}
+                    </p>
+                  </button>
+
+                  <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                    <span className="pill">{tourTitle || 'Tour ca nhan'}</span>
+                    <span className="pill border-teal text-teal">
+                      {visiblePois.find((item) => item.id === poi.id)?.priceRange || poi.priceRange}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button type="button" className="pill border-teal text-teal" onClick={() => focusPoi(poi.id)}>
+                      {selectedPoiId === poi.id ? 'Dang duoc chon' : 'Tap trung tren ban do'}
+                    </button>
+                    <Link to={`/poi/${poi.id}`} className="pill">
+                      Xem chi tiet
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </>
           ) : navigationMode && selectedPoi ? (
             <div className="rounded-2xl bg-white p-5 shadow-soft dark:bg-slate-900">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal">Diem den hien tai</p>

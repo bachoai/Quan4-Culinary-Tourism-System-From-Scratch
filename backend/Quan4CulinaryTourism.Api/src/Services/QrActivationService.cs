@@ -188,8 +188,8 @@ public class QrActivationService
 
     private static string NormalizeScanMode(string? scanMode)
     {
-        var normalized = string.IsNullOrWhiteSpace(scanMode) ? "prefer_audio" : scanMode.Trim().ToLowerInvariant();
-        if (!SharedConstants.QrScanModes.Contains(normalized, StringComparer.Ordinal))
+        var normalized = string.IsNullOrWhiteSpace(scanMode) ? SharedConstants.QrScanModes.PreferAudio : scanMode.Trim().ToLowerInvariant();
+        if (!SharedConstants.QrScanModes.Values.Contains(normalized, StringComparer.Ordinal))
         {
             throw new ApiException("ScanMode không hợp lệ.");
         }
@@ -211,4 +211,3 @@ public class QrActivationService
     private static string? NormalizeOptionalText(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
-

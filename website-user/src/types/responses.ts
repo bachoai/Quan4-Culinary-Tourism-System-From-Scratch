@@ -236,6 +236,7 @@ export interface TourResponse {
   description: string;
   lang: string;
   coverImageUrl?: string | null;
+  createdByUserId?: string | null;
   estimatedDurationMinutes: number;
   isActive: boolean;
   stops: TourStopResponse[];
